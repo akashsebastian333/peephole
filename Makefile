@@ -18,11 +18,16 @@ vet:
 fmt:
 	gofmt -w *.go
 
-# What CI enforces: formatting, vet, and the race suite.
+# What CI enforces: formatting, vet, the generated-KB freshness check, and the race suite.
 check:
-	@test -z "$$(gofmt -l *.go)" || (echo "gofmt needed:"; gofmt -l *.go; exit 1)
+	@test -z "$$(gofmt -l *.go cmd internal)" || (echo "gofmt needed:"; gofmt -l *.go cmd internal; exit 1)
+	go run ./cmd/kbgen --check
 	go vet ./...
 	go test -race ./...
+
+# Regenerate rules_gen.go from rules/*.json (run before build after rule edits).
+gen:
+	go run ./cmd/kbgen
 
 # Regenerate bin/manifest.sha256 from the current binaries.
 manifest:

@@ -47,10 +47,15 @@ functions, 703 swallowed security errors, 841 reentrancy, 284 tx.origin,
 Plus: secure-default `updatedInput` rewrite (offered only when it leaves the file
 fully clean), commit/push-time review (HEAD-deduped), statusline badge.
 
-Hot-path latency (optimized): ~8ms end-to-end. Wins: launcher forks 4->1 + fork-free
-cache; curl subprocess instead of net/http (binary 6.1M->2.8M, Go init 5.6ms->2.9ms);
-GOMAXPROCS=1/GOGC=off; literal-set prefilters (135 unfiltered patterns -> 27).
-See docs/REVIEW.md for the review passes + research that drove these.
+Hot-path latency (measured, this machine): **~8.5ms end-to-end** (46% faster
+than the 15.9ms phase-9 baseline). Wins: hooks.json inline read+exec fast path
+(no second shell); KB as build-time-generated Go literals with precomputed
+prefilters (`loadKB` ~7µs; was ~2ms of JSON+prefilter work); detached
+SessionStart `warmcache` priming (install verdicts ~90ms vs ~500ms cold);
+earlier: launcher forks 4->1, curl instead of net/http (binary 6.1M->2.8M),
+GOMAXPROCS=1/GOGC=off, literal-set prefilters (135 unfiltered patterns -> 27).
+Session wall-time is 100% API-side (correlation 1.000) - the hook is 0.005% of
+a session. See docs/BENCHMARK.md §D and docs/REVIEW.md.
 
 ## §8 self-hardening controls
 

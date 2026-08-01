@@ -19,7 +19,10 @@ jobs:
           cache: true
 
       - name: gofmt
-        run: test -z "$(gofmt -l *.go)" || (gofmt -l *.go && echo "run gofmt -w *.go" && exit 1)
+        run: test -z "$(gofmt -l *.go cmd internal)" || (gofmt -l *.go cmd internal && echo "run gofmt -w" && exit 1)
+
+      - name: generated KB is fresh
+        run: go run ./cmd/kbgen --check
 
       - name: go vet
         run: go vet ./...

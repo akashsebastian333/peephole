@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -36,6 +37,9 @@ func main() {
 			return
 		case "scan":
 			cliScan(args[1:])
+			return
+		case "warmcache":
+			cliWarmcache()
 			return
 		case "sarif":
 			cliSarif(args[1:])
@@ -249,6 +253,64 @@ func unapprovedMarkers(root, sd string) []debtMarker {
 		}
 	}
 	return out
+}
+
+// cliWarmcache refreshes the slopsquat cache for the project's manifest deps in
+// the background. Spawned detached by SessionStart (spawnWarmcache), so the
+// first install command of a session hits a warm cache instead of eating a
+// 1-2s live registry check on the write path. Silent, best-effort, bounded.
+func cliWarmcache() {
+	cwd, _ := os.Getwd()
+	e := Event{Cwd: cwd}
+	root := projectDir(e)
+	sd := stateDir(e)
+	if err := os.MkdirAll(sd, 0o700); err != nil {
+		return
+	}
+	var deps []Install
+	for _, m := range []string{"requirements.txt", "pyproject.toml", "Pipfile", "package.json"} {
+		if b, err := os.ReadFile(filepath.Join(root, m)); err == nil {
+			deps = append(deps, extractManifestDeps(m, string(b))...)
+		}
+	}
+	var live []Install
+	for _, in := range deps {
+		if checkPackageOffline(sd, in) == pkgUnknown {
+			live = append(live, in)
+		}
+	}
+	if len(live) > 0 {
+		checkPackagesLive(sd, live) // populates the 7-day disk cache
+	}
+}
+
+// spawnWarmcache launches `peephole warmcache` detached at SessionStart when the
+// project has a dependency manifest. Fire-and-forget: setsid, stdio discarded,
+// never waited on - SessionStart latency is unaffected (~1 fork).
+func spawnWarmcache(e Event) {
+	root := projectDir(e)
+	hasManifest := false
+	for _, m := range []string{"requirements.txt", "pyproject.toml", "Pipfile", "package.json"} {
+		if fi, err := os.Stat(filepath.Join(root, m)); err == nil && fi.Size() > 0 {
+			hasManifest = true
+			break
+		}
+	}
+	if !hasManifest {
+		return
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		return
+	}
+	cmd := exec.Command(exe, "warmcache")
+	cmd.Dir = root
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = nil, nil, nil
+	detach(cmd)
+	if err := cmd.Start(); err != nil {
+		_ = os.WriteFile(filepath.Join(stateDir(e), "warmcache.err"), []byte(err.Error()), 0o600)
+	}
+	// deliberately not waited on
 }
 
 // cliScan scans one or more files and prints CWE findings. Exit 0 always (a

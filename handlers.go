@@ -50,7 +50,8 @@ func handleSessionStart(e Event, kb *KB) {
 	if e.Source == "startup" || e.Source == "clear" {
 		_ = os.RemoveAll(filepath.Join(stateDir(e), "session"))
 	}
-	migrateState(e) // state schema-version: migrate-or-reset (§8 uninstall/migration)
+	migrateState(e)   // state schema-version: migrate-or-reset (§8 uninstall/migration)
+	spawnWarmcache(e) // pre-warm the slopsquat cache, detached (zero added latency)
 	mode := getMode(e)
 	var b strings.Builder
 	if ok, detail := verifySelf(); !ok {

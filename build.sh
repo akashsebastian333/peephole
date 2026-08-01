@@ -5,6 +5,10 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Regenerate the embedded KB as Go literals (with precomputed prefilters) so the
+# hook pays no JSON/unmarshal/prefilter cost per event.
+go run ./cmd/kbgen
+
 targets="darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64"
 for t in $targets; do
   os=${t%/*}; arch=${t#*/}

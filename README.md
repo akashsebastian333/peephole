@@ -36,10 +36,14 @@ misses.
 ## How it's built (and why you won't feel it)
 
 A single **static Go binary**, cross-compiled for macOS/Linux/Windows and shipped
-in `bin/`. You install **no runtime** — not Node, not Python. Native start is a
-few milliseconds, so the hot path (which fires on every Write/Edit/Bash) is
-invisible. If your platform has no matching binary, the launcher exits cleanly
-with a notice and never blocks your work.
+in `bin/`. You install **no runtime** — not Node, not Python. The full hook path
+(launcher + binary + scan) measures **~8.5ms per event** on this machine (46%
+faster after three optimizations: the launcher hot path execs the cached binary
+with zero extra shell, the KB ships as build-time-generated Go literals with
+precomputed prefilters — `loadKB` is ~7µs, not ~2ms — and a detached SessionStart
+`warmcache` pre-warms the slopsquat cache so the first install verdict skips the
+cold-registry ~500ms). If your platform has no matching binary, the launcher exits
+cleanly with a notice and never blocks your work.
 
 The CWE knowledge base is embedded into the binary (`go:embed`), so a local
 attacker can't quietly edit rule files the binary ignores, and there's no file
@@ -112,7 +116,7 @@ evidence for regulated teams. `/sec-audit` rolls decisions up to OWASP 2025.
 ## Build & test
 
 ```sh
-./build.sh      # cross-compile all targets + regenerate the integrity manifest
+./build.sh      # regenerate rules_gen.go, cross-compile all targets, regen integrity manifest
 go test ./...   # end-to-end hook contract tests + KB self-consistency + tamper tests
 ```
 
@@ -240,7 +244,7 @@ treat as marketing-aware claims).
 | Acts **before** code lands | ✅ PreToolUse deny | ❌ PostToolUse warn | ❌ post-write scan | ❌ in-loop scan | ✅ pre-commit deps | ✅ pre-install deps |
 | Blocks the write | ✅ strict/hardened | ❌ advisory only | regen-until-clean (Guardian) | ❌ | ✅ (deps only) | ✅ (deps only) |
 | App-code pattern breadth | 176 rules / 77 CWEs *(measured)* | 25 patterns *(measured)* | large SAST corpus, taint engine | medium | none (deps) | none (deps) |
-| Semantic / LLM review | ❌ (regex + checklists) | ✅ LLM diff review | ✅ taint (OSS) + more | ✅ | ❌ | ❌ |
+| Semantic / LLM review | ⚠️ diff-grounded self-review (host model, zero-cost) | ✅ LLM diff review | ✅ taint (OSS) + more | ✅ | ❌ | ❌ |
 | Supply-chain gate | ✅ installs + manifests | ❌ | partial (SCA product) | ✅ | ✅ | ✅ |
 | Tamper-evident audit log | ✅ hash-chained | ❌ | ❌ | platform | platform | ❌ |
 | Born-secure metric | ✅ N2 decomposition | ❌ | ❌ | ❌ | ❌ | ❌ |

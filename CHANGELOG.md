@@ -3,6 +3,36 @@
 All notable changes to Peephole are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] - 2026-08
+
+Latency + review-quality release, driven by the live-benchmark findings
+(wall time is 100% API-side; the hook is the cheap part — see
+`docs/BENCHMARK.md` §D).
+
+### Latency (measured, this machine)
+- Full production hook path **15.9ms -> 8.5ms (-46%)**: hooks.json now execs the
+  cached platform binary directly (read-builtin fast path, zero extra shell;
+  falls back to `peephole.sh` when unprimed).
+- **KB as generated Go literals** (`rules_gen.go`, built by `cmd/kbgen` from
+  `rules/*.json` with prefilters precomputed via `internal/litset`): `loadKB`
+  ~2ms -> ~7µs per event. CI fails the build if the JSON and the generated file
+  drift (`go run ./cmd/kbgen --check`).
+- **Slopsquat warm-cache priming**: SessionStart spawns a detached
+  `peephole warmcache` (setsid, fire-and-forget) that pre-checks manifest deps
+  against the registry, so the session's first install verdict is served from
+  cache (~90ms) instead of a cold ~500ms curl. Cache writes are atomic
+  (tmp+rename) for concurrent gate/warmcache access.
+
+### Review quality
+- Stop self-review is now **diff-grounded and CWE-targeted** (injects the
+  bounded session `git diff` + the N3-classified CWE classes into the same
+  single forced continuation - zero extra turns, no LLM call of our own).
+- N6 trigger fixed to blueprint spec: fires on N3-classified security tasks
+  with writes, not only on presence findings (IDOR/ratelimit-class sessions
+  were previously never reviewed). Validation documented honestly in
+  `docs/BENCHMARK.md` §D: mechanism verified, Haiku self-review rubber-stamps
+  (0/7), consistent with published ~25% LLM self-repair rates.
+
 ## [0.2.0] - 2026-08
 
 Hardening + blueprint-completeness release. Four more confirmed logic blunders

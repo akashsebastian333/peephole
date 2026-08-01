@@ -152,8 +152,14 @@ func loadCache(sd string) map[string]cacheRec {
 }
 
 func saveCache(sd string, m map[string]cacheRec) {
-	if b, err := json.Marshal(m); err == nil {
-		_ = os.WriteFile(cachePath(sd), b, 0o600)
+	b, err := json.Marshal(m)
+	if err != nil {
+		return
+	}
+	// atomic write: a concurrent warmcache/gate reader never sees a torn file
+	tmp := cachePath(sd) + ".tmp"
+	if err := os.WriteFile(tmp, b, 0o600); err == nil {
+		_ = os.Rename(tmp, cachePath(sd))
 	}
 }
 

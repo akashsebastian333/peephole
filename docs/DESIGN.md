@@ -88,7 +88,7 @@ DEFERRED (blueprint itself defers these):
 
 ```
 .claude-plugin/plugin.json   plugin manifest
-hooks/hooks.json             event → command wiring (all events → peephole.sh hook)
+hooks/hooks.json             event → command wiring (inline read+exec fast path -> cached binary, fallback peephole.sh)
 hooks/peephole.sh            platform dispatcher: picks bin/peephole-<os>-<arch>
 bin/peephole-<os>-<arch>     prebuilt static binaries (5 targets) + manifest.sha256
 main.go                      CLI dispatch (hook/mode/selfcheck/audit/debt/scan/sarif/statusline/genmanifest) + watchdog
