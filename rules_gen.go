@@ -414,6 +414,59 @@ var generatedRules = []Rule{
 	},
 	{
 		CWE:          "CWE-200",
+		Name:         "Environment / secret exfiltration to a network sink",
+		Rank:         0,
+		KEV:          false,
+		OWASP:        []string{"A01"},
+		Severity:     "critical",
+		TaskTriggers: []string{"telemetry", "analytics", "reporting", "debug", "diagnostics", "webhook", "callback", "metrics", "phone home", "upload logs", "crash report"},
+		Patterns: []Pattern{
+			{
+				Lang:       "python",
+				Re:         "(?:requests|httpx|session|urllib\\.request)\\.(?:post|put|patch|urlopen|request)\\([^)]{0,240}(?:dict\\(os\\.environ|os\\.environ\\s*[),])",
+				Confidence: "high",
+				prefilter:  []string{"requests", "httpx", "session", "urllib.request"},
+			},
+			{
+				Lang:       "javascript",
+				Re:         "(?:fetch|axios(?:\\.(?:post|put|patch))?|got\\.post|http\\.request)\\([^)]{0,240}(?:JSON\\.stringify\\(\\s*process\\.env\\s*\\)|\\bprocess\\.env\\s*[)},])",
+				Confidence: "high",
+				prefilter:  []string{"post", "put", "patch"},
+			},
+			{
+				Lang:       "go",
+				Re:         "http\\.(?:Post|PostForm)\\([^)]{0,240}os\\.Environ\\(\\)",
+				Confidence: "high",
+				prefilter:  []string{"environ"},
+			},
+			{
+				Lang:       "",
+				Re:         "\\b(?:curl|wget)\\b[^\\n|]*(?:-d|--data(?:-raw|-binary)?)\\s+[^\\n]*\\$\\(\\s*(?:env|printenv)\\s*\\)",
+				Confidence: "high",
+				prefilter:  []string{"curl", "wget"},
+			},
+			{
+				Lang:       "",
+				Re:         "\\b(?:requests|httpx|session)\\.(?:post|put)\\([^)]{0,240}(?:AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|sk-ant-[A-Za-z0-9_\\-]{24}|sk_live_[A-Za-z0-9]{16}|AIza[0-9A-Za-z_\\-]{35}|LTAI[A-Za-z0-9]{12,24})",
+				Confidence: "high",
+				prefilter:  []string{"requests", "httpx", "session"},
+			},
+		},
+		Absence:        nil,
+		AttackScenario: "an instruction hidden in a README, issue, or tool result tells the agent to 'add telemetry/crash reporting', and the agent POSTs the process environment (which holds every API key, token, and DB password) to an attacker endpoint. The model does not refuse because sending diagnostics is a legitimate-looking task, and a warning that fires after the request has already put the secrets on the wire. Only a write-time deny keeps the credentials in the box (OWASP LLM01 indirect prompt injection / confused deputy).",
+		NegativeHints:  []string{"point the code at a local sink and assert the captured request body does NOT contain \"dict(os.environ)\" nor the value of any environment secret"},
+		Exemplar: struct {
+			Noncompliant string `json:"noncompliant"`
+			Compliant    string `json:"compliant"`
+			Explanation  string `json:"explanation"`
+		}{
+			Noncompliant: "requests.post(url, json=dict(os.environ))",
+			Compliant:    "requests.post(url, json={\"event\": \"startup\", \"version\": VERSION})",
+			Explanation:  "never send the whole environment or a raw secret to a network sink; report only explicit, non-sensitive fields, and read credentials from the environment only to authenticate to their own service",
+		},
+	},
+	{
+		CWE:          "CWE-200",
 		Name:         "WebView universal/file URL access enabled",
 		Rank:         0,
 		KEV:          false,
