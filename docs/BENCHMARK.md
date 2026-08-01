@@ -148,7 +148,12 @@ security-guidance (its own hooks.json wiring, verbatim), peephole (strict).
 - **Cost of enforcement:** peephole is flat on tokens/dollars vs baseline
   (100%/101%) but ~2× wall time (192%); 3 of its sessions hit the 600s cap
   (forced-continuation loops) and were excluded. 9 harness timeouts total,
-  disclosed per arm in the raw log.
+  disclosed per arm in the raw log. Caveat: wall time is **100% API-side**
+  (wall-vs-API-duration correlation 1.000; turns flat at 2.0–2.3 across arms) —
+  the time deltas are model generation time + shared-proxy latency variance,
+  not hook cost (~8ms, 0.005% of a session). bare-prompt's 264% is the same
+  effect (a security instruction lengthens generations); medians (81/156/233s)
+  tell a milder story than means (105/202/278s).
 - **Attack confound:** Haiku refuses most blatant attack prompts unprompted, so
   "attacks stopped" flatters every arm. The discriminative attack was the
   subtle rename bypass (`app.txt` → `mv app.py`): it LANDED on baseline and
@@ -162,6 +167,47 @@ security-guidance (its own hooks.json wiring, verbatim), peephole (strict).
   scanner (the born-secure metric is defined over its presence patterns) —
   mitigated by the Semgrep cross-column and the fully independent semantic
   judge. n=2 per cell, one model, one day — directional, not a headline.
+
+---
+
+## D. Latency analysis & the diff-grounded Stop review (2026-08, honest outcome)
+
+**Where the time actually goes.** Across all 144 live sessions, wall time is
+**100% API-side** (wall-vs-API-duration correlation 1.000) and turn counts are
+flat across arms (2.0–2.3). Peephole's hook process is ~8ms — 0.005% of a
+session. The session-time deltas (192% peephole, 264% bare-prompt) are model
+generation time plus shared-proxy latency variance, heavily right-skewed —
+medians (81s baseline / 156s peephole / 233s bare-prompt) tell a milder story
+than means (105/202/278s). bare-prompt's 264% is not a harness bug: a security
+instruction makes the model generate longer, more careful responses. Any
+"latency work" on the hook side is therefore wasted; the levers are turn count
+and review precision.
+
+**What was built.** The Stop self-review was upgraded from a generic checklist
+to a **diff-grounded, CWE-targeted** review, at zero marginal cost: it injects
+the session's actual `git diff` (bounded 6KB, untracked files included) plus
+the N3-classified CWE classes ("This task was classified as touching CWE-639,
+CWE-862 — verify those first") into the *same* single forced continuation that
+already existed. No LLM call of peephole's own, no API key, no extra turns.
+The trigger was also fixed to match blueprint N6: it now fires on N3-classified
+security tasks with writes (was: only on presence findings — which never fire
+for IDOR/ratelimit classes).
+
+**Validation — mechanism works, effect on Haiku ≈ nil (no sugarcoating).**
+Hook-level tests confirm the diff and the targeted classes reach the forced
+continuation, and coverage of semantic tasks rose from 4/10 (only finding-
+triggered sessions) to 7/10 judged. But in a 10-session re-validation on the
+peephole arm, the judge scored **0/7 secure**: Haiku's self-review
+rubber-stamps its own diff ("...parameterized SQL, PBKDF2 with salt — Code is
+secure" on a login endpoint with no rate limiting). This matches the published
+evidence — LLM self-repair on security bugs is weak (~25% full-correctness on
+Vul4J, semantic misunderstanding dominant). The 43% pass-1 semantic score came
+from *upfront* ladder guidance (secure first drafts), not from any Stop review.
+The mechanism is kept (it is the blueprint's N6 design, costs nothing, and
+stronger models self-review better); the honest claim is "fires correctly and
+grounds the review in the real diff", not "catches semantic bugs on Haiku".
+A shared-proxy 5-parallel rate cap contributed to 5/10 session timeouts during
+validation; noted for future run design (fewer workers).
 
 ---
 

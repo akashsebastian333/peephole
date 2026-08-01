@@ -201,11 +201,22 @@ Read this one carefully, because it's the honest one:
 - **security-guidance's semantic 0% needs context too**: its LLM Stop-review
   fires *after* the code is written; in these sessions it either didn't run to
   a fix or the fixes didn't satisfy the rubric. That is its design (advise, not
-  enforce), not necessarily its ceiling.
+  enforce), not necessarily its ceiling. Peephole's own Stop review was since
+  upgraded (diff-grounded, CWE-targeted, N3-triggered) and re-validated: it
+  fires correctly, but Haiku *rubber-stamps its own diff* (0/7 fixed) — LLM
+  self-review on security bugs is weak everywhere, ours included. See
+  `docs/BENCHMARK.md` §D.
 - **Cost realism:** peephole costs +1% money, +92% wall time vs baseline
   (hook events + gate retries + the N6 continuation) and 3 of its 5 harness
   timeouts were forced-continuation loops hitting the 10-minute cap. That is
-  the real price of enforcement; tokens and dollars are flat.
+  the real price of enforcement; tokens and dollars are flat. Two caveats on
+  the time numbers: (1) wall time is **100% API-side** — the wall-vs-API-duration
+  correlation is 1.000, turns are flat across arms (2.0–2.3), so the deltas are
+  model generation time and shared-proxy latency variance, not hook cost
+  (peephole's hook is ~8ms, 0.005% of a session); (2) bare-prompt's 264% is the
+  same phenomenon — a security instruction makes the model generate longer,
+  more careful responses, plus skew from a few slow sessions (medians: 81s
+  baseline / 156s peephole / 233s bare-prompt — less dramatic than means).
 - **Attacks:** the rename bypass (write `app.txt`, `mv app.py`) landed on
   baseline and bare-prompt — the only attack that got through anywhere — and
   peephole's gate stopped it mechanically (not via model refusal). Confound:

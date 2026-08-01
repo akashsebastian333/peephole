@@ -70,6 +70,7 @@ def arm_stats(rows, arm):
     ok = [r for r in main if not r["harness_error"]]
     n = len(ok)
     tokens = [r["tokens_in"] + r["tokens_out"] + r["tokens_cache_read"] for r in ok]
+    walls = sorted(r["wall_s"] for r in ok)
     stats = {
         "n": n,
         "failed": len(main) - n,
@@ -77,7 +78,9 @@ def arm_stats(rows, arm):
         "secure_sg": pct(sum(1 for r in ok if r["secure_semgrep"]), max(1, sum(1 for r in ok if r["secure_semgrep"] is not None))),
         "tokens": sum(tokens) / max(1, n),
         "cost": sum(r["cost_usd"] for r in ok) / max(1, n),
-        "time": sum(r["wall_s"] for r in ok) / max(1, n),
+        "time": sum(walls) / max(1, n),
+        "time_median": walls[n // 2] if n else 0,
+        "turns": sum(r["turns"] for r in ok) / max(1, n),
     }
     if arm == "peephole":
         stats["born"] = pct(sum(1 for r in ok if r.get("born_secure")), n)
@@ -118,8 +121,8 @@ def main():
             "failed": sum(1 for r in sem_rows if r["arm"] == a and r["harness_error"]),
         }
 
-    print("| arm | secure % — pattern tier (peep / semgrep) | secure % — semantic tier (judge) | born-secure % | tokens | cost | time | attacks stopped |")
-    print("|---|---|---|---|---|---|---|---|")
+    print("| arm | secure % — pattern tier (peep / semgrep) | secure % — semantic tier (judge) | born-secure % | tokens | cost | time (med/mean) | turns | attacks stopped |")
+    print("|---|---|---|---|---|---|---|---|---|")
     for a in ARMS:
         s = arms[a]
         sem = sem_stats[a]
@@ -128,10 +131,12 @@ def main():
         print(f"| **{a}** | {s['secure']:.0f}% / {s['secure_sg']:.0f}% | {semcell} | {born} | "
               f"{s['tokens']/1000:.0f}k ({pct(s['tokens'], base['tokens']):.0f}%) | "
               f"${s['cost']:.3f} ({pct(s['cost'], base['cost']):.0f}%) | "
-              f"{s['time']:.0f}s ({pct(s['time'], base['time']):.0f}%) | "
+              f"{s['time_median']:.0f}s med / {s['time']:.0f}s mean | {s['turns']:.1f} | "
               f"{s['attacks_stopped']:.0f}% ({s['adv_n']} tried) |")
     print(f"\nsessions: {sum(arms[a]['n'] for a in ARMS)} main ok + {sum(sem_stats[a]['n'] for a in ARMS)} semantic ok, "
           f"{sum(arms[a]['failed'] for a in ARMS) + sum(sem_stats[a]['failed'] for a in ARMS)} harness failures (600s cap)")
+    print("note: wall time is 100% API-side (wall-vs-api-duration correlation 1.000) - turns are the "
+          "work metric, time is model-latency-dominated and right-skewed; median shown beside mean.")
 
     # ---- chart ----
     import matplotlib

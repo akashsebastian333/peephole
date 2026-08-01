@@ -12,7 +12,7 @@ what's deliberately deferred. Updated as work proceeds.
 | N3 | Threat-Model-Aware Context Compiler (task→CWE, exemplars, attack scenarios, KEV, org policy) | **done** | `handlers.go` classify + compileContext; `policy.go` org-policy loader |
 | N4 | Sec-Debt Ledger + human-authorized waivers | **done** | line-scoped marker deny→ask, waiver audit-logged, unapproved markers flagged at Stop + `/sec-audit`; `/sec-debt` harvest |
 | N5 | Slopsquat Gate (install + manifest edits) | **done** | `slopsquat.go` (offline signals + bounded live checks) + `manifest.go` |
-| N6 | Adversarial Self-Check Mandate (Stop negative-test gate) | **done** | `handlers.go` handleStop: audit warns, max 2 forced continuations, exhaustion logged as sec-debt |
+| N6 | Adversarial Self-Check Mandate (Stop negative-test gate + diff-grounded, CWE-targeted self-review, N3-triggered) | **done** | `handlers.go` handleStop + `diff.go`; audit warns, max 2 continuations, exhaustion logged; effect on Haiku self-review documented honestly (BENCHMARK §D) |
 | N7 | Diff-Provenance Taint Echo | **done (experimental opt-in)** | `taint.go`; ask by default, deny behind `.peephole/taint-deny`; off unless enabled |
 
 **KB: 174 rules, 77 distinct CWEs, 504 presence patterns** across ~28 language

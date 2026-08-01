@@ -110,6 +110,16 @@ func handleUserPrompt(e Event, kb *KB) {
 	if len(candidates) == 0 {
 		passthrough("")
 	}
+	// N6 trigger: task is security-relevant; store the top classes for a
+	// targeted Stop review (structured beats generic).
+	var top []string
+	for i, r := range candidates {
+		if i >= 3 {
+			break
+		}
+		top = append(top, r.CWE)
+	}
+	markN3Sec(stateDir(e), e.SessionID, top)
 	injectContext("UserPromptSubmit", compileContext(kb, e, candidates))
 }
 
@@ -640,12 +650,37 @@ func handleStop(e Event, kb *KB) {
 		clearNegTest(sd, e.SessionID)
 		resetNegCount(sd, e.SessionID)
 	}
-	needReview := sessionSecRelevant(sd, e.SessionID) && !sessionReviewed(sd, e.SessionID)
+	// Trigger per blueprint N6: this turn's writes touched trust-boundary paths
+	// (a presence finding/decision, OR an N3-classified security task) AND
+	// something was actually written.
+	n3cwes, n3hit := sessionN3Sec(sd, e.SessionID)
+	secRelevant := (sessionSecRelevant(sd, e.SessionID) || n3hit) && sessionSawWrite(sd, e.SessionID)
+	needReview := secRelevant && !sessionReviewed(sd, e.SessionID)
 	needTest := wantTest && !exercised
 	if needReview || needTest {
 		var msg string
 		if needReview {
+			// Diff-grounded, targeted self-review: the model reviews the concrete
+			// diff it just wrote against the classes this task was classified
+			// under - structured beats generic. Same single continuation as
+			// before - zero extra turns, no LLM call of our own.
 			msg = selfReviewChecklist
+			if n3cwes != "" {
+				msg = "This task was classified as touching " + n3cwes + ". Verify those classes first, then the rest.\n\n" + msg
+			}
+			if diff := sessionDiff(projectDir(e)); diff != "" {
+				msg = "Review the code you wrote THIS session (full diff below) against these checks that\n" +
+					"automated patterns cannot verify - fix anything that fails, then you may stop:\n" +
+					"- Race/atomicity: any read-check-write on shared state (balance, counter, stock, quota) must be\n" +
+					"  atomic (transaction + row lock or a single guarded UPDATE), not read-then-write.\n" +
+					"- Authorization: every state-changing or cross-user operation must check the acting user owns/may\n" +
+					"  act on the object (no IDOR); does not trust a client-supplied id or role.\n" +
+					"- Business logic: quantities/amounts validated (no negative/zero), prices/totals computed\n" +
+					"  server-side, valid state transitions enforced, one-time actions idempotent.\n" +
+					"- Secure defaults: cookies HttpOnly+Secure+SameSite, TLS 1.2+, least-privilege perms, outbound\n" +
+					"  timeouts, no secrets in logs.\n" +
+					"State briefly which apply and how you handled them.\n\n```diff\n" + diff + "\n```"
+			}
 			markReviewed(sd, e.SessionID)
 		}
 		if needTest {

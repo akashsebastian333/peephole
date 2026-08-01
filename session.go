@@ -45,6 +45,23 @@ func sessionSecRelevant(sd, sid string) bool {
 	return err == nil
 }
 
+// n3sec: the UserPromptSubmit classifier matched this task to CWE candidates -
+// the blueprint's N6 trigger ("writes touched trust-boundary paths, per N3").
+// Fires the Stop self-review even when no presence finding ever landed, which
+// is exactly the semantic-class (IDOR/race/business-logic) coverage gap. The
+// file stores the top classes so the review is TARGETED, not generic.
+func markN3Sec(sd, sid string, cwes []string) {
+	_ = os.WriteFile(sidFile(sd, sid, "n3sec"), []byte(strings.Join(cwes, ",")), 0o600)
+}
+
+func sessionN3Sec(sd, sid string) (string, bool) {
+	b, err := os.ReadFile(sidFile(sd, sid, "n3sec"))
+	if err != nil {
+		return "", false
+	}
+	return strings.TrimSpace(string(b)), true
+}
+
 // reviewed: the Stop-time semantic self-review already fired (one-shot).
 func markReviewed(sd, sid string) {
 	_ = os.WriteFile(sidFile(sd, sid, "reviewed"), []byte("1"), 0o600)
