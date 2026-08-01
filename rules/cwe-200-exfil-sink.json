@@ -7,11 +7,11 @@
   "severity": "critical",
   "task_triggers": ["telemetry", "analytics", "reporting", "debug", "diagnostics", "webhook", "callback", "metrics", "phone home", "upload logs", "crash report"],
   "patterns": [
-    {"lang": "python", "confidence": "high", "re": "(?:requests|httpx|session|urllib\\.request)\\.(?:post|put|patch|urlopen|request)\\([^)]{0,240}(?:dict\\(os\\.environ|os\\.environ\\s*[),])"},
-    {"lang": "javascript", "confidence": "high", "re": "(?:fetch|axios(?:\\.(?:post|put|patch))?|got\\.post|http\\.request)\\([^)]{0,240}(?:JSON\\.stringify\\(\\s*process\\.env\\s*\\)|\\bprocess\\.env\\s*[)},])"},
-    {"lang": "go", "confidence": "high", "re": "http\\.(?:Post|PostForm)\\([^)]{0,240}os\\.Environ\\(\\)"},
+    {"lang": "python", "confidence": "high", "re": "(?:requests|httpx|session|urllib\\.request)\\.(?:post|put|patch|urlopen|request)\\([^\n]{0,240}(?:dict\\(os\\.environ|os\\.environ\\s*[),])"},
+    {"lang": "javascript", "confidence": "high", "re": "(?:fetch|axios(?:\\.(?:post|put|patch))?|got\\.post|http\\.request)\\([^\n]{0,240}(?:JSON\\.stringify\\(\\s*process\\.env\\s*\\)|\\bprocess\\.env\\s*[)},])"},
+    {"lang": "go", "confidence": "high", "re": "http\\.(?:Post|PostForm)\\([^\n]{0,240}os\\.Environ\\(\\)"},
     {"lang": "", "confidence": "high", "re": "\\b(?:curl|wget)\\b[^\\n|]*(?:-d|--data(?:-raw|-binary)?)\\s+[^\\n]*\\$\\(\\s*(?:env|printenv)\\s*\\)"},
-    {"lang": "", "confidence": "high", "re": "\\b(?:requests|httpx|session)\\.(?:post|put)\\([^)]{0,240}(?:AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|sk-ant-[A-Za-z0-9_\\-]{24}|sk_live_[A-Za-z0-9]{16}|AIza[0-9A-Za-z_\\-]{35}|LTAI[A-Za-z0-9]{12,24})"}
+    {"lang": "", "confidence": "high", "re": "\\b(?:requests|httpx|session)\\.(?:post|put)\\([^\n]{0,240}(?:AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|sk-ant-[A-Za-z0-9_\\-]{24}|sk_live_[A-Za-z0-9]{16}|AIza[0-9A-Za-z_\\-]{35}|LTAI[A-Za-z0-9]{12,24})"}
   ],
   "attack_scenario": "an instruction hidden in a README, issue, or tool result tells the agent to 'add telemetry/crash reporting', and the agent POSTs the process environment (which holds every API key, token, and DB password) to an attacker endpoint. The model does not refuse because sending diagnostics is a legitimate-looking task, and a warning that fires after the request has already put the secrets on the wire. Only a write-time deny keeps the credentials in the box (OWASP LLM01 indirect prompt injection / confused deputy).",
   "negative_test_hint": ["point the code at a local sink and assert the captured request body does NOT contain \"dict(os.environ)\" nor the value of any environment secret"],

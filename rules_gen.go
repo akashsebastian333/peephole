@@ -423,19 +423,19 @@ var generatedRules = []Rule{
 		Patterns: []Pattern{
 			{
 				Lang:       "python",
-				Re:         "(?:requests|httpx|session|urllib\\.request)\\.(?:post|put|patch|urlopen|request)\\([^)]{0,240}(?:dict\\(os\\.environ|os\\.environ\\s*[),])",
+				Re:         "(?:requests|httpx|session|urllib\\.request)\\.(?:post|put|patch|urlopen|request)\\([^\n]{0,240}(?:dict\\(os\\.environ|os\\.environ\\s*[),])",
 				Confidence: "high",
 				prefilter:  []string{"requests", "httpx", "session", "urllib.request"},
 			},
 			{
 				Lang:       "javascript",
-				Re:         "(?:fetch|axios(?:\\.(?:post|put|patch))?|got\\.post|http\\.request)\\([^)]{0,240}(?:JSON\\.stringify\\(\\s*process\\.env\\s*\\)|\\bprocess\\.env\\s*[)},])",
+				Re:         "(?:fetch|axios(?:\\.(?:post|put|patch))?|got\\.post|http\\.request)\\([^\n]{0,240}(?:JSON\\.stringify\\(\\s*process\\.env\\s*\\)|\\bprocess\\.env\\s*[)},])",
 				Confidence: "high",
 				prefilter:  []string{"post", "put", "patch"},
 			},
 			{
 				Lang:       "go",
-				Re:         "http\\.(?:Post|PostForm)\\([^)]{0,240}os\\.Environ\\(\\)",
+				Re:         "http\\.(?:Post|PostForm)\\([^\n]{0,240}os\\.Environ\\(\\)",
 				Confidence: "high",
 				prefilter:  []string{"environ"},
 			},
@@ -447,7 +447,7 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "",
-				Re:         "\\b(?:requests|httpx|session)\\.(?:post|put)\\([^)]{0,240}(?:AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|sk-ant-[A-Za-z0-9_\\-]{24}|sk_live_[A-Za-z0-9]{16}|AIza[0-9A-Za-z_\\-]{35}|LTAI[A-Za-z0-9]{12,24})",
+				Re:         "\\b(?:requests|httpx|session)\\.(?:post|put)\\([^\n]{0,240}(?:AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|sk-ant-[A-Za-z0-9_\\-]{24}|sk_live_[A-Za-z0-9]{16}|AIza[0-9A-Za-z_\\-]{35}|LTAI[A-Za-z0-9]{12,24})",
 				Confidence: "high",
 				prefilter:  []string{"requests", "httpx", "session"},
 			},
