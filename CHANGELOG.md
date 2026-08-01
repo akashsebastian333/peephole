@@ -3,6 +3,58 @@
 All notable changes to Peephole are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-08
+
+Driven by a deep read-only review (Go code, rules, benchmark validity, repo
+maturity) that found real flaws and an inflated self-benchmark. Fixes the flaws,
+makes the benchmark honest, adds a novel capability, and expands beyond Claude
+Code to a universal multi-agent gate.
+
+### Security / correctness
+- **Self-protection: closed the mode-lowering bypass.** Shell variable indirection
+  (`P=peephole; $P mode off`) evaded the guard and disabled enforcement.
+  `resolveAssignments` substitutes simple aliases before matching; the guard also
+  blocks agent-initiated `strict`.
+- **Prefilter soundness:** an optional `(?:a|b)?`/`*` group is no longer treated as
+  a required literal (could false-skip a real match = missed vuln).
+- **Audit log:** deletion while the head sidecar records entries is now tamper;
+  `withLock` steals a stale lock to avoid chain-desync false alarms.
+
+### False positives (framework-level)
+- Injection-class rules only reach `high` (hard deny) when the tainted position is
+  visible; otherwise `ask`. Applied to SSRF, NoSQL, path traversal, weak-cred,
+  crypto (sha256 is not weak), Rust silent-failure, header injection.
+  `TestNoHighConfidenceFalsePositives` locks it.
+
+### Terminating guardrail (timeout fix)
+- A blocking gate the model kept retrying could livelock the agent to the session
+  cap. A **per-rule (mutation-invariant) deny counter** plus a global floor
+  escalates to "stop retrying" and finally `ask` (hand to human), so the agent
+  always terminates. The finding always stands.
+
+### New capability
+- **Confused-deputy exfil-sink gate (CWE-200):** hard-deny when the whole
+  environment or a raw secret flows into a network sink — the "add telemetry"
+  indirect-prompt-injection attack the model won't refuse and an advisory warns
+  about too late. Near-zero FP.
+
+### Beyond Claude Code
+- `peephole hook --exit2` (universal exit-2 block signal), `peephole scan --gate
+  --staged` (git pre-commit), `peephole mcp` (MCP server), `peephole lsp` (LSP
+  diagnostics). `docs/INTEGRATIONS.md` + `integrations/` cover Gemini CLI, Codex,
+  Qwen, Crush, Goose, Cursor, OpenCode, Amp, plus the MCP/LSP editor cohort.
+
+### Benchmark honesty
+- `report.py` rewritten: independent grader (Semgrep / out-of-family judge) is the
+  headline, not peephole's own scanner; empty output ≠ secure; timeouts counted;
+  nothing hardcoded. Real live numbers (peephole 90% independent, not 100%).
+- `judge_v2.py`: blinded, rubric-guided, reason-before-verdict, escalate-on-
+  disagreement independent judge.
+
+### Repo / CI
+- CI scans its own code (gosec, govulncheck, staticcheck). Reproducible binary
+  builds (`-buildvcs=false`). Dropped product-name references.
+
 ## [0.2.1] - 2026-08
 
 Latency + review-quality release, driven by the live-benchmark findings

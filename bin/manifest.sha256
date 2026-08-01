@@ -1,5 +1,5 @@
 {
-  ".claude-plugin/plugin.json": "337d9a563c79534dcbf2b0b9559fd0fe8b31fe14f31c5b9276e4a6c0a28e6e80",
+  ".claude-plugin/plugin.json": "961eb9f1b3e23ee3abd1c019449fc98ea71bd08a81494baf6bfdeef044df2559",
   "hooks/hooks.json": "7851f245d42f5abfcfad8291566d29ab1215c2f65d325f5687fc2b1e26604d06",
   "hooks/peephole.sh": "877f29bed353f624d15c89046b8995361559f69d4375294e4c5a37880c9364b9",
   "peephole-darwin-amd64": "a6c5072f1ca8f2fa58cd3b1334566cd58616d4af6a0f3009e07036f5f1cdd1b7",
