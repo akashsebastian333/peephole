@@ -2,7 +2,7 @@
   "name": "peephole",
   "displayName": "Peephole",
   "version": "0.2.0",
-  "description": "Born-secure enforcement for AI coding assistants. Gates insecure writes at PreToolUse before they land, with a CWE-mapped audit log. The security analogue of ponytail: never ship code before checking what's in it.",
+  "description": "Born-secure enforcement for AI coding assistants. Gates insecure writes at PreToolUse before they land, with a CWE-mapped audit log.",
   "author": {
     "name": "Akash"
   },

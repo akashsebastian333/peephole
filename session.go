@@ -80,6 +80,21 @@ func armNegTest(sd, sid, hint string) {
 	_ = os.WriteFile(sidFile(sd, sid, "negtest"), []byte(hint), 0o600)
 }
 
+// incDeny records another PreToolUse deny this session and returns the new count.
+// A normal session has 0-1 denies; a rising count is the signature of a
+// deny -> rewrite -> deny retry loop, which the caller uses to terminate the loop
+// (a blocking guardrail that never terminates is a livelock, not security).
+func incDeny(sd, sid string) int {
+	p := sidFile(sd, sid, "denies")
+	n := 0
+	if b, err := os.ReadFile(p); err == nil {
+		n, _ = strconv.Atoi(strings.TrimSpace(string(b)))
+	}
+	n++
+	_ = os.WriteFile(p, []byte(strconv.Itoa(n)), 0o600)
+	return n
+}
+
 func pendingNegativeTest(sd, sid string) (string, bool) {
 	b, err := os.ReadFile(sidFile(sd, sid, "negtest"))
 	if err != nil {

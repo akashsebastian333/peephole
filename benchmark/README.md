@@ -23,7 +23,7 @@ Labeled-corpus detection comparison, three engines on identical inputs:
   (baseline / bare-prompt / security-guidance / peephole), 10 insecure-inducing
   tasks × 2 runs + a 6-attack adversarial tier. `live/driver.py` runs the
   sessions into `live/results.jsonl`; `live/report.py` aggregates and renders
-  `assets/benchmark-live.png` (ponytail-style: every metric vs baseline).
+  `assets/benchmark-live.png`.
   Costs real API money (~$0.05–0.15/session, ~100 sessions) and takes hours —
   run it deliberately, not in CI.
 

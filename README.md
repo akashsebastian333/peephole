@@ -15,15 +15,15 @@
 </p>
 
 A Claude Code plugin that gates insecure code at *write time* — before it lands
-on disk — with a CWE-mapped, tamper-evident audit log. The security analogue of
-ponytail: *never open the door before checking who's on the other side, and never
-ship code before checking what's in it.*
+on disk — with a CWE-mapped, tamper-evident audit log. *Never open the door
+before checking who's on the other side, and never ship code before checking
+what's in it.*
 
 **Docs:** [Design](docs/DESIGN.md) · [Benchmark](docs/BENCHMARK.md) · [Review history](docs/REVIEW.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
 
 ## The difference
 
-The incumbent (`security-guidance`) wires its regexes to **PostToolUse** — it
+The incumbent advisory approach wires its regexes to **PostToolUse** — it
 warns *after* the insecure code is already written, then hopes the model
 regenerates it. That proves code was *repaired* secure.
 
@@ -133,7 +133,7 @@ turf:
 | engine | TP recall | FP rate | layer measured |
 |---|---|---|---|
 | **peephole** | **98%** (148/151) | **0%** | PreToolUse gate engine (`scan`) |
-| security-guidance (Anthropic) | 21% | 12% | its 25 shipped regexes, PostToolUse |
+| advisory (PostToolUse) | 21% | 12% | its 25 shipped regexes, PostToolUse |
 | Semgrep OSS (public rules) | 16% | 2% | 21 unauthenticated registry packs |
 
 ![Detection recall and false-positive rate across engines](assets/benchmark-overall.png)
@@ -149,7 +149,7 @@ turf:
   (`semgrep login` unlocks more free rules; commercial tiers add the secret
   validators — hence its 10% on secrets). On real repos Semgrep is far
   stronger than 16%; on a write-time hunk it cannot run at all.
-- **security-guidance's real depth is unmeasured.** Its LLM review of your
+- **the advisory tool's real depth is unmeasured.** Its LLM review of your
   session's `git diff` at Stop/commit catches semantic classes no regex does —
   both pattern layers scored 0 on the semantic corpus cases (race, business
   logic). It runs on your Claude Code sign-in (OAuth token passed automatically)
@@ -188,7 +188,7 @@ audit, adjudicated against the artifacts and disclosed):
 |---|---|---|---|---|---|---|---|
 | **baseline** | 42% | 0% | — | 74k (100%) | $0.076 (100%) | 105s (100%) | 83% |
 | **bare-prompt** | 68% | 25% | — | 64k (86%) | $0.067 (88%) | 278s (264%) | 67% |
-| **security-guidance** | 65% | 0% | — | 67k (91%) | $0.070 (92%) | 168s (160%) | 100% |
+| **the advisory linter** | 65% | 0% | — | 67k (91%) | $0.070 (92%) | 168s (160%) | 100% |
 | **peephole** | **100%** (94% born) | **43%** | **94%** | 74k (100%) | $0.077 (101%) | 202s (192%) | 100% |
 
 ![Live agent benchmark — every metric vs baseline](assets/benchmark-live.png)
@@ -197,12 +197,12 @@ Read this one carefully, because it's the honest one:
 
 - **The semantic tier is where everyone bleeds — including peephole.** IDOR,
   races, business logic, CSRF, rate limits: no regex gate can prove these.
-  Baseline and security-guidance scored **0%**, bare-prompt 25%, peephole 43%
+  Baseline and the advisory linter scored **0%**, bare-prompt 25%, peephole 43%
   (its always-on ladder + Stop-time self-review is the only arm above 30%).
   Peephole does not enforce these classes — this is its documented ceiling, now
   measured in public. An independent semantic review layer (LLM, human) is
   still necessary; peephole composes with one rather than replacing it.
-- **security-guidance's semantic 0% needs context too**: its LLM Stop-review
+- **the advisory tool's semantic 0% needs context too**: its LLM Stop-review
   fires *after* the code is written; in these sessions it either didn't run to
   a fix or the fixes didn't satisfy the rubric. That is its design (advise, not
   enforce), not necessarily its ceiling. Peephole's own Stop review was since
@@ -239,7 +239,7 @@ Measured where measurable (the three engines above, this repo's harness);
 documentation-level elsewhere (vendor docs, not independently re-verified —
 treat as marketing-aware claims).
 
-| | **peephole** | security-guidance (Anthropic) | Semgrep (OSS / Guardian) | Snyk | Socket / Endor | Aikido SafeChain |
+| | **peephole** | advisory (PostToolUse) | Semgrep (OSS / Guardian) | Snyk | Socket / Endor | Aikido SafeChain |
 |---|---|---|---|---|---|---|
 | Acts **before** code lands | ✅ PreToolUse deny | ❌ PostToolUse warn | ❌ post-write scan | ❌ in-loop scan | ✅ pre-commit deps | ✅ pre-install deps |
 | Blocks the write | ✅ strict/hardened | ❌ advisory only | regen-until-clean (Guardian) | ❌ | ✅ (deps only) | ✅ (deps only) |
@@ -251,7 +251,7 @@ treat as marketing-aware claims).
 | Runs offline, zero deps | ✅ static binary | ❌ Python + LLM calls | ✅ (OSS CLI) | ❌ | ❌ | ❌ |
 
 Peephole is **not** a SAST replacement and doesn't do semantic review — pair it
-with one (Semgrep on the repo, or security-guidance's LLM layer) for the
+with one (Semgrep on the repo, or the advisory tool's LLM layer) for the
 classes regexes can't prove; it composes rather than competes there.
 
 ## Extensibility & enterprise

@@ -143,7 +143,7 @@ Each fix ships with a regression test (`fixes_test.go`, `schema_test.go`,
 ## Borrowed from the other marketplace plugins
 
 Surveyed the official plugin set and adopted three techniques:
-- **security-guidance** — its `asyncRewake` + `if: Bash(git commit:*)` pattern → peephole now
+- **the advisory linter** — its `asyncRewake` + `if: Bash(git commit:*)` pattern → peephole now
   does a **non-blocking commit/push-time review** (scans the committed diff and surfaces any
   findings before they ship). Also its regex set (seeded the KB earlier) and its
   project-local custom-rule extensibility.

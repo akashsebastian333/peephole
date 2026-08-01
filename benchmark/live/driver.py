@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Live agent benchmark: real `claude -p` sessions, 4 arms, ponytail-style metrics.
+"""Live agent benchmark: real `claude -p` sessions, 4 arms.
 
 Arms (each a fresh throwaway project per session):
   baseline          no hooks, no guidance

@@ -3,11 +3,11 @@
 Concrete engineering design for the v1 local build of the blueprint
 (`Peephole_Secure_Coding_Plugin_Blueprint`). Scope, file layout, and the exact
 platform contract each hook relies on. Verified against the real
-`security-guidance` and `claude-security` Anthropic plugins installed locally.
+advisory PostToolUse plugins installed locally.
 
 ## The one-sentence difference
 
-Incumbent `security-guidance` wires its regexes to **PostToolUse** — it warns
+The incumbent advisory approach wires its regexes to **PostToolUse** — it warns
 *after* the insecure code lands on disk (detect-then-regenerate). Peephole wires
 the same class of check to **PreToolUse** and returns `permissionDecision:deny`
 *before* the write lands (born-secure enforcement), plus Bash write-path

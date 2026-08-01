@@ -9,7 +9,7 @@ the verdict recorded for audit. Verdicts are written to judge.jsonl and merged
 into report.py's semantic rows.
 
 A second judge run should reproduce ~the same verdicts; the prompts and raw
-outputs are kept so disagreements can be inspected (ponytail's judge-disclosure
+outputs are kept so disagreements can be inspected (the judge-disclosure
 rule).
 """
 

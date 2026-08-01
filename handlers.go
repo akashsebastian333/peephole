@@ -224,6 +224,18 @@ func enforce(e Event, mode, decision, cwe, ruleID, tool, digest, reason string) 
 	enforceMarked(e, mode, cand{decision, cwe, ruleID, tool, digest, reason, false})
 }
 
+// Terminating-guardrail budget: a blocking gate the model keeps retrying against
+// must eventually stop denying, or it livelocks the agent into a
+// deny -> rewrite -> deny loop until the session times out. A normal session has
+// 0-1 denies; past the soft budget we tell the model to stop retrying, and past
+// the hard budget we downgrade to ask (hand off to the human) so the agent always
+// terminates. The finding is still logged; self-protection denies bypass this
+// (they never route through enforceMarked).
+const (
+	denySoftBudget = 2
+	denyHardBudget = 4
+)
+
 func enforceMarked(e Event, mode string, c cand) {
 	if mode == "audit" || c.decision == "allow" {
 		logDecisionMarked(e, "allow", c.cwe, c.ruleID, c.tool, c.digest, c.marker)
@@ -231,6 +243,15 @@ func enforceMarked(e Event, mode string, c cand) {
 			passthrough(provenance + " (audit) allowed and logged: " + c.reason)
 		}
 		passthrough("")
+	}
+	if c.decision == "deny" && e.HookEventName == "PreToolUse" {
+		switch n := incDeny(stateDir(e), e.SessionID); {
+		case n >= denyHardBudget:
+			c.decision = "ask"
+			c.reason += fmt.Sprintf(" [peephole has blocked a write %d times this session; it is not looping further. Stop retrying this approach and ask the user how to proceed — the finding still stands.]", n)
+		case n >= denySoftBudget:
+			c.reason += fmt.Sprintf(" [block %d this session: if you cannot satisfy this, stop and ask the user rather than retrying.]", n)
+		}
 	}
 	logDecisionMarked(e, c.decision, c.cwe, c.ruleID, c.tool, c.digest, c.marker)
 	emitPreDecision(c.decision, c.reason)

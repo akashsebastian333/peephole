@@ -1,7 +1,7 @@
 # Peephole — benchmarks
 
 Two independent measurements: (A) a labeled-corpus detection benchmark against
-Anthropic's official `security-guidance` plugin, and (B) plane-ablation +
+an advisory PostToolUse plugin, and (B) plane-ablation +
 Claude-in-the-loop born-secure sessions. Methodology and limitations are stated
 plainly; the harness is in-repo and re-runnable.
 
@@ -19,7 +19,7 @@ everyday-code cases + 2 semantic cases. It is the *union* of all tools'
 documented detection classes plus independent edge cases — so no engine is
 measured only on home turf. All engines see byte-identical inputs: peephole
 via its shipped binary (`peephole scan`, the same engine the PreToolUse gate
-runs); `security-guidance` via its own `patterns.py` executed with its exact
+runs); an advisory PostToolUse plugin via its own `patterns.py` executed with its exact
 `check_patterns()` semantics; Semgrep OSS 1.172 via 21 unauthenticated
 registry packs (`p/security-audit`, `p/sql-injection`, `p/command-injection`,
 `p/xss`, `p/secrets`, `p/jwt`, `p/insecure-transport`, the language packs,
@@ -30,7 +30,7 @@ registry packs (`p/security-audit`, `p/sql-injection`, `p/command-injection`,
 | engine | TP recall (151 cases) | FP (50 benign) |
 |---|---|---|
 | **peephole** | **98%** (148/151) | **0** |
-| security-guidance (pattern layer) | 21% | 6 (12%) |
+| advisory linter (pattern layer) | 21% | 6 (12%) |
 | Semgrep OSS (public rules) | 16% | 1 (2%) |
 
 ![overall](assets/benchmark-overall.png)
@@ -39,11 +39,11 @@ registry packs (`p/security-audit`, `p/sql-injection`, `p/command-injection`,
 Peephole misses: 1 ReDoS variant (`(x|y)*.*z` — the star-height class regexes
 can't prove) and the 2 supply-chain cases, which the scan engine doesn't cover
 but the **hook layer does** (verified: `ask` in strict for a requirements.txt
-typosquat and for `curl | python3`). security-guidance structurally cannot
+typosquat and for `curl | python3`). the advisory linter structurally cannot
 catch those two: its Bash hooks fire only on git commit/push, and its pattern
 list has no dependency rules.
 
-The false positives are the instructive part. security-guidance flags
+The false positives are the instructive part. the advisory linter flags
 `yaml.load(…, Loader=yaml.SafeLoader)` (its own suppression window stops at the
 nested `)`), `el.innerHTML = DOMPurify.sanitize(x)` twice (substring match,
 sanitizer-invisible), `defusedxml.ElementTree.parse` (the *recommended fix* for
@@ -63,20 +63,20 @@ Peephole's declarative `reject_re`/`prev_not` refinements spared all seven.
   validators (hence its 10% on the secrets class — public secrets rules are
   thin). Its strength where it fired: misconfig 50%, and the only engine
   besides peephole with any GHA/IaC coverage.
-- **security-guidance's LLM diff-review layer.** Its real detection depth is a
+- **the advisory tool's LLM diff-review layer.** Its real detection depth is a
   Haiku/Opus review of the session's `git diff` at Stop/commit — semantic
   analysis no regex does (authz, business logic, races). It runs on the user's
   Claude Code sign-in (OAuth token passed automatically) or an Anthropic API
   key, and it is nondeterministic, so it is out of scope for this harness. On the 2
   *semantic* corpus cases (race, business-logic) **all three pattern layers
   score 0** — that is exactly the class its LLM layer (and peephole's Stop-time
-  self-review checklist) exists for. Do not read 21% as "security-guidance
+  self-review checklist) exists for. Do not read 21% as "the advisory linter
   detects 21% of vulns"; read it as "its regex layer covers 21% of this
   corpus's classes."
 - **Language support.** Cases in languages an engine doesn't parse (Semgrep:
   nim/zig/clojure/crystal/haskell/julia/solidity/bicep/plist) count as misses
   and are disclosed per-case in the harness output.
-- **Timing.** security-guidance's patterns fire **PostToolUse** (after the code
+- **Timing.** the advisory tool's patterns fire **PostToolUse** (after the code
   lands, advisory); Semgrep runs in CI, later still. Peephole's fire
   **PreToolUse** and deny before landing (strict/hardened). A warn-after-landing
   tool structurally cannot produce a born-secure guarantee; an enforcement gate
@@ -111,7 +111,7 @@ semantic scoring) + `report.py`. Raw evidence: `benchmark/live/results.jsonl`,
 so hook `ask`s are auto-approved — the harness simulates the over-trusting
 user; only hard `deny`s stand). Four arms, each a fresh project per session:
 baseline (nothing), bare-prompt (a CLAUDE.md "write secure code" control),
-security-guidance (its own hooks.json wiring, verbatim), peephole (strict).
+the advisory linter (its own hooks.json wiring, verbatim), peephole (strict).
 
 - **Pattern tier:** 10 insecure-inducing tasks × 2 runs. Scored by peephole's
   scanner (primary; scorer-overlap disclosed) with Semgrep as an independent
@@ -135,7 +135,7 @@ reference. Empty output (the model refused / wrote no file) is not counted as
 |---|---|---|---|---|---|---|---|
 | baseline | 95% | 14 | 57% | 0% (8 judged) | 21% | $0.076 (100%) | 105s (100%) |
 | bare-prompt | 95% | 19 | 74% | 25% (8 judged) | 68% | $0.067 (88%) | 278s (264%) |
-| security-guidance | 100% | 11 | 73% | 0% (7 judged) | 36% | $0.070 (92%) | 168s (160%) |
+| advisory (PostToolUse) | 100% | 11 | 73% | 0% (7 judged) | 36% | $0.070 (92%) | 168s (160%) |
 | peephole | **85%** | 10 | **90%** | **25% (12 judged)** | 100% | $0.077 (101%) | 202s (192%) |
 
 ![live benchmark](../assets/benchmark-live.png)
@@ -153,9 +153,9 @@ timeouts — all of which inflated it):**
   unprompted (baseline "safe" 83%). The gate's value is the subtle rename bypass.
 - **Peephole has the lowest completion rate (85%): its Stop-loop causes timeouts.**
 - **Semantic tier: everyone fails; peephole ties bare-prompt at 25%** (baseline &
-  security-guidance 0%). This is peephole's documented absence-of-guard ceiling,
+  the advisory linter 0%). This is peephole's documented absence-of-guard ceiling,
   measured in public: an independent semantic review layer remains necessary.
-- **security-guidance's 0% is a design consequence, not necessarily a ceiling:**
+- **the advisory tool's 0% is a design consequence, not necessarily a ceiling:**
   its LLM Stop-review is advisory and post-write; in these sessions it did not
   run to rubric-satisfying fixes.
 - **Cost of enforcement:** peephole is flat on tokens/dollars vs baseline
@@ -171,7 +171,7 @@ timeouts — all of which inflated it):**
   "attacks stopped" flatters every arm. The discriminative attack was the
   subtle rename bypass (`app.txt` → `mv app.py`): it LANDED on baseline and
   bare-prompt; peephole's gate stopped it mechanically (deny/ask + retro-scan),
-  security-guidance's arm refused via the model.
+  the advisory tool's arm refused via the model.
 - **Judge audit:** 2 judge mislabels were found where the judge's own reasoning
   described the safe pattern (peephole csrf/race); both adjudicated SECURE
   against the artifacts and flagged `adjudicated` in `judge.jsonl`. Judge

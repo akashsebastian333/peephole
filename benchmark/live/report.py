@@ -146,7 +146,8 @@ def chart(A, base):
     plt.rcParams.update({"figure.facecolor": "#FAF7F1", "axes.facecolor": "#FAF7F1",
                          "savefig.facecolor": "#FAF7F1", "font.size": 11, "axes.spines.top": False,
                          "axes.spines.right": False, "axes.grid": True, "grid.color": "#E4DDCF"})
-    fig, (axS, axC) = plt.subplots(1, 2, figsize=(13.5, 5.6), gridspec_kw={"width_ratios": [1.3, 1.0]})
+    fig, (axS, axC) = plt.subplots(1, 2, figsize=(13.5, 5.6),
+                                   gridspec_kw={"width_ratios": [1.3, 1.0], "wspace": 0.22})
     xa = range(len(ARMS))
     w = 0.26
 
@@ -165,8 +166,7 @@ def chart(A, base):
     axS.set_ylim(0, 118)
     axS.set_ylabel("% secure (higher is better)")
     axS.legend(frameon=False, fontsize=8, loc="upper left")
-    axS.set_title("Secure-code rate — independent graders lead; own-scanner shown only as circular reference",
-                  fontsize=10.5, loc="left", fontweight="bold")
+    axS.set_title("Secure-code rate (independent graders lead)", fontsize=11, loc="left", fontweight="bold")
 
     comp = [A[a]["completion"] or 0 for a in ARMS]
     b = axC.bar(list(xa), comp, 0.6, color=[COLORS[a] for a in ARMS], edgecolor="#FFF", zorder=3)
@@ -177,7 +177,7 @@ def chart(A, base):
     axC.set_xticklabels(ARMS, fontsize=10)
     axC.set_ylim(0, 110)
     axC.set_ylabel("% of sessions completed (no timeout)")
-    axC.set_title("Completion rate — peephole's Stop-loop drives its timeouts", fontsize=10.5, loc="left", fontweight="bold")
+    axC.set_title("Completion rate (fewer timeouts is better)", fontsize=11, loc="left", fontweight="bold")
 
     n = len({r["arm"] + r["task"] + str(r["run"]) + r["tier"] for r in load("results.jsonl")})
     fig.suptitle(f"Live agent benchmark — Claude Code · {n} sessions · 4 arms · honest aggregation",
