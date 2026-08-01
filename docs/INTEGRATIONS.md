@@ -22,12 +22,12 @@ Two facts shape everything below:
 | **In-process plugin** (shells to `peephole hook`) | **Yes, hard** | OpenCode, Sourcegraph Amp, OpenHands, Cline (SDK) |
 | **git pre-commit** (`peephole scan --gate --staged`) | **Yes, at commit** | Universal — any git repo (Aider auto-commits, so effectively per edit) |
 | **MCP server** (`peephole mcp`) | No — advisory | Windsurf, Trae, Tongyi Lingma, Comate, CodeGeeX, iFlyCode, Qoder, + MCP mode of every CLI agent |
-| **LSP diagnostics** *(planned: `peephole lsp`)* | No — warn only | Zed, JetBrains AI, VS Code / Copilot |
+| **LSP diagnostics** (`peephole lsp`) | No — warn only | Zed, JetBrains AI, VS Code / Copilot |
 
 Editors (VS Code/Copilot, Cursor file-edits, Windsurf, Zed) mostly cannot veto an
 AI *edit* synchronously — they expose only post-hoc events or diagnostics. For
 those, the honest gate is the git pre-commit hook (blocks the commit) or the
-planned MCP/LSP advisory. Shell-path writes (`cat > f <<EOF`, redirects) *are*
+MCP/LSP advisory below. Shell-path writes (`cat > f <<EOF`, redirects) *are*
 blocked pre-write wherever a shell-execution hook exists (e.g. Cursor).
 
 ## Native pre-tool hook agents
@@ -109,6 +109,17 @@ per host; this is the common one, e.g. `~/.codeium/windsurf/mcp_config.json`,
 
 ```json
 { "mcpServers": { "peephole": { "command": "peephole", "args": ["mcp"] } } }
+```
+
+## LSP diagnostics (warn-only — inline findings in editors)
+
+`peephole lsp` is a stdio language server that publishes each document's findings
+as diagnostics (high = error, medium = warning), giving inline squiggles in Zed,
+JetBrains, VS Code, and any LSP-capable editor. It annotates; it cannot block an
+edit. Register it per the editor's "custom language server" setting, e.g. Zed:
+
+```json
+{ "lsp": { "peephole": { "binary": { "path": "peephole", "arguments": ["lsp"] } } } }
 ```
 
 ## Universal git pre-commit backstop

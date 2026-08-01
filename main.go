@@ -47,6 +47,9 @@ func main() {
 		case "mcp":
 			cliMCP()
 			return
+		case "lsp":
+			cliLSP()
+			return
 		case "statusline":
 			cliStatusline()
 			return
