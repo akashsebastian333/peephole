@@ -65,7 +65,7 @@ var (
 	rePkgClean           = regexp.MustCompile(`^[@A-Za-z0-9._/-]+`)
 	reFlagValue          = regexp.MustCompile(`^-(?:r|c|f|e|-requirement|-constraint|-find-links|-editable)$`)
 	reFilePath           = regexp.MustCompile(`\.(?:txt|whl|tar|gz|tgz|zip|cfg|toml|lock|in|json)$`)
-	reIndexUrl           = regexp.MustCompile(`--(?:extra-)?index-url\s+(\S+)`)
+	reIndexURL           = regexp.MustCompile(`--(?:extra-)?index-url\s+(\S+)`)
 	reRemoteInstall      = regexp.MustCompile(`\b(?:pip3?|npm|yarn|pnpm|bun)\s+(?:install|add|i)\s+[^\n;&|]*\b(git\+|https?://|git://|ssh://|file:)`)
 	rePypiHost           = regexp.MustCompile(`(?i)^https?://(?:[\w.-]+\.)?(?:pypi\.org|pythonhosted\.org|npmjs\.org|npmjs\.com)`)
 )
@@ -128,7 +128,7 @@ func analyzeBash(cmd string) BashAnalysis {
 	}
 	// 5. Install commands -> package names + supply-chain smells.
 	a.Installs = extractInstalls(cmd)
-	for _, m := range reIndexUrl.FindAllStringSubmatch(cmd, -1) {
+	for _, m := range reIndexURL.FindAllStringSubmatch(cmd, -1) {
 		if !rePypiHost.MatchString(m[1]) {
 			a.InstallSmells = append(a.InstallSmells, "install uses a non-official package index ("+m[1]+") - packages could be substituted; verify the host.")
 		}
