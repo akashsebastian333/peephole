@@ -13,7 +13,10 @@ targets="darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64"
 for t in $targets; do
   os=${t%/*}; arch=${t#*/}
   out="bin/peephole-$os-$arch"; [ "$os" = windows ] && out="$out.exe"
-  CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath -ldflags="-s -w" -o "$out" .
+  # -buildvcs=false strips the vcs.revision/vcs.modified stamp so the binary is a
+  # pure, reproducible function of the source (with -trimpath): a user can rebuild
+  # and byte-match the committed artifact the integrity manifest pins.
+  CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath -buildvcs=false -ldflags="-s -w" -o "$out" .
   echo "built $out"
 done
 
