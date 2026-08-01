@@ -44,6 +44,9 @@ func main() {
 		case "sarif":
 			cliSarif(args[1:])
 			return
+		case "mcp":
+			cliMCP()
+			return
 		case "statusline":
 			cliStatusline()
 			return

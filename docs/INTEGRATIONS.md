@@ -21,7 +21,7 @@ Two facts shape everything below:
 | **Native pre-tool hook** (`peephole hook --exit2`) | **Yes, hard** | Claude Code, Gemini CLI, OpenAI Codex CLI, Qwen Code, Charm Crush, Block Goose, Cursor (shell + MCP paths) |
 | **In-process plugin** (shells to `peephole hook`) | **Yes, hard** | OpenCode, Sourcegraph Amp, OpenHands, Cline (SDK) |
 | **git pre-commit** (`peephole scan --gate --staged`) | **Yes, at commit** | Universal — any git repo (Aider auto-commits, so effectively per edit) |
-| **MCP server** *(planned: `peephole mcp`)* | No — advisory | Windsurf, Trae, Tongyi Lingma, Comate, CodeGeeX, iFlyCode, Qoder, + MCP mode of every CLI agent |
+| **MCP server** (`peephole mcp`) | No — advisory | Windsurf, Trae, Tongyi Lingma, Comate, CodeGeeX, iFlyCode, Qoder, + MCP mode of every CLI agent |
 | **LSP diagnostics** *(planned: `peephole lsp`)* | No — warn only | Zed, JetBrains AI, VS Code / Copilot |
 
 Editors (VS Code/Copilot, Cursor file-edits, Windsurf, Zed) mostly cannot veto an
@@ -94,6 +94,22 @@ export const Peephole = async ({ $ }) => ({
 **Sourcegraph Amp** — `~/.config/amp/plugins/peephole.ts`, register a `tool.call`
 handler that shells to `peephole hook --exit2` and returns
 `"reject-and-continue"` when the exit code is 2, else `"allow"`.
+
+## MCP server (advisory — for editors that can't block)
+
+Editors that consume MCP (Windsurf, Trae, Tongyi Lingma, Comate, CodeGeeX,
+iFlyCode, Qoder, Cursor, and the MCP mode of any CLI agent) can call peephole's
+`scan_code` tool to check code before writing it. This is **advisory** — the
+model chooses to call it; MCP servers cannot intercept the host's file writes.
+Pair it with the git pre-commit backstop for an actual block.
+
+`peephole mcp` is a stdio MCP server. Register it (config shape varies slightly
+per host; this is the common one, e.g. `~/.codeium/windsurf/mcp_config.json`,
+`.cursor/mcp.json`):
+
+```json
+{ "mcpServers": { "peephole": { "command": "peephole", "args": ["mcp"] } } }
+```
 
 ## Universal git pre-commit backstop
 
