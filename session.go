@@ -95,6 +95,28 @@ func incDeny(sd, sid string) int {
 	return n
 }
 
+// denyStreak returns how many times IN A ROW the same rule has denied this
+// session (a different rule denying resets it). Keying the loop detector on the
+// rule the guardrail itself emitted - not on the payload - makes it invariant to
+// the model (or an adaptive attacker) mutating the payload to change its hash
+// while pursuing the identical blocked intent: the payload keeps changing but the
+// rule keeps firing, so the streak still climbs and the loop still terminates.
+func denyStreak(sd, sid, key string) int {
+	p := sidFile(sd, sid, "denystreak")
+	n := 1
+	if b, err := os.ReadFile(p); err == nil {
+		if s := strings.TrimSpace(string(b)); s != "" {
+			if i := strings.LastIndexByte(s, '\t'); i >= 0 && s[:i] == key {
+				if v, e := strconv.Atoi(s[i+1:]); e == nil {
+					n = v + 1
+				}
+			}
+		}
+	}
+	_ = os.WriteFile(p, []byte(key+"\t"+strconv.Itoa(n)), 0o600)
+	return n
+}
+
 func pendingNegativeTest(sd, sid string) (string, bool) {
 	b, err := os.ReadFile(sidFile(sd, sid, "negtest"))
 	if err != nil {

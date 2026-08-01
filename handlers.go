@@ -232,8 +232,9 @@ func enforce(e Event, mode, decision, cwe, ruleID, tool, digest, reason string) 
 // terminates. The finding is still logged; self-protection denies bypass this
 // (they never route through enforceMarked).
 const (
-	denySoftBudget = 2
-	denyHardBudget = 4
+	denySoftBudget = 2 // same rule fires twice in a row: warn the model to stop retrying
+	denyHardBudget = 3 // same rule fires 3x in a row: downgrade to ask (hand to human)
+	denyFloor      = 6 // any 6 denies in a session: downgrade to ask (diffuse runaway floor)
 )
 
 func enforceMarked(e Event, mode string, c cand) {
@@ -245,12 +246,20 @@ func enforceMarked(e Event, mode string, c cand) {
 		passthrough("")
 	}
 	if c.decision == "deny" && e.HookEventName == "PreToolUse" {
-		switch n := incDeny(stateDir(e), e.SessionID); {
-		case n >= denyHardBudget:
+		key := c.cwe
+		if key == "" {
+			key = c.ruleID
+		}
+		// Terminate on per-rule verdict stability (mutation-invariant) OR a global
+		// floor (diffuse runaway across many distinct denies).
+		streak := denyStreak(stateDir(e), e.SessionID, key)
+		total := incDeny(stateDir(e), e.SessionID)
+		switch {
+		case streak >= denyHardBudget || total >= denyFloor:
 			c.decision = "ask"
-			c.reason += fmt.Sprintf(" [peephole has blocked a write %d times this session; it is not looping further. Stop retrying this approach and ask the user how to proceed — the finding still stands.]", n)
-		case n >= denySoftBudget:
-			c.reason += fmt.Sprintf(" [block %d this session: if you cannot satisfy this, stop and ask the user rather than retrying.]", n)
+			c.reason += " [peephole has blocked this repeatedly this session; it is not looping further. Stop retrying this approach and ask the user how to proceed — the finding still stands.]"
+		case streak >= denySoftBudget:
+			c.reason += " [this exact block is deterministic and has fired before; if you cannot satisfy it, stop and ask the user rather than retrying.]"
 		}
 	}
 	logDecisionMarked(e, c.decision, c.cwe, c.ruleID, c.tool, c.digest, c.marker)
