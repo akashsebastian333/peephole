@@ -1,0 +1,22 @@
+{
+  "cwe_id": "CWE-362",
+  "name": "Race Condition / TOCTOU (advisory)",
+  "owasp": ["A04"],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": ["transfer", "withdraw", "deposit", "balance", "payment", "wallet", "credit", "debit", "counter", "increment", "decrement", "inventory", "stock", "booking", "reserve", "concurrent", "atomic", "race", "double spend", "quota", "rate limit", "coupon", "redeem"],
+  "patterns": [],
+  "absence_requirements": [
+    "This looks like a read-check-write on shared state (a balance, counter, stock level, or quota). A non-atomic 'read value → check → write new value' is a TOCTOU race: two concurrent requests both pass the check and double-spend. Make it atomic — use a database transaction with row locking (SELECT ... FOR UPDATE), a single atomic UPDATE with a guard (UPDATE ... SET balance = balance - :amt WHERE balance >= :amt), an atomic increment/CAS, or an application-level lock.",
+    "For actions that must not run twice (payments, redemptions), require an idempotency key so a retry is a no-op.",
+    "Enforce every limit (quota, rate, stock) on the server inside the same transaction, never by a separate read-then-write."
+  ],
+  "attack_scenario": "two concurrent requests both read the same balance, both pass the 'balance >= amount' check before either writes, and both succeed — the account is debited once but spent twice (double-spend)",
+  "negative_test_hint": ["fire two concurrent \"withdraw(account, full_balance)\" calls and assert the final balance is never negative and only one succeeds"],
+  "exemplar": {
+    "noncompliant": "bal = account.balance\nif bal >= amount:\n    account.balance = bal - amount\n    account.save()",
+    "compliant": "with transaction.atomic():\n    updated = Account.objects.filter(id=account.id, balance__gte=amount).update(balance=F('balance') - amount)\n    if not updated:\n        raise InsufficientFunds()",
+    "explanation": "perform the check and the decrement as one atomic, guarded UPDATE inside a transaction so concurrent requests cannot both pass the check"
+  }
+}

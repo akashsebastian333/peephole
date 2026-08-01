@@ -1,0 +1,117 @@
+{
+  "cwe_id": "CWE-78",
+  "name": "OS Command Injection",
+  "owasp": [
+    "A03"
+  ],
+  "rank": 7,
+  "kev": true,
+  "severity": "critical",
+  "task_triggers": [
+    "ping",
+    "dns",
+    "ffmpeg",
+    "convert",
+    "git",
+    "backup",
+    "zip",
+    "archive",
+    "shell",
+    "command",
+    "hostname",
+    "filename"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "os\\.(?:system|popen)\\(\\s*(?:f[\"']|[\"'][^\"']*[\"']\\s*(?:\\+|%|\\.format\\())"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "shell\\s*=\\s*True",
+      "require_re": "f[\"']|[\"'][^\"']*[\"']\\s*(?:\\+|%)|\\.format\\("
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "\\bshell\\s*=\\s*True\\b"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "(?:child_process|cp)\\.exec(?:Sync)?\\(\\s*`[^`]*\\$\\{"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\bexecSync\\(\\s*(?:`[^`]*\\$\\{|[\"'][^\"']*[\"']\\s*\\+)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\bshelljs?\\.exec\\("
+    },
+    {
+      "lang": "rust",
+      "confidence": "high",
+      "re": "Command::new\\(\\s*[\"'](?:sh|bash|zsh|/bin/sh|/bin/bash|cmd)[\"']"
+    },
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "exec\\.Command\\(\\s*[\"'](?:sh|bash|/bin/sh|/bin/bash)[\"']\\s*,\\s*[\"']-c[\"']"
+    },
+    {
+      "lang": "elixir",
+      "confidence": "high",
+      "re": "System\\.cmd\\([^)]*(?:#\\{|<>)|:os\\.cmd\\("
+    },
+    {
+      "lang": "lua",
+      "confidence": "medium",
+      "re": "\\bos\\.execute\\(|\\bio\\.popen\\("
+    },
+    {
+      "lang": "perl",
+      "confidence": "medium",
+      "re": "\\b(?:system|exec)\\s*\\(?\\s*[\"'][^\"']*\\$|`[^`]*\\$"
+    },
+    {
+      "lang": "swift",
+      "confidence": "medium",
+      "re": "Process\\(\\)[^\\n]*\\.arguments\\s*=\\s*\\[[^\\]]*\\\\\\("
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\bexec\\(\\s*`[^`]*\\$\\{",
+      "prev_not": "."
+    },
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "\\b(?:system|exec|shell_exec|passthru|popen|proc_open)\\s*\\(\\s*[\"'][^\"']*[\"']\\s*\\.\\s*\\$_"
+    },
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "`[^`]*#\\{"
+    },
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "\\b(?:system|exec|spawn)\\s*\\(\\s*[\"'][^\"']*[\"']\\s*\\+"
+    }
+  ],
+  "attack_scenario": "attacker appends a shell metacharacter and a second command to the interpolated field; the shell parses and runs it with the service's privileges",
+  "negative_test_hint": [
+    "submit host = \"127.0.0.1; id\" and assert the second command does not run"
+  ],
+  "exemplar": {
+    "noncompliant": "subprocess.run(f\"ping -c1 {host}\", shell=True)",
+    "compliant": "subprocess.run([\"ping\", \"-c1\", host], shell=False, check=True, timeout=5)",
+    "explanation": "argv list without a shell — metacharacters in host are passed as one literal argument, never parsed"
+  }
+}

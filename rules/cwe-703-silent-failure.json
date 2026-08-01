@@ -1,0 +1,22 @@
+{
+  "cwe_id": "CWE-703",
+  "name": "Swallowed Error / Silent Failure",
+  "owasp": ["A09"],
+  "rank": 0,
+  "kev": false,
+  "severity": "medium",
+  "task_triggers": ["error handling", "try", "catch", "except", "validate", "verify", "auth"],
+  "patterns": [
+    {"lang": "python", "confidence": "medium", "re": "except(?:\\s+[\\w.]+(?:\\s+as\\s+\\w+)?)?\\s*:\\s*pass\\b"},
+    {"lang": "javascript", "confidence": "medium", "re": "catch\\s*(?:\\([^)]*\\))?\\s*\\{\\s*\\}"},
+    {"lang": "go", "confidence": "medium", "re": "(?i)(?:verify|validate|check|auth|compare|decode|parse)\\w*\\([^)]*\\)\\s*(?://[^\\n]*)?\\n\\s*//\\s*ignore|_\\s*,\\s*_\\s*=\\s*[\\w.]+\\.(?:Verify|Validate|Check|Compare)"},
+    {"lang": "rust", "confidence": "high", "re": "\\.(?:verify|verify_signature|decrypt|decode|validate|authenticate|check_password|from_pem|from_der)\\w*\\([^)]*\\)\\s*\\.(?:unwrap|expect)\\("}
+  ],
+  "attack_scenario": "an error from a security-relevant operation (signature/permission check, validation, decode) is caught and discarded, so the code proceeds as if it succeeded — the check becomes a no-op an attacker sails past",
+  "negative_test_hint": ["make the guarded check fail (present an \"invalid-signature\" token) and assert the operation is rejected loudly, not silently swallowed"],
+  "exemplar": {
+    "noncompliant": "try:\n    verify_signature(token)\nexcept Exception:\n    pass",
+    "compliant": "try:\n    verify_signature(token)\nexcept SignatureError:\n    abort(401)   # fail closed on a failed check",
+    "explanation": "never swallow an error from a security check; fail closed (reject) rather than proceeding as if it passed"
+  }
+}

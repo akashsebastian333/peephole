@@ -1,0 +1,34 @@
+{
+  "cwe_id": "CWE-276",
+  "name": "World-readable/writable file or preference mode",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "shared preferences",
+    "openFileOutput",
+    "MODE_WORLD",
+    "file storage",
+    "getSharedPreferences"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "MODE_WORLD_READABLE"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "MODE_WORLD_WRITEABLE"
+    }
+  ],
+  "attack_scenario": "A malicious app on the same device opens the victim's world-readable SharedPreferences file and reads the stored session token, or overwrites a world-writable config to point the app at an attacker server.",
+  "negative_test_hint": [
+    "write the session token with \"Context.MODE_WORLD_READABLE\" and assert the call throws SecurityException or is rejected, never leaving the file readable by other apps"
+  ],
+  "exemplar": {
+    "noncompliant": "val prefs = getSharedPreferences(\"auth\", Context.MODE_WORLD_READABLE)\nopenFileOutput(\"session.dat\", Context.MODE_WORLD_WRITEABLE).use { it.write(token) }",
+    "compliant": "val prefs = getSharedPreferences(\"auth\", Context.MODE_PRIVATE)\nopenFileOutput(\"session.dat\", Context.MODE_PRIVATE).use { it.write(token) }",
+    "explanation": "MODE_WORLD_READABLE/MODE_WORLD_WRITEABLE make the file or SharedPreferences readable/writable by every other app on the device, breaking the app sandbox. They were deprecated and throw SecurityException on API 24+, but legacy code still uses them and downgrades storage of tokens/PII to shared state. CWE-276 / OWASP MASVS-STORAGE."
+  }
+}

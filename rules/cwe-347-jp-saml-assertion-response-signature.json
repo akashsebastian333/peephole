@@ -1,0 +1,35 @@
+{
+  "cwe_id": "CWE-347",
+  "name": "SAML Assertion/Response Signature Validation Disabled",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "saml",
+    "sso",
+    "assertion",
+    "signature",
+    "opensaml",
+    "idp",
+    "spring security",
+    "metadata"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?:wantAssertionsSigned|signatureRequired|setValidateSignature)\\s*\\(\\s*false\\s*\\)"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "WantAssertionsSigned\\s*=\\s*[\"']false[\"']"
+    }
+  ],
+  "attack_scenario": "With signatures not enforced, an attacker replays or hand-crafts a SAML response (or wraps an extra unsigned assertion around a signed one) asserting subject=admin; the SP consumes the attacker-chosen NameID and authenticates them as any user, a full auth bypass.",
+  "negative_test_hint": ["forge an unsigned SAML response asserting NameID = \"attacker-admin@evil.example.com\" and assert the service provider rejects it and establishes no session"],
+  "exemplar": {
+    "noncompliant": "RelyingPartyRegistration reg = builder\n    .wantAssertionsSigned(false)\n    .build();",
+    "compliant": "RelyingPartyRegistration reg = builder\n    .wantAssertionsSigned(true)\n    .build();",
+    "explanation": "CVE-2020-5407 (spring-security-saml2 signature wrapping) plus JPCERT/OpenSAML guidance: SAML security assumes every assertion/response is signed and the SP validates it against a trusted IdP cert. Turning wantAssertionsSigned/signatureRequired/setValidateSignature off lets an attacker replay or hand-craft a response asserting any identity, a full authentication bypass. Requiring signatures makes the SP reject anything the IdP did not actually sign."
+  }
+}

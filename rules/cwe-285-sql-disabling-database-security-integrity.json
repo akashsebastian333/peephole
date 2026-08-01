@@ -1,0 +1,53 @@
+{
+  "cwe_id": "CWE-285",
+  "name": "Disabling database security/integrity controls",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "ALTER TABLE altering security",
+    "bulk load / migration scripts",
+    "disabling RLS / triggers / FK checks",
+    "session_replication_role"
+  ],
+  "patterns": [
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)disable\\s+row\\s+level\\s+security"
+    },
+    {
+      "lang": "sql",
+      "confidence": "medium",
+      "re": "(?i)set\\s+foreign_key_checks\\s*=\\s*0"
+    },
+    {
+      "lang": "sql",
+      "confidence": "medium",
+      "re": "(?i)set\\s+unique_checks\\s*=\\s*0"
+    },
+    {
+      "lang": "sql",
+      "confidence": "medium",
+      "re": "(?i)nocheck\\s+constraint\\b"
+    },
+    {
+      "lang": "sql",
+      "confidence": "medium",
+      "re": "(?i)disable\\s+trigger\\s+all"
+    },
+    {
+      "lang": "sql",
+      "confidence": "medium",
+      "re": "(?i)set\\s+session_replication_role\\s*=\\s*'?replica'?"
+    }
+  ],
+  "attack_scenario": "A migration disables RLS on a multi-tenant table and never re-enables it; every tenant's queries now return all tenants' rows, turning a routine deploy into a mass data-exposure breach.",
+  "negative_test_hint": [
+    "submit the migration statement \"ALTER TABLE tenants DISABLE ROW LEVEL SECURITY;\" and assert the review or migration tooling rejects it instead of applying it"
+  ],
+  "exemplar": {
+    "noncompliant": "ALTER TABLE accounts DISABLE ROW LEVEL SECURITY;",
+    "compliant": "ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;",
+    "explanation": "These statements switch off tenant isolation (RLS), referential/uniqueness integrity (FOREIGN_KEY_CHECKS=0, UNIQUE_CHECKS=0, NOCHECK CONSTRAINT) or audit/enforcement triggers (DISABLE TRIGGER ALL, session_replication_role=replica). Left in a shipped script they let inconsistent or cross-tenant data land permanently, so security and integrity controls must stay enabled in production schema changes."
+  }
+}

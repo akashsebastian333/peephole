@@ -1,0 +1,42 @@
+{
+  "cwe_id": "CWE-352",
+  "name": "Rails CSRF Protection Disabled",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "controller",
+    "csrf",
+    "verify_authenticity_token",
+    "protect_from_forgery",
+    "api",
+    "webhook",
+    "before_action",
+    "forgery"
+  ],
+  "patterns": [
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "skip_(?:before_action|before_filter)\\s+:verify_authenticity_token"
+    },
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "\\bskip_forgery_protection\\b"
+    },
+    {
+      "lang": "ruby",
+      "confidence": "medium",
+      "re": "protect_from_forgery\\s+with:\\s*:null_session"
+    }
+  ],
+  "attack_scenario": "Attacker hosts a page that auto-submits a POST to /account/email; the victim's session cookie rides along and, with CSRF checks off, the email (and account recovery) is changed silently.",
+  "negative_test_hint": [
+    "submit a cross-origin POST to \"/account/email\" carrying the session cookie but no CSRF token and assert the request is rejected with 403 rather than applied"
+  ],
+  "exemplar": {
+    "noncompliant": "skip_before_action :verify_authenticity_token",
+    "compliant": "protect_from_forgery with: :exception",
+    "explanation": "Skipping verify_authenticity_token (or skip_forgery_protection) turns off Rails CSRF token checking for state-changing actions, so any origin can forge authenticated requests. Keep protect_from_forgery with: :exception; for token-authenticated APIs, authenticate by bearer token rather than disabling the check on session-cookie routes."
+  }
+}

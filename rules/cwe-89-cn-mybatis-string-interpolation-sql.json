@@ -1,0 +1,39 @@
+{
+  "cwe_id": "CWE-89",
+  "name": "MyBatis ${} string interpolation SQL injection",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "mybatis",
+    "mapper",
+    "@Select",
+    "@Update",
+    "order by",
+    "dynamic column",
+    "dynamic sql",
+    "sort",
+    "search filter",
+    "ibatis"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "@(?:Select|Update|Insert|Delete|SelectProvider)\\s*\\(\\s*\"[^\"]*\\$\\{"
+    },
+    {
+      "lang": "java",
+      "confidence": "medium",
+      "re": "(?i)\\b(?:order\\s+by|group\\s+by|where|from|values|set|like)\\b[^\\n]*\\$\\{\\w"
+    }
+  ],
+  "attack_scenario": "Attacker sends orderBy=id;DROP TABLE sys_user-- or (CASE WHEN ...) for blind extraction; because ${} concatenates the value verbatim, the injected SQL alters the query structure and reads or destroys arbitrary tables.",
+  "negative_test_hint": [
+    "send orderBy = \"id;DROP TABLE sys_user--\" and assert the injected SQL never reaches the database because the value is rejected or bound, not concatenated"
+  ],
+  "exemplar": {
+    "noncompliant": "@Select(\"SELECT * FROM sys_user ORDER BY ${orderBy}\")",
+    "compliant": "@Select(\"SELECT * FROM sys_user WHERE id = #{id}\")",
+    "explanation": "MyBatis substitutes ${} by raw string concatenation into the SQL text, while #{} is a bound PreparedStatement parameter, so any user value reaching ${} (classically ORDER BY or dynamic column names, where #{} cannot be used) is injectable. Values must go through #{} bindings and dynamic identifiers through an explicit allowlist, never raw interpolation."
+  }
+}

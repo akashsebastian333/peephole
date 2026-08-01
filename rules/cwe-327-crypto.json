@@ -1,0 +1,80 @@
+{
+  "cwe_id": "CWE-327",
+  "name": "Weak or Broken Cryptography",
+  "owasp": [
+    "A02"
+  ],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": [
+    "hash",
+    "password",
+    "signup",
+    "encrypt",
+    "cipher",
+    "token",
+    "checksum",
+    "otp",
+    "reset link",
+    "crypto",
+    "aes",
+    "salt"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "hashlib\\.(?:md5|sha1|sha256|sha512)\\(\\s*(?i:password|passwd|pwd|secret|pw|token|pin)"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "(?i)(?:password|passwd|pwd|secret|token)[\\w\\[\\]'\".]*\\s*=\\s*hashlib\\.(?:md5|sha1|sha256|sha512)\\("
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "\\bhashlib\\.(?:md5|sha1)\\("
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "MODE_ECB\\b|\\bmodes\\.ECB\\("
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "(?i)(?:token|secret|otp|nonce|salt|session|password|api_?key)[\\w\\[\\]'\".]*\\s*=\\s*[^;\\n]*\\brandom\\.(?:random|randint|choice|randrange|getrandbits)\\("
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "crypto\\.createCipher\\("
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "(?i)(?:token|secret|otp|nonce|salt|session|password|api_?key|uuid)[\\w.]*\\s*=\\s*[^;\\n]*Math\\.random\\(\\)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "medium",
+      "re": "crypto\\.createHash\\(\\s*[\"'](?:md5|sha1)[\"']"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\"AES/ECB/|Cipher\\.getInstance\\(\\s*[\"'][^\"']*ECB"
+    }
+  ],
+  "attack_scenario": "an attacker who obtains the hash store cracks fast/weak password hashes at GPU speed; under ECB, identical plaintext blocks yield identical ciphertext, leaking structure",
+  "negative_test_hint": [
+    "hash the password \"correct horse battery staple\" twice and assert the digests differ (per-call salt) and that md5/sha1 were not used"
+  ],
+  "exemplar": {
+    "noncompliant": "pw_hash = hashlib.md5(password.encode()).hexdigest()",
+    "compliant": "import bcrypt\npw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt(12))",
+    "explanation": "use a slow, salted password hash (bcrypt/argon2id/scrypt); never a raw fast digest"
+  }
+}

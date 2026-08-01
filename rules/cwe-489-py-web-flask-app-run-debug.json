@@ -1,0 +1,36 @@
+{
+  "cwe_id": "CWE-489",
+  "name": "Flask app.run(debug=True) / Werkzeug debugger exposed",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "run",
+    "app",
+    "flask",
+    "main",
+    "serve",
+    "debug",
+    "deploy",
+    "entrypoint"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\bapp\\.run\\([^)]*\\bdebug\\s*=\\s*True",
+      "reject_re": "debug\\s*=\\s*(?:os\\.|getenv|environ|config\\(|env\\(|bool\\()"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "run_simple\\([^)]*use_debugger\\s*=\\s*True"
+    }
+  ],
+  "attack_scenario": "An attacker triggers any 500, opens the Werkzeug debugger console on the error page, and runs __import__('os').system('...') in the web process for direct RCE; even without the console, debug mode leaks full tracebacks and source.",
+  "negative_test_hint": ["trigger a 500 error and submit \"__import__('os').system('id')\" to the debugger console and assert no interactive console or traceback detail is exposed"],
+  "exemplar": {
+    "noncompliant": "app.run(host=\"0.0.0.0\", debug=True)",
+    "compliant": "app.run(host=\"127.0.0.1\", debug=os.environ.get(\"FLASK_DEBUG\") == \"1\")",
+    "explanation": "Flask's app.run(debug=True) (and Werkzeug run_simple(use_debugger=True)) mount the interactive Werkzeug traceback debugger. On any unhandled exception it exposes an in-browser Python console that executes arbitrary code in the server process; the protective PIN is bypassable and is derived from predictable machine data. Debug must be environment-driven and default off so production never serves the console or its tracebacks."
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "cwe_id": "CWE-200",
+  "name": "WebView universal/file URL access enabled",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "webview",
+    "websettings",
+    "file access",
+    "allowUniversalAccess",
+    "local html"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?i)allowUniversalAccessFromFileURLs\\s*(\\(\\s*true\\s*\\)|=\\s*true)"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?i)allowFileAccessFromFileURLs\\s*(\\(\\s*true\\s*\\)|=\\s*true)"
+    },
+    {
+      "lang": "java",
+      "confidence": "medium",
+      "re": "(?i)allowFileAccess\\s*(\\(\\s*true\\s*\\)|=\\s*true)"
+    }
+  ],
+  "attack_scenario": "Attacker gets the app to render a malicious local HTML file; its JavaScript uses XMLHttpRequest on file:///data/data/<pkg>/... to read the auth database and POST it to a remote server.",
+  "negative_test_hint": [
+    "render a malicious local HTML file whose script reads \"file:///data/data/com.example.app/databases/auth.db\" via XMLHttpRequest and assert the WebView blocks the cross-origin file read"
+  ],
+  "exemplar": {
+    "noncompliant": "webView.settings.allowUniversalAccessFromFileURLs = true\nwebView.settings.allowFileAccessFromFileURLs = true\nwebView.loadUrl(\"file:///android_asset/index.html\")",
+    "compliant": "webView.settings.allowUniversalAccessFromFileURLs = false\nwebView.settings.allowFileAccessFromFileURLs = false\nwebView.settings.allowFileAccess = false\n// Serve local assets through WebViewAssetLoader over https instead of file://",
+    "explanation": "setAllowUniversalAccessFromFileURLs/setAllowFileAccessFromFileURLs let content loaded from a file:// URL read arbitrary local files and make cross-origin requests, defeating the same-origin policy. Combined with any injected JS (e.g. a saved HTML file or downloaded content), it enables theft of the app's private files. OWASP MASVS-PLATFORM; Google explicitly deprecated these flags for this reason."
+  }
+}

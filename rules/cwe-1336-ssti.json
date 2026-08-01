@@ -1,0 +1,47 @@
+{
+  "cwe_id": "CWE-1336",
+  "name": "Server-Side Template Injection",
+  "owasp": [
+    "A03"
+  ],
+  "rank": 0,
+  "kev": true,
+  "severity": "critical",
+  "task_triggers": [
+    "template",
+    "render",
+    "email",
+    "report",
+    "jinja",
+    "mako",
+    "handlebars",
+    "ejs",
+    "page"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "render_template_string\\(\\s*(?:f[\"']|[^)]*\\+)"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "(?:Template|Environment\\(\\)\\.from_string|\\.from_string)\\(\\s*(?:f[\"']|[A-Za-z_]\\w*\\s*[+%]|[\"'][^\"']{0,80}[\"']\\s*\\+)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "(?:Handlebars\\.compile|_\\.template|ejs\\.(?:render|compile))\\(\\s*`[^`]*\\$\\{"
+    }
+  ],
+  "attack_scenario": "user input is placed into the template SOURCE (not passed as data), so the template engine evaluates attacker markup — a full remote-code-execution path in Jinja2/Mako/Handlebars",
+  "negative_test_hint": [
+    "submit \"{{7*7}}\" (Jinja) or \"{{constructor.constructor('return process')()}}\" and assert it is not evaluated"
+  ],
+  "exemplar": {
+    "noncompliant": "return render_template_string(\"Hello \" + name)",
+    "compliant": "return render_template(\"hello.html\", name=name)",
+    "explanation": "pass user data as context variables to a fixed template; never build the template source from user input"
+  }
+}

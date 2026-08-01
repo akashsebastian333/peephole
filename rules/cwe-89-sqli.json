@@ -1,0 +1,86 @@
+{
+  "cwe_id": "CWE-89",
+  "name": "SQL Injection",
+  "owasp": [
+    "A03"
+  ],
+  "rank": 3,
+  "kev": true,
+  "severity": "critical",
+  "task_triggers": [
+    "database",
+    "query",
+    "sql",
+    "select",
+    "insert",
+    "update",
+    "orm",
+    "cursor",
+    "login",
+    "authenticate",
+    "search",
+    "postgres",
+    "mysql",
+    "sqlite"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\.(?:execute|executemany|query|raw)\\(\\s*f[\"'][^)]*\\{",
+      "require_re": "(?i:SELECT|INSERT|UPDATE|DELETE|MERGE|DROP)"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\.(?:execute|executemany|query|raw)\\(\\s*[\"'][^)]*[\"']\\s*(?:%\\s*[A-Za-z(]|\\+|\\.format\\()",
+      "require_re": "(?i:SELECT|INSERT|UPDATE|DELETE)"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\btext\\(\\s*f[\"']"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\.(?:query|execute)\\(\\s*`[^`]*\\$\\{",
+      "require_re": "(?i:SELECT|INSERT|UPDATE|DELETE)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\.(?:query|execute)\\(\\s*[\"'][^)]*[\"']\\s*\\+",
+      "require_re": "(?i:SELECT|INSERT|UPDATE|DELETE)"
+    },
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "\\.(?:Query|QueryRow|Exec|Prepare)(?:Context)?\\(\\s*(?:ctx\\s*,\\s*)?fmt\\.Sprintf\\(\\s*[\"'](?i:SELECT|INSERT|UPDATE|DELETE|DROP)"
+    },
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "\\.(?:Query|QueryRow|Exec)(?:Context)?\\(\\s*(?:ctx\\s*,\\s*)?[\"'](?i:SELECT|INSERT|UPDATE|DELETE)[^\"']*[\"']\\s*\\+"
+    },
+    {
+      "lang": "rust",
+      "confidence": "high",
+      "re": "(?:\\.|::)(?:query|query_as|execute|batch_execute)\\(\\s*&?format!\\(\\s*[\"'](?i:SELECT|INSERT|UPDATE|DELETE|DROP)"
+    },
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "[\"'][^\"']*(?:SELECT|INSERT|UPDATE|DELETE)[^\"']*[\"']\\s*\\.\\s*\\$_"
+    }
+  ],
+  "attack_scenario": "attacker submits input that closes the string literal and appends its own SQL clause, turning a single-row lookup into an arbitrary read, write, or auth bypass",
+  "negative_test_hint": [
+    "submit name = \"' OR '1'='1' -- \" and assert the query returns a single row or errors, not the whole table"
+  ],
+  "exemplar": {
+    "noncompliant": "cur.execute(f\"SELECT * FROM users WHERE email = '{email}'\")",
+    "compliant": "cur.execute(\"SELECT * FROM users WHERE email = %s\", (email,))",
+    "explanation": "parameterized query — the driver escapes the value, the SQL text is fixed"
+  }
+}

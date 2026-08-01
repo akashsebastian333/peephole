@@ -1,0 +1,29 @@
+{
+  "cwe_id": "CWE-502",
+  "name": "pickle-of-model-or-response-io",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "pickle",
+    "cache",
+    "embedding cache",
+    "llm response",
+    "serialize",
+    "vector store",
+    "memory"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "pickle\\.loads?\\s*\\([^)]*(?:response|completion|embedding|model_output|llm_|payload)"
+    }
+  ],
+  "attack_scenario": "An attacker poisons the embedding/response cache with a pickle whose __reduce__ returns os.system('...'); when the app pickle.loads it, the payload runs.",
+  "negative_test_hint": ["feed the cache loader a pickle whose __reduce__ returns \"os.system('touch /tmp/pwned')\" and assert the bytes are rejected or the file never appears"],
+  "exemplar": {
+    "noncompliant": "cached = pickle.loads(response.content)",
+    "compliant": "cached = json.loads(response.content)  # JSON has no code-execution gadget path",
+    "explanation": "pickle.load(s) on model output, cached embeddings, or a network response deserializes attacker-influencable bytes; pickle executes __reduce__ during unpickling, so a poisoned cache entry or malicious upstream response is arbitrary code execution."
+  }
+}

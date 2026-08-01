@@ -1,0 +1,40 @@
+{
+  "cwe_id": "CWE-295",
+  "name": "Ansible SSH host-key verification disabled",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "ansible",
+    "ssh",
+    "host_key_checking",
+    "known_hosts",
+    "git",
+    "accept_hostkey",
+    "inventory",
+    "connection"
+  ],
+  "patterns": [
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?i)StrictHostKeyChecking\\s*=\\s*no\\b"
+    },
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*host_key_checking\\s*[:=]\\s*(?:false|no|0)\\b"
+    },
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*accept_hostkey\\s*:\\s*(?:yes|true)\\b"
+    }
+  ],
+  "attack_scenario": "an attacker who can redirect the target hostname/IP (DNS poisoning, BGP hijack, malicious jump host) transparently MITMs the SSH session, capturing sudo passwords and injecting commands, and the play never notices the changed host key",
+  "negative_test_hint": ["present a swapped host key \"AAAAForgedAttackerHostKey\" from a MITM endpoint and assert the play fails host-key verification instead of connecting and sending credentials"],
+  "exemplar": {
+    "noncompliant": "  vars:\n    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'",
+    "compliant": "  vars:\n    ansible_ssh_common_args: '-o StrictHostKeyChecking=accept-new'",
+    "explanation": "StrictHostKeyChecking=no (or host_key_checking: false, or git accept_hostkey: yes) makes Ansible connect to any host without verifying its SSH key, defeating the protection known_hosts provides. accept-new pins the key on first use instead of blindly trusting every future key, and the value 'accept-new' does not match the =no pattern so the safe form is clean."
+  }
+}

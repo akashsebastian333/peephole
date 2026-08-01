@@ -1,0 +1,41 @@
+{
+  "cwe_id": "CWE-22",
+  "name": "Flask send_file with request-derived path",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "download",
+    "file",
+    "attachment",
+    "export",
+    "serve",
+    "flask",
+    "upload",
+    "avatar",
+    "static"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "send_file\\(\\s*(?:f[\"']|request\\.|flask\\.request\\.)"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "send_file\\([^)]*\\+\\s*request\\."
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "send_file\\([^)]*\\brequest\\.(?:args|form|values|json|view_args)"
+    }
+  ],
+  "attack_scenario": "GET /download?path=../../../../etc/passwd (or an absolute /etc/passwd) makes send_file stream arbitrary files readable by the service user, source code, secrets, SSH keys.",
+  "negative_test_hint": ["request the download endpoint with path = \"../../../../etc/passwd\" and assert the response is a 404 or 403 and the file contents are never streamed"],
+  "exemplar": {
+    "noncompliant": "return send_file(request.args[\"path\"])",
+    "compliant": "return send_from_directory(UPLOAD_DIR, name)",
+    "explanation": "Flask's send_file() does NO path containment, it opens whatever path it is given. Feeding it a request-derived value (directly, via an f-string, or via concatenation) lets ../ sequences or an absolute path escape the intended directory. The third pattern is scoped to the user-controlled request accessors (args/form/values/json/view_args), so send_file(get_report_path(request.user.id)) is NOT flagged. send_from_directory() is the safe counterpart: it applies werkzeug safe_join and 404s on any traversal outside the base folder."
+  }
+}

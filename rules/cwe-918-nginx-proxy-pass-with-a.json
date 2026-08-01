@@ -1,0 +1,33 @@
+{
+  "cwe_id": "CWE-918",
+  "name": "proxy_pass with a request-derived host (SSRF / open proxy)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "nginx proxy_pass",
+    "reverse proxy upstream",
+    "dynamic proxy target",
+    "ssrf nginx"
+  ],
+  "patterns": [
+    {
+      "lang": "webserver",
+      "confidence": "high",
+      "re": "(?im)^\\s*proxy_pass\\s+[^;#\\n]*://\\$(arg_|http_)"
+    },
+    {
+      "lang": "webserver",
+      "confidence": "medium",
+      "re": "(?im)^\\s*proxy_pass\\s+[^;#\\n]*\\$"
+    }
+  ],
+  "attack_scenario": "Attacker sets Host: 169.254.169.254 (or a ?target= arg wired into the host) so nginx proxies to the cloud metadata endpoint and returns temporary IAM credentials, or reaches internal-only admin services.",
+  "negative_test_hint": [
+    "send a request with Host header \"169.254.169.254\" and assert nginx never proxies to the metadata endpoint because the upstream host is fixed"
+  ],
+  "exemplar": {
+    "noncompliant": "proxy_pass http://$http_host$request_uri;",
+    "compliant": "proxy_pass http://backend_api;",
+    "explanation": "When the proxy_pass upstream host is built from client input ($http_host, $arg_*), the server becomes an open proxy and SSRF pivot into internal networks and cloud metadata endpoints. A proxy_pass to a fixed upstream keeps client input out of the destination host."
+  }
+}

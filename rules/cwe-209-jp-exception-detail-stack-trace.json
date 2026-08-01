@@ -1,0 +1,45 @@
+{
+  "cwe_id": "CWE-209",
+  "name": "Exception Detail / Stack Trace Returned to Client",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "exception",
+    "error",
+    "catch",
+    "stacktrace",
+    "senderror",
+    "servlet",
+    "handler",
+    "jsp"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.sendError\\([^)\\n]*getMessage\\(\\)"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "getWriter\\(\\)\\s*\\.\\s*(?:print|println|write|append)\\([^)\\n]*get(?:Message|StackTrace)\\(\\)"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "printStackTrace\\(\\s*(?:response|resp)\\b"
+    },
+    {
+      "lang": "java",
+      "confidence": "medium",
+      "re": "ResponseEntity[^;\\n]{0,120}\\b(?:ex|exc|exception|throwable|err|error)\\.get(?:Message|StackTrace)\\(\\)"
+    }
+  ],
+  "attack_scenario": "The leaked stack trace/SQL error exposes framework versions, absolute file paths, table and column names, and internal IPs; the attacker uses this to fingerprint the stack, refine SQLi payloads, and locate other endpoints, turning a handled error into reconnaissance.",
+  "negative_test_hint": ["submit id = \"' OR 1=1 -- \" to force a SQLException and assert the response returns a generic 500 message with no stack trace, SQL detail, or file paths"],
+  "exemplar": {
+    "noncompliant": "} catch (SQLException ex) {\n    response.sendError(500, ex.getMessage());\n}",
+    "compliant": "} catch (SQLException ex) {\n    logger.error(\"query failed\", ex);\n    response.sendError(500, \"Internal Server Error\");\n}",
+    "explanation": "The KISA Java secure-coding guide flags '\uc624\ub958 \uba54\uc2dc\uc9c0\ub97c \ud1b5\ud55c \uc815\ubcf4 \ub178\ucd9c' (CWE-209) as one of the most frequently fixed weaknesses: getMessage()/getStackTrace()/printStackTrace() rendered into the HTTP response or a JSP error page. Log the exception server-side and return a generic message instead, which keeps stack traces, framework versions, absolute paths, and schema details off the wire and out of the attacker's reconnaissance."
+  }
+}

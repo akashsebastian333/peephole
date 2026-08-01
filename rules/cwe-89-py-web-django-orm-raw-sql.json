@@ -1,0 +1,40 @@
+{
+  "cwe_id": "CWE-89",
+  "name": "Django ORM raw-SQL escape hatch (extra/RawSQL)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "query",
+    "orm",
+    "django",
+    "filter",
+    "search",
+    "report",
+    "annotate",
+    "raw sql"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "RawSQL\\(\\s*f[\"']"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "RawSQL\\([^)]*[\"']\\s*(?:%|\\+|\\.format\\()"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\.extra\\([^)]*(?:f[\"']|[\"']\\s*(?:%|\\+)|\\.format\\()"
+    }
+  ],
+  "attack_scenario": "A request supplies name = \"x' OR '1'='1' -- \"; the extra()/RawSQL fragment closes the literal and appends attacker SQL, turning a filtered lookup into a full-table read or auth bypass under the DB user's privileges.",
+  "negative_test_hint": ["submit name = \"' OR '1'='1' -- \" and assert the query returns a single row or errors, not the whole table"],
+  "exemplar": {
+    "noncompliant": "User.objects.extra(where=[\"name = '%s'\" % name])",
+    "compliant": "User.objects.filter(name=name)",
+    "explanation": "Django's QuerySet.extra() and RawSQL() drop out of the ORM's parameter binding; building their SQL fragments with f-strings, %, +, or .format() splices user input straight into the query. Both APIs accept a params= list precisely so values never touch the SQL text, so the %s-placeholder-plus-params form (where=[\"price > %s\"], params=[minp]) is safe and is NOT flagged. Only interpolation into the fragment matches. .extra() is deprecated for exactly this reason."
+  }
+}

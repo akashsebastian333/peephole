@@ -1,0 +1,33 @@
+{
+  "cwe_id": "CWE-917",
+  "name": "Spring SpEL expression injection",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "spel",
+    "expression",
+    "parseExpression",
+    "rule engine",
+    "dynamic query",
+    "@Value",
+    "evaluate formula",
+    "template expression"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.parseExpression\\s*\\(",
+      "reject_re": "parseExpression\\s*\\(\\s*\""
+    }
+  ],
+  "attack_scenario": "Attacker submits T(java.lang.Runtime).getRuntime().exec('id') (or new ProcessBuilder(...)) as the expression string; parseExpression + getValue executes it on the server.",
+  "negative_test_hint": [
+    "submit the expression \"T(java.lang.Runtime).getRuntime().exec('id')\" and assert it is rejected or treated as inert data, never parsed and evaluated as SpEL"
+  ],
+  "exemplar": {
+    "noncompliant": "Expression expr = parser.parseExpression(userSuppliedRule);\nObject result = expr.getValue();",
+    "compliant": "// Only ever parse a fixed, developer-authored expression\nExpression expr = parser.parseExpression(\"order.total > 1000\");\nObject result = expr.getValue(new StandardEvaluationContext(order));",
+    "explanation": "SpringExpressionParser.parseExpression on attacker-controlled text evaluates arbitrary SpEL, e.g. T(java.lang.Runtime).getRuntime().exec(...), giving remote code execution. Only literal expressions are safe; user data must be fed as evaluation-context variables, never parsed as the expression itself."
+  }
+}

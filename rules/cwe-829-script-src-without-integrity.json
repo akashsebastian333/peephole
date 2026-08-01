@@ -1,0 +1,24 @@
+{
+  "cwe_id": "CWE-829",
+  "name": "External script without Subresource Integrity",
+  "owasp": ["A03"],
+  "rank": 0,
+  "kev": false,
+  "severity": "medium",
+  "task_triggers": ["script tag", "cdn", "html", "script src", "subresource integrity", "sri", "external script"],
+  "patterns": [
+    {
+      "lang": "",
+      "confidence": "medium",
+      "re": "<script\\b[^>]*\\bsrc\\s*=\\s*[\"'](?:https?:)?//",
+      "reject_re": "integrity\\s*="
+    }
+  ],
+  "attack_scenario": "the CDN (or any middlebox on the way to it) is compromised and serves a backdoored copy of the library to every user of the site; without an integrity hash the browser executes it blindly",
+  "negative_test_hint": ["load the page with a tampered library served from \"https://cdn.example.com/lib.js\" and assert the browser refuses it for an integrity mismatch"],
+  "exemplar": {
+    "noncompliant": "<script src=\"https://cdn.example.com/lib.js\"></script>",
+    "compliant": "<script src=\"https://cdn.example.com/lib.js\" integrity=\"sha384-abc123\" crossorigin=\"anonymous\"></script>",
+    "explanation": "An external <script> without integrity=\"sha384-...\" executes whatever the CDN (or anyone who compromises it) serves. Subresource Integrity pins the expected hash so a tampered file is rejected by the browser."
+  }
+}

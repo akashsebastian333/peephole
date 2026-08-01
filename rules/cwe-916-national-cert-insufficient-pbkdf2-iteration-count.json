@@ -1,0 +1,41 @@
+{
+  "cwe_id": "CWE-916",
+  "name": "Insufficient PBKDF2 iteration count (PBEKeySpec)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "password hash",
+    "PBKDF2",
+    "PBEKeySpec",
+    "key derivation",
+    "derive key from password",
+    "SecretKeyFactory",
+    "store password"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "new\\s+PBEKeySpec\\s*\\(\\s*[^,]+,\\s*[^,]+,\\s*\\d{1,4}\\s*[,)]"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\bPBKDF2\\(\\s*[^,]+,\\s*[^,]+,\\s*\\d{1,4}\\s*[,)]"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\bhashlib\\.pbkdf2_hmac\\([^)]*,\\s*\\d{1,4}\\s*\\)"
+    }
+  ],
+  "attack_scenario": "An attacker who exfiltrates the password-hash store runs an offline dictionary/brute-force attack; at 1000 iterations a commodity GPU tests billions of candidate passwords cheaply, recovering user passwords in minutes to hours instead of the years a 600k work-factor would impose.",
+  "negative_test_hint": [
+    "run an offline dictionary attack starting with \"password123\" against an exfiltrated hash and assert cracking is impractical because the iteration count is at least 600000"
+  ],
+  "exemplar": {
+    "noncompliant": "KeySpec spec = new PBEKeySpec(password, salt, 1000, 256);",
+    "compliant": "KeySpec spec = new PBEKeySpec(password, salt, 600000, 256);",
+    "explanation": "NIST SP 800-132, the OWASP Password Storage Cheat Sheet, and BSI TR-02102-1 require a high PBKDF2 iteration count (OWASP recommends 600,000 for PBKDF2-HMAC-SHA256); an iteration count below 10,000 offers negligible work-factor against modern GPU/ASIC cracking. A high iteration count makes every guess expensive, turning offline cracking of an exfiltrated hash store from minutes into years."
+  }
+}

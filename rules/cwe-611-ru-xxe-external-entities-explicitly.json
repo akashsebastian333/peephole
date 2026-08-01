@@ -1,0 +1,65 @@
+{
+  "cwe_id": "CWE-611",
+  "name": "xxe-external-entities-explicitly-enabled",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "parse xml",
+    "load xml document",
+    "configure xml parser",
+    "xml reader",
+    "dom parser setup",
+    "process xml upload"
+  ],
+  "patterns": [
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "(?i)setExpandEntityReferences\\s*\\(\\s*true\\s*\\)"
+    },
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "(?i)libxml_disable_entity_loader\\s*\\(\\s*false\\s*\\)"
+    },
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "(?i)(resolveExternals|substituteEntities)\\s*=\\s*true"
+    },
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "(?i)(disallow-doctype-decl)\"\\s*,\\s*false"
+    },
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "(?i)(external-general-entities|external-parameter-entities)\"\\s*,\\s*true"
+    },
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "(?i)XmlResolver\\s*=\\s*new\\s+Xml(Url)?Resolver"
+    },
+    {
+      "lang": "",
+      "confidence": "medium",
+      "re": "(?i)DtdProcessing\\s*\\.\\s*Parse"
+    },
+    {
+      "lang": "",
+      "confidence": "medium",
+      "re": "\\bLIBXML_NOENT\\b"
+    }
+  ],
+  "attack_scenario": "Attacker uploads XML with <!DOCTYPE x [<!ENTITY e SYSTEM \"file:///etc/passwd\">]>&e;; the re-enabled entity-expanding parser reads local files or performs SSRF to internal endpoints, and billion-laughs entities can DoS the service.",
+  "negative_test_hint": [
+    "submit XML containing \"<!DOCTYPE x [<!ENTITY e SYSTEM 'file:///etc/passwd'>]>\" and assert the parser rejects the DOCTYPE or resolves no external entity content"
+  ],
+  "exemplar": {
+    "noncompliant": "dbf.setExpandEntityReferences(true);",
+    "compliant": "dbf.setExpandEntityReferences(false);",
+    "explanation": "Explicitly re-enabling entity expansion (setExpandEntityReferences(true), libxml_disable_entity_loader(false), resolveExternals/substituteEntities=true, external-general-entities=true, XmlResolver = new XmlUrlResolver, DtdProcessing.Parse, LIBXML_NOENT) turns a parser a framework had defaulted to safe back into an XXE vector, enabling local-file read, SSRF, and billion-laughs DoS. The hardened inverse (expansion disabled, DTDs prohibited, resolver null) keeps attacker-supplied XML inert."
+  }
+}

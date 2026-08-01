@@ -1,0 +1,26 @@
+{
+  "cwe_id": "CWE-918",
+  "name": "Server-Side Request Forgery",
+  "owasp": ["A10"],
+  "rank": 19,
+  "kev": true,
+  "severity": "high",
+  "task_triggers": ["fetch", "url", "webhook", "proxy", "request", "download", "callback", "http client", "scrape", "image url", "avatar url"],
+  "patterns": [
+    {"lang": "python", "confidence": "high", "re": "\\b(?:requests|httpx|session)\\.(?:get|post|put|delete|head|patch|request)\\(\\s*f[\"']"},
+    {"lang": "python", "confidence": "high", "re": "urllib\\.request\\.urlopen\\(\\s*(?:f[\"']|[^)]*\\+)"},
+    {"lang": "python", "confidence": "high", "re": "\\b(?:requests|httpx)\\.(?:get|post)\\(\\s*[\"'][^\"']*[\"']\\s*\\+"},
+    {"lang": "javascript", "confidence": "high", "re": "\\b(?:fetch|got|axios(?:\\.\\w+)?)\\(\\s*`[^`]*\\$\\{"},
+    {"lang": "javascript", "confidence": "high", "re": "\\b(?:fetch|got|axios(?:\\.\\w+)?)\\(\\s*[\"'][^\"']*[\"']\\s*\\+"}
+  ],
+  "absence_requirements": [
+    "If the request URL is derived from user input, validate it against an allowlist of hosts and reject internal/link-local targets (169.254.169.254, 127.0.0.0/8, 10/8, 192.168/16) to prevent access to cloud metadata and internal services."
+  ],
+  "attack_scenario": "attacker supplies a URL pointing at an internal service or the cloud metadata endpoint (169.254.169.254), and the server fetches it, leaking credentials or reaching services never meant to be exposed",
+  "negative_test_hint": ["submit url = \"http://169.254.169.254/latest/meta-data/iam/security-credentials/\" and assert the request is refused"],
+  "exemplar": {
+    "noncompliant": "r = requests.get(f\"https://{user_host}/api\")",
+    "compliant": "host = user_host.lower()\nif host not in ALLOWED_HOSTS:\n    abort(400)\nurl = \"https://\" + host + \"/api\"\nr = requests.get(url, allow_redirects=False, timeout=5)",
+    "explanation": "validate the target against a host allowlist and block redirects before fetching a user-influenced URL"
+  }
+}

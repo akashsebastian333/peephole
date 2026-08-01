@@ -1,0 +1,43 @@
+{
+  "cwe_id": "CWE-918",
+  "name": "net/http request to a user-controlled URL (SSRF)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "fetch",
+    "url",
+    "webhook",
+    "proxy",
+    "download",
+    "callback",
+    "image url",
+    "avatar",
+    "http client",
+    "scrape",
+    "import from url"
+  ],
+  "patterns": [
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "http\\.(?:Get|Post|Head|PostForm)\\(\\s*fmt\\.Sprintf\\("
+    },
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "http\\.(?:Get|Post|Head)\\(\\s*\"[^\"]*\"\\s*\\+"
+    },
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "http\\.NewRequest(?:WithContext)?\\([^;\\n]*,\\s*(?:fmt\\.Sprintf\\(|\"[^\"]*\"\\s*\\+)"
+    }
+  ],
+  "attack_scenario": "Attacker sets the webhook/avatar URL to http://169.254.169.254/latest/meta-data/iam/security-credentials/; the server fetches it and returns the instance's IAM credentials.",
+  "negative_test_hint": ["submit the callback URL \"http://169.254.169.254/latest/meta-data/iam/security-credentials/\" and assert the server refuses to fetch it, blocking link-local and private ranges"],
+  "exemplar": {
+    "noncompliant": "resp, err := http.Get(fmt.Sprintf(\"https://%s/api\", host))",
+    "compliant": "const statusURL = \"https://api.internal.svc/status\"\nif !allowedHosts[host] {\n    return errForbiddenHost\n}\nresp, err := http.Get(statusURL)   // fixed const target, not user input",
+    "explanation": "http.Get/Post/Head/PostForm and http.NewRequest fetch whatever URL they are handed. Building that URL from user input via Sprintf or literal+concatenation lets an attacker point the server at internal services or the cloud metadata endpoint. Fetch only fixed constant targets or hosts validated against an allowlist, and block link-local/private ranges (169.254.169.254, 127/8, 10/8, 192.168/16) before making the request."
+  }
+}

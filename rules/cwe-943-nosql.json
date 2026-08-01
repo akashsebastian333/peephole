@@ -1,0 +1,51 @@
+{
+  "cwe_id": "CWE-943",
+  "name": "NoSQL Injection",
+  "owasp": [
+    "A03"
+  ],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": [
+    "mongo",
+    "mongodb",
+    "nosql",
+    "query",
+    "find",
+    "login",
+    "database",
+    "collection"
+  ],
+  "patterns": [
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\.(?:find|findOne|findOneAndUpdate|updateOne|deleteOne|deleteMany)\\(\\s*\\{[^}]*:\\s*req\\.(?:body|query|params)"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\.(?:find|find_one|delete_one|update_one)\\(\\s*\\{[^}]*:\\s*(?:request\\.(?:json|args|form|data)|req\\.)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\$where\\s*:\\s*(?:\"[^\"]*\"|'[^']*')\\s*\\+"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\$where\\s*:\\s*`[^`]*\\$\\{"
+    }
+  ],
+  "attack_scenario": "a request field is placed directly into a NoSQL query document, so an attacker sends an operator object (e.g. {\"$ne\": null} or {\"$gt\": \"\"}) to bypass authentication or read arbitrary records",
+  "negative_test_hint": [
+    "submit the JSON body '{\"$ne\": null}' as the password and assert login is refused"
+  ],
+  "exemplar": {
+    "noncompliant": "db.users.findOne({ user: req.body.user, pass: req.body.pass })",
+    "compliant": "db.users.findOne({ user: String(req.body.user), pass: String(req.body.pass) })",
+    "explanation": "coerce request values to primitive types (or validate with a schema) so a client cannot inject query operators"
+  }
+}

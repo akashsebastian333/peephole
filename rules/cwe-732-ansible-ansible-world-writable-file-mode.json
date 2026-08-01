@@ -1,0 +1,36 @@
+{
+  "cwe_id": "CWE-732",
+  "name": "Ansible world-writable file mode / readable tmpfiles",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "ansible",
+    "file",
+    "copy",
+    "template",
+    "mode",
+    "permissions",
+    "chmod",
+    "tmpfiles",
+    "world writable"
+  ],
+  "patterns": [
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*mode\\s*:\\s*['\"]?0?[0-7]*[2367]['\"]?\\s*$"
+    },
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*allow_world_readable_tmpfiles\\s*[:=]\\s*(?:true|yes)\\b"
+    }
+  ],
+  "attack_scenario": "any unprivileged local user edits the world-writable config or script Ansible just deployed (privilege escalation via a root-run cron/service reading it), or reads secrets left in world-readable become tmpfiles during a privilege-drop task",
+  "negative_test_hint": ["as an unprivileged local user write \"pwned-by-unprivileged-user\" into the deployed file and assert the write is denied because the file is not world-writable"],
+  "exemplar": {
+    "noncompliant": "  - ansible.builtin.copy:\n      src: app.conf\n      dest: /etc/app/app.conf\n      mode: '0777'",
+    "compliant": "  - ansible.builtin.copy:\n      src: app.conf\n      dest: /etc/app/app.conf\n      mode: '0640'",
+    "explanation": "A file/copy/template mode whose final octal digit carries the write bit (for example 0777, 0666, or 0002) makes the deployed file world-writable, so any unprivileged local user can tamper with configs or scripts that a root-run service or cron later reads. allow_world_readable_tmpfiles: true similarly leaves privilege-escalation temp files readable by every local user; restrictive modes such as 0640 keep writes limited to owner and group."
+  }
+}

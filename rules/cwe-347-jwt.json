@@ -1,0 +1,22 @@
+{
+  "cwe_id": "CWE-347",
+  "name": "Improper JWT Verification",
+  "owasp": ["A02"],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": ["jwt", "token", "auth", "claims", "bearer", "login", "session"],
+  "patterns": [
+    {"lang": "python", "confidence": "high", "re": "jwt\\.decode\\([^)]*verify_signature[\"']?\\s*:\\s*False"},
+    {"lang": "python", "confidence": "high", "re": "jwt\\.decode\\([^)]*verify\\s*=\\s*False"},
+    {"lang": "", "confidence": "high", "re": "algorithms\\s*[=:]\\s*\\[[^\\]]*[\"']none[\"']"},
+    {"lang": "javascript", "confidence": "high", "re": "jwt\\.verify\\([^)]*algorithms\\s*:\\s*\\[[^\\]]*[\"']none[\"']"}
+  ],
+  "attack_scenario": "verification is disabled or the 'none' algorithm is accepted, so an attacker crafts a token with arbitrary claims (e.g. admin) that the server trusts without a valid signature",
+  "negative_test_hint": ["submit a token with header \"eyJhbGciOiJub25lIn0\" (alg=none) and an empty signature and assert it is rejected"],
+  "exemplar": {
+    "noncompliant": "data = jwt.decode(token, options={\"verify_signature\": False})",
+    "compliant": "data = jwt.decode(token, key, algorithms=[\"RS256\"])",
+    "explanation": "always verify the signature and pin the expected algorithm; never accept 'none' or decode without verification"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "cwe_id": "CWE-918",
+  "name": "Spring RestTemplate/WebClient SSRF via interpolated URL",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "resttemplate",
+    "webclient",
+    "http client",
+    "fetch url",
+    "webhook",
+    "proxy request",
+    "getForObject",
+    "uri",
+    "download from url",
+    "callback url"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.(?:getForObject|getForEntity|postForObject|postForEntity|getForList|exchange)\\s*\\(\\s*\"[^\"]*\"\\s*\\+"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.uri\\s*\\(\\s*(?:\"[^\"]*\"|[A-Za-z_]\\w*)\\s*\\+"
+    }
+  ],
+  "attack_scenario": "Attacker sets host to 169.254.169.254 (AWS/GCP metadata) or an internal admin service; the server-side client fetches it and returns credentials or internal data.",
+  "negative_test_hint": [
+    "set host to \"http://169.254.169.254/latest/meta-data\" and assert the server rejects the request instead of returning metadata credentials"
+  ],
+  "exemplar": {
+    "noncompliant": "String body = restTemplate.getForObject(\"http://\" + host + \"/api\", String.class);",
+    "compliant": "if (!ALLOWED_HOSTS.contains(host)) throw new IllegalArgumentException(\"host not allowed\");\nURI target = URI.create(\"https://\" + host + \"/api\");\nString body = restTemplate.getForObject(target, String.class);",
+    "explanation": "Passing a user-influenced string to RestTemplate (getForObject/exchange) or WebClient .uri lets an attacker point the server at internal services or the cloud metadata endpoint. Validating the host against an allowlist and blocking internal/link-local ranges before fetching keeps the server from becoming a confused deputy."
+  }
+}

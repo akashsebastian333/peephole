@@ -1,0 +1,44 @@
+{
+  "cwe_id": "CWE-89",
+  "name": "Rails ActiveRecord SQL String Interpolation",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "activerecord",
+    "where",
+    "query",
+    "search",
+    "order",
+    "find_by_sql",
+    "scope",
+    "filter",
+    "sort",
+    "sql"
+  ],
+  "patterns": [
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "\\.(?:where|find_by_sql|exists\\?|calculate|pluck|update_all|delete_all)\\(\\s*\"[^\"]*#\\{"
+    },
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "\\.(?:order|group|having|select|joins|reorder)\\(\\s*\"[^\"]*#\\{"
+    },
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "\\.where\\(\\s*[\"'][^)]*[\"']\\s*\\+"
+    }
+  ],
+  "attack_scenario": "Attacker submits email=' OR '1'='1' --; the interpolated fragment turns a single-row lookup into a full-table dump or auth bypass.",
+  "negative_test_hint": [
+    "submit email \"' OR '1'='1' --\" and assert the lookup returns a single row or errors instead of bypassing authentication"
+  ],
+  "exemplar": {
+    "noncompliant": "User.where(\"email = '#{params[:email]}'\").order(\"#{params[:sort]} ASC\")",
+    "compliant": "User.where(\"email = ?\", params[:email]).order(sort_column)  # sort_column validated against an allowlist",
+    "explanation": "ActiveRecord where/order/find_by_sql accept raw SQL fragments; interpolating (#{...}) or concatenating (+) any value into that string reopens SQL injection despite the ORM. Bind parameters (?, named binds) keep values out of the SQL grammar, and column/direction names must come from an allowlist."
+  }
+}

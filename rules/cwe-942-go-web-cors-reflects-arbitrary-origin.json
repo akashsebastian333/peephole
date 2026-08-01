@@ -1,0 +1,35 @@
+{
+  "cwe_id": "CWE-942",
+  "name": "CORS reflects arbitrary Origin / allow-all origin function",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "cors",
+    "origin",
+    "access-control",
+    "api",
+    "middleware",
+    "cross-origin",
+    "credentials",
+    "header"
+  ],
+  "patterns": [
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "\"Access-Control-Allow-Origin\"\\s*,\\s*r\\.Header\\.Get\\("
+    },
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "AllowOriginFunc:\\s*func\\b[^{]*\\{\\s*return\\s+true"
+    }
+  ],
+  "attack_scenario": "attacker.example serves a page that fetch()es https://victim.app/account with credentials; the server reflects Origin: attacker.example, the browser exposes the response, and the attacker reads the victim's private account data.",
+  "negative_test_hint": ["send a credentialed request with Origin \"https://attacker.example\" and assert the Access-Control-Allow-Origin response header does not echo it"],
+  "exemplar": {
+    "noncompliant": "w.Header().Set(\"Access-Control-Allow-Origin\", r.Header.Get(\"Origin\"))",
+    "compliant": "origin := r.Header.Get(\"Origin\")\nif allowedOrigins[origin] {\n    w.Header().Set(\"Access-Control-Allow-Origin\", origin)\n    w.Header().Set(\"Vary\", \"Origin\")\n}",
+    "explanation": "Echoing the request's Origin header inline into Access-Control-Allow-Origin (or an AllowOriginFunc that unconditionally returns true) makes every website a trusted origin. Combined with Allow-Credentials this lets any attacker page read authenticated responses. The safe form hoists the header into a variable and reflects it only after an allowlist check, which does not match. Set Vary: Origin as well."
+  }
+}

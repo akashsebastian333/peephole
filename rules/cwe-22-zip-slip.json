@@ -1,0 +1,20 @@
+{
+  "cwe_id": "CWE-409",
+  "name": "Archive Extraction Path Traversal (Zip Slip)",
+  "owasp": ["A01"],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": ["zip", "tar", "archive", "extract", "unzip", "unpack", "import", "upload"],
+  "patterns": [
+    {"lang": "python", "confidence": "medium", "re": "(?:zipfile\\.ZipFile|tarfile\\.open)\\([^)]*\\)\\.extractall\\(|\\.extractall\\(\\s*\\)"},
+    {"lang": "javascript", "confidence": "medium", "re": "\\.extractAllTo\\(|adm[_-]?zip[^\\n]*\\.extract"}
+  ],
+  "attack_scenario": "an archive entry named ../../etc/cron.d/x is extracted with its path intact, so unpacking an attacker-supplied archive writes files outside the target directory (zip slip)",
+  "negative_test_hint": ["extract an archive containing an entry named \"../../evil.sh\" and assert nothing is written outside the destination directory"],
+  "exemplar": {
+    "noncompliant": "zipfile.ZipFile(path).extractall(dest)",
+    "compliant": "with zipfile.ZipFile(path) as z:\n    for name in z.namelist():\n        target = (Path(dest) / name).resolve()\n        if not target.is_relative_to(Path(dest).resolve()):\n            raise ValueError(\"unsafe path\")\n        z.extract(name, dest)",
+    "explanation": "validate each entry resolves inside the destination before extracting; do not blindly extractall untrusted archives"
+  }
+}

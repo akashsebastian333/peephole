@@ -1,0 +1,31 @@
+{
+  "cwe_id": "CWE-94",
+  "name": "Code Injection",
+  "owasp": ["A03"],
+  "rank": 11,
+  "kev": true,
+  "severity": "critical",
+  "task_triggers": ["eval", "calculator", "formula", "expression", "rule engine", "plugin", "dynamic", "repl", "sandbox", "run code", "template"],
+  "patterns": [
+    {"lang": "python", "confidence": "high", "re": "(?:eval|exec)\\(\\s*f[\"']", "prev_not": "A-Za-z0-9_."},
+    {"lang": "python", "confidence": "high", "re": "(?:eval|exec)\\(\\s*(?:request\\.|input\\(|sys\\.argv|os\\.environ|payload|user_)", "prev_not": "A-Za-z0-9_."},
+    {"lang": "python", "confidence": "high", "re": "(?:eval|exec)\\(\\s*[\"'][^\"']*[\"']\\s*(?:\\+|%|\\.format\\()", "prev_not": "A-Za-z0-9_."},
+    {"lang": "python", "confidence": "high", "re": "(?:eval|exec)\\s*\\(\\s*[\\w.]*(?:b64decode|fromhex|unhexlify|decompress|\\.decode\\s*\\(|\\.read\\s*\\()", "prev_not": "A-Za-z0-9_."},
+    {"lang": "javascript", "confidence": "high", "re": "new\\s+Function\\([^)]*(?:\\$\\{|\\+\\s*[A-Za-z_$])"},
+    {"lang": "javascript", "confidence": "high", "re": "(?:setTimeout|setInterval)\\(\\s*`[^`]*\\$\\{"},
+    {"lang": "javascript", "confidence": "high", "re": "vm\\.runIn(?:This|New)Context\\(", "reject_re": "runIn(?:This|New)Context\\(\\s*[\"'`]"},
+    {"lang": "powershell", "confidence": "high", "re": "(?i)\\b(?:Invoke-Expression|iex)\\b|DownloadString\\([^)]*\\)\\s*\\|"},
+    {"lang": "lua", "confidence": "high", "re": "\\bloadstring\\s*\\(|\\bload\\s*\\(\\s*[A-Za-z_]"},
+    {"lang": "elixir", "confidence": "high", "re": "Code\\.eval_(?:string|quoted)\\("},
+    {"lang": "perl", "confidence": "medium", "re": "\\beval\\s*[\"']"},
+    {"lang": "r", "confidence": "high", "re": "\\beval\\s*\\(\\s*parse\\s*\\("},
+    {"lang": "", "confidence": "medium", "re": "\\$\\{\\{\\s*github\\.(?:head_ref\\b|event\\.(?:issue|pull_request|comment|review|discussion|commits|head_commit|pages|inputs)[^}]*\\.(?:title|body|name|email|message|ref|label|login|value))", "reject_re": "(?m)^\\s*[\\w.-]+\\s*:\\s*\\$\\{\\{"}
+  ],
+  "attack_scenario": "attacker supplies an expression that reaches the runtime's import/require facility, achieving remote code execution as the application user",
+  "negative_test_hint": ["feed expr = \"__import__('os').popen('id').read()\" and assert it is rejected, not executed"],
+  "exemplar": {
+    "noncompliant": "result = eval(request.args[\"expr\"])",
+    "compliant": "import ast\nresult = ast.literal_eval(request.args[\"expr\"])  # literals only; no calls, no imports",
+    "explanation": "ast.literal_eval parses only literals; it cannot call functions or import modules"
+  }
+}

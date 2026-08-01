@@ -1,0 +1,50 @@
+{
+  "cwe_id": "CWE-327",
+  "name": "Deprecated TLS/SSL protocol enabled (SSLv2/SSLv3/TLSv1.0/TLSv1.1)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "nginx tls config",
+    "apache ssl config",
+    "reverse proxy hardening",
+    "ssl_protocols",
+    "SSLProtocol",
+    "tls version"
+  ],
+  "patterns": [
+    {
+      "lang": "webserver",
+      "confidence": "high",
+      "re": "(?im)^\\s*ssl_protocols\\s+[^;#\\n]*(SSLv2|SSLv3)\\b"
+    },
+    {
+      "lang": "webserver",
+      "confidence": "high",
+      "re": "(?im)^\\s*ssl_protocols\\s+[^;#\\n]*TLSv1\\.1\\b"
+    },
+    {
+      "lang": "webserver",
+      "confidence": "high",
+      "re": "(?im)^\\s*ssl_protocols\\s+[^;#\\n]*TLSv1[\\s;]"
+    },
+    {
+      "lang": "webserver",
+      "confidence": "high",
+      "re": "(?im)^\\s*SSLProtocol\\b[^#\\n]*[+\\s](SSLv2|SSLv3|TLSv1\\.1)\\b"
+    },
+    {
+      "lang": "webserver",
+      "confidence": "high",
+      "re": "(?im)^\\s*SSLProtocol\\b[^#\\n]*[+\\s]TLSv1([\\s]|$)"
+    }
+  ],
+  "attack_scenario": "A network MITM forces the handshake to negotiate TLS 1.0/SSLv3 and uses POODLE/BEAST to decrypt session cookies or injected plaintext byte-by-byte.",
+  "negative_test_hint": [
+    "configure ssl_protocols with \"TLSv1 TLSv1.1\" and assert the server refuses handshakes below TLS 1.2"
+  ],
+  "exemplar": {
+    "noncompliant": "ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;",
+    "compliant": "ssl_protocols TLSv1.2 TLSv1.3;",
+    "explanation": "SSLv2/SSLv3 (POODLE) and TLS 1.0/1.1 (BEAST, weak MACs, deprecated per RFC 8996) carry protocol-level cryptographic weaknesses, and enabling them lets a man-in-the-middle downgrade the handshake to a broken protocol. Restricting ssl_protocols to TLSv1.2 and TLSv1.3 removes the downgrade path."
+  }
+}

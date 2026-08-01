@@ -1,0 +1,34 @@
+{
+  "cwe_id": "CWE-918",
+  "name": "Next.js image remotePatterns/domains wildcard host",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "next",
+    "next.config",
+    "images",
+    "remotePatterns",
+    "domains",
+    "hostname",
+    "optimizer"
+  ],
+  "patterns": [
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "hostname\\s*:\\s*[\"']\\*\\*?[\"']"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "medium",
+      "re": "domains\\s*:\\s*\\[[^\\]]*[\"']\\*"
+    }
+  ],
+  "attack_scenario": "attacker requests /_next/image?url=http://169.254.169.254/latest/meta-data/ (host allowed by '**'); the server-side optimizer fetches internal metadata and relays the response",
+  "negative_test_hint": ["request \"/_next/image?url=http://169.254.169.254/latest/meta-data/\" and assert the optimizer refuses to fetch it instead of relaying the metadata response"],
+  "exemplar": {
+    "noncompliant": "module.exports = { images: { remotePatterns: [{ protocol: 'https', hostname: '**' }] } };",
+    "compliant": "module.exports = { images: { remotePatterns: [{ protocol: 'https', hostname: 'images.example.com' }] } };",
+    "explanation": "A fully-wildcard hostname ('*' or '**') turns the Next.js image optimizer into an open image proxy that fetches and re-serves any URL an attacker supplies, enabling SSRF and bandwidth abuse. The pattern anchors to a quote immediately closing the wildcard, so intended single-level subdomain wildcards like '*.example.com' do NOT match."
+  }
+}

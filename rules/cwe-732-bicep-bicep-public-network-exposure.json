@@ -1,0 +1,47 @@
+{
+  "cwe_id": "CWE-732",
+  "name": "Bicep: public network exposure",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "azure",
+    "bicep",
+    "public access",
+    "network",
+    "firewall",
+    "blob",
+    "storage",
+    "publicNetworkAccess"
+  ],
+  "patterns": [
+    {
+      "lang": "bicep",
+      "confidence": "high",
+      "re": "(?im)^\\s*allowBlobPublicAccess\\s*:\\s*true\\b"
+    },
+    {
+      "lang": "bicep",
+      "confidence": "medium",
+      "re": "(?im)^\\s*publicNetworkAccess\\s*:\\s*'Enabled'"
+    },
+    {
+      "lang": "bicep",
+      "confidence": "medium",
+      "re": "(?im)^\\s*defaultAction\\s*:\\s*'Allow'"
+    },
+    {
+      "lang": "bicep",
+      "confidence": "high",
+      "re": "(?im)^\\s*startIpAddress\\s*:\\s*'0\\.0\\.0\\.0'"
+    }
+  ],
+  "attack_scenario": "an unauthenticated attacker on the internet enumerates the public endpoint and reads blob data or connects to the database directly, bypassing every network control the VNet was supposed to provide",
+  "negative_test_hint": [
+    "set \"publicNetworkAccess: 'Enabled'\" on the storage account and assert the template is rejected in favor of Disabled with a deny-by-default network ACL"
+  ],
+  "exemplar": {
+    "noncompliant": "  allowBlobPublicAccess: true",
+    "compliant": "  allowBlobPublicAccess: false",
+    "explanation": "allowBlobPublicAccess:true permits anonymous blob reads; publicNetworkAccess:'Enabled' and defaultAction:'Allow' open the resource to the whole internet; a firewall rule with startIpAddress '0.0.0.0' whitelists every source. Secure defaults are Disabled/Deny with explicit allow-lists so only intended networks can reach the resource."
+  }
+}

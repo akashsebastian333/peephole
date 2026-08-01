@@ -1,0 +1,33 @@
+{
+  "cwe_id": "CWE-359",
+  "name": "Aadhaar / PAN identifier written to logs",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "kyc",
+    "aadhaar",
+    "pan",
+    "log",
+    "logger",
+    "audit",
+    "pii",
+    "onboarding",
+    "uidai",
+    "verify"
+  ],
+  "patterns": [
+    {
+      "lang": "",
+      "confidence": "medium",
+      "re": "(?i)(?:log(?:ger)?|console|system\\.out|print)\\s*[.(][^)\\n]{0,120}\\b(?:aadha?ar[_]?(?:no|num|number|card|id)|aadha?arnumber|pan[_]?(?:no|num|number|card)|pannumber|uidai|customer[_]?aadha?ar)\\b",
+      "reject_re": "(?i)mask|redact|hash|sha256|encrypt|tokeni[sz]|last4|last_?four|xxxx|\\*{4}"
+    }
+  ],
+  "attack_scenario": "Logs aggregated to a SIEM, shipped to a third-party vendor, or left world-readable on disk leak millions of Aadhaar/PAN numbers; an insider or anyone with log access harvests them for identity theft, SIM-swap, and KYC fraud \u2014 a reportable breach under Indian law with no attacker skill required.",
+  "negative_test_hint": ["log a KYC verification record containing aadhaar number \"123456789012\" and assert the log output masks or omits the identifier instead of recording it in plaintext"],
+  "exemplar": {
+    "noncompliant": "logger.info(\"KYC verified aadhaar_number=\" + aadhaarNumber + \" pan=\" + panNo);",
+    "compliant": "logger.info(\"KYC verified for customer \" + customerId);",
+    "explanation": "India's Aadhaar Act 2016 (Sec. 29/37) and UIDAI/MeitY data-security regulations treat Aadhaar and PAN as regulated identifiers that must never land in plaintext application logs, which are readable by operators and often shipped to third-party SIEMs. Logging an opaque customer id keeps the audit trail useful without creating a reportable PII leak; masked, hashed, or tokenised forms of the identifier are equally safe."
+  }
+}

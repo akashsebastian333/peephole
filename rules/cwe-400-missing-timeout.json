@@ -1,0 +1,21 @@
+{
+  "cwe_id": "CWE-400",
+  "name": "Outbound Call Without Timeout",
+  "owasp": ["A05"],
+  "rank": 0,
+  "kev": false,
+  "severity": "medium",
+  "task_triggers": ["http client", "fetch", "request", "api call", "webhook", "download", "timeout"],
+  "patterns": [
+    {"lang": "python", "confidence": "medium", "re": "\\brequests\\.(?:get|post|put|patch|delete|head|request)\\(", "reject_re": "timeout\\s*="},
+    {"lang": "python", "confidence": "medium", "re": "\\bhttpx\\.(?:get|post|put|patch|delete)\\(", "reject_re": "timeout\\s*="},
+    {"lang": "python", "confidence": "medium", "re": "urllib\\.request\\.urlopen\\(", "reject_re": "timeout\\s*="}
+  ],
+  "attack_scenario": "an outbound call with no timeout hangs forever if the remote is slow or malicious, exhausting connections/threads and taking the service down (a resource-exhaustion DoS)",
+  "negative_test_hint": ["point the call at a \"black-hole server\" that accepts but never answers and assert the call aborts within a bounded time"],
+  "exemplar": {
+    "noncompliant": "r = requests.get(url)",
+    "compliant": "r = requests.get(url, timeout=5)",
+    "explanation": "always set an explicit timeout on outbound network calls so a slow/hostile peer cannot hang the service"
+  }
+}

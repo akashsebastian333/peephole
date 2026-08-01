@@ -1,0 +1,22 @@
+{
+  "cwe_id": "CWE-862",
+  "name": "Missing Authorization (advisory)",
+  "owasp": ["A01"],
+  "rank": 4,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": ["endpoint", "route", "api", "login", "admin", "account", "user id", "profile", "delete", "update", "order", "invoice", "session"],
+  "patterns": [],
+  "absence_requirements": [
+    "AuthZ cannot be proven present from one hunk — confirm this route checks authorization server-side, keyed on the session subject, not a client-supplied id (CWE-862/863).",
+    "If it reads or mutates another user's object by id, confirm ownership is enforced before the operation (CWE-639 IDOR).",
+    "If it is a state-changing endpoint, confirm CSRF protection is present (CWE-352)."
+  ],
+  "attack_scenario": "an authenticated user changes an id in the request to act on another user's resource because the server trusts the client-supplied identifier",
+  "negative_test_hint": ["as user A, request user B's object id and assert the response is 403/404, not B's data"],
+  "exemplar": {
+    "noncompliant": "order = Order.objects.get(id=request.GET[\"id\"])   # any user can read any order",
+    "compliant": "order = Order.objects.get(id=request.GET[\"id\"], owner=request.user)   # scoped to the caller",
+    "explanation": "scope every object lookup to the authenticated subject; never trust a client-supplied id alone"
+  }
+}

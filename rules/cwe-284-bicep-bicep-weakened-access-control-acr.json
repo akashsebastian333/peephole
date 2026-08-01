@@ -1,0 +1,35 @@
+{
+  "cwe_id": "CWE-284",
+  "name": "Bicep: weakened access control (ACR admin / Key Vault RBAC off)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "azure",
+    "bicep",
+    "key vault",
+    "rbac",
+    "acr",
+    "container registry",
+    "admin",
+    "access control"
+  ],
+  "patterns": [
+    {
+      "lang": "bicep",
+      "confidence": "high",
+      "re": "(?im)^\\s*adminUserEnabled\\s*:\\s*true\\b"
+    },
+    {
+      "lang": "bicep",
+      "confidence": "high",
+      "re": "(?im)^\\s*enableRbacAuthorization\\s*:\\s*false\\b"
+    }
+  ],
+  "attack_scenario": "the shared ACR admin password leaks from a pipeline or the broad Key Vault access policy is abused, and the attacker pushes a poisoned image or reads every secret in the vault with no way to trace which identity did it",
+  "negative_test_hint": ["deploy a template containing \"adminUserEnabled: true\" and assert the policy check fails and the shared registry admin credential is never created"],
+  "exemplar": {
+    "noncompliant": "  adminUserEnabled: true",
+    "compliant": "  enableRbacAuthorization: true",
+    "explanation": "adminUserEnabled:true turns on a single shared registry admin credential (no per-identity attribution, cannot be scoped) instead of AAD/token auth; enableRbacAuthorization:false makes Key Vault fall back to legacy vault access policies that grant coarse, hard-to-audit permissions. CIS Azure recommends the admin account off and RBAC on."
+  }
+}

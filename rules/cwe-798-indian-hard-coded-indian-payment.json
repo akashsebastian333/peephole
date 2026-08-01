@@ -1,0 +1,34 @@
+{
+  "cwe_id": "CWE-798",
+  "name": "Hard-coded Indian payment-gateway merchant secret",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "payment",
+    "razorpay",
+    "payu",
+    "ccavenue",
+    "phonepe",
+    "paytm",
+    "cashfree",
+    "checkout",
+    "merchant",
+    "salt",
+    "webhook"
+  ],
+  "patterns": [
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "(?i)(?:razorpay[_-]?key[_-]?secret|razorpay[_-]?secret|payu[_-]?salt|merchant[_-]?salt|ccavenue[_-]?working[_-]?key|working[_-]?key|phonepe[_-]?salt[_-]?key|paytm[_-]?merchant[_-]?key|cashfree[_-]?secret[_-]?key)\\s*[:=]\\s*[\"'][^\"'\\n]{8,}[\"']",
+      "reject_re": "(?i)\\$\\{|process\\.env|os\\.getenv|getenv|system\\.getenv|@value|config\\(|env\\(|<%=|secretmanager|vault"
+    }
+  ],
+  "attack_scenario": "Anyone with repo access, a decompiled APK, or a leaked container layer reads the merchant salt and can forge valid payment-success signatures/checksums \u2014 completing orders without paying, tampering with amounts, or replaying webhooks \u2014 because the entire trust model of these gateways rests on that one secret staying private.",
+  "negative_test_hint": ["place a live-looking secret such as \"rzp_live_Ab1Cd2Ef3Gh4Ij5K\" directly in source and assert the review rejects it, requiring an environment or secret-manager lookup"],
+  "exemplar": {
+    "noncompliant": "const razorpay_key_secret = \"rzp_live_9aXbYc7d5E4f3G2h\";",
+    "compliant": "const razorpay_key_secret = process.env.RAZORPAY_KEY_SECRET;",
+    "explanation": "Indian PSP integration guides (Razorpay, PayU, CCAvenue, PhonePe, Paytm, Cashfree) all hinge on a server-side merchant secret/salt/working-key used to sign and verify payment requests; CERT-In fintech advisories and numerous public GitHub leaks show these baked into source constantly in outsourced Java/PHP/Node code. Loading the secret from an environment variable or secret manager keeps it out of the codebase and out of leaked artifacts."
+  }
+}

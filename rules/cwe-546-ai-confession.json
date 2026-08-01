@@ -1,0 +1,21 @@
+{
+  "cwe_id": "CWE-546",
+  "name": "Suspicious Comment / AI Confession Marker",
+  "owasp": ["A04"],
+  "rank": 0,
+  "kev": false,
+  "severity": "medium",
+  "task_triggers": ["auth", "secret", "prototype", "demo", "example", "todo", "production"],
+  "patterns": [
+    {"lang": "", "confidence": "medium", "re": "(?i)in production(?:,| you| this| we| it)|in a real (?:app|system|deployment|world)|for (?:demo|example|testing|illustration) purposes|replace (?:this )?with your|your (?:real |actual )?(?:api[_-]?key|secret|token|password)(?: goes)? here|not for production|do not use in production|skip(?:ping)? (?:auth|authentication|validation|verification) for now"},
+    {"lang": "", "confidence": "medium", "re": "(?i)(?:TODO|FIXME|HACK|XXX)\\b[^\\n]{0,40}(?:auth|security|secure|validate|sanitize|encrypt|permission|escape|csrf|injection)"},
+    {"lang": "", "confidence": "medium", "re": "示例|简化实现|仅供演示|生产环境中|实际生产|실제로는|프로덕션에서는|セキュリティは省略"}
+  ],
+  "attack_scenario": "an AI assistant ships insecure or incomplete code and admits it in a nearby comment ('replace with your real key', 'TODO: add auth', 'in production you would validate') - the comment ships to production unread and the gap becomes a live vulnerability",
+  "negative_test_hint": ["add a temporary \"NOT SECURE - placeholder\" marker comment and assert the pre-release sweep catches it before ship"],
+  "exemplar": {
+    "noncompliant": "app.run(host=\"0.0.0.0\")  # TODO: add authentication before production",
+    "compliant": "app.run(host=\"127.0.0.1\")  # auth enforced by @login_required on every route",
+    "explanation": "resolve the confessed gap before shipping; a comment admitting missing auth/validation is a real, unfinished security hole"
+  }
+}

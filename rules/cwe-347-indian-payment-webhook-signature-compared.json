@@ -1,0 +1,41 @@
+{
+  "cwe_id": "CWE-347",
+  "name": "Payment webhook signature compared with insecure operator",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "webhook",
+    "signature",
+    "razorpay",
+    "payu",
+    "verify",
+    "hmac",
+    "checksum",
+    "payment",
+    "callback",
+    "hash"
+  ],
+  "patterns": [
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "(?i)(?:razorpay_signature|x_razorpay_signature|expected_signature|generated_signature|webhook_signature|payu_hash|computed_hash|expected_hash|received_hash|calculated_checksum)\\s*(?:===?|!==?)\\s*[\\$\\w]",
+      "reject_re": "(?i)timingsafeequal|hash_equals|compare_digest|messagedigest\\.isequal|constanttime|hmac\\.compare"
+    },
+    {
+      "lang": "",
+      "confidence": "medium",
+      "re": "(?i)(?:razorpay_signature|generated_signature|expected_signature|computed_hash|expected_hash|payu_hash)\\s*\\.\\s*equals\\s*\\(",
+      "reject_re": "(?i)messagedigest\\.isequal|constanttime|hmac"
+    }
+  ],
+  "attack_scenario": "A non-constant-time or type-juggling comparison lets an attacker brute-force the signature byte-by-byte via response timing, or (in PHP loose comparison) submit a crafted `0e...` hash that compares equal, forging a valid payment-success callback and marking unpaid orders as paid.",
+  "negative_test_hint": [
+    "submit a webhook whose razorpay_signature is \"0e462097431906509019562988736854\" and assert it is rejected by a constant-time comparison, never type-juggled or prefix-matched into equality"
+  ],
+  "exemplar": {
+    "noncompliant": "if (razorpay_signature == generated_signature) { markPaid(order); }",
+    "compliant": "if (crypto.timingSafeEqual(Buffer.from(generated_signature), Buffer.from(razorpay_signature))) { markPaid(order); }",
+    "explanation": "Razorpay/PayU/PhonePe webhook-verification docs require a constant-time compare (timingSafeEqual / hash_equals / MessageDigest.isEqual). A plain == or .equals() on payment signatures leaks matching-prefix information through response timing (CWE-208), and in PHP loose comparison a crafted '0e...' magic hash type-juggles to equal (CWE-697) — both let an attacker forge payment-success callbacks and mark unpaid orders as paid."
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "cwe_id": "CWE-327",
+  "name": "crypto-ecb-mode-block-cipher",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "encrypt",
+    "cipher",
+    "AES",
+    "crypto",
+    "MODE_ECB",
+    "confidentiality"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "(?i)\\bMODE_ECB\\b"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "(?i)modes\\.ECB\\("
+    }
+  ],
+  "attack_scenario": "Attacker observing ECB ciphertext of a structured record (e.g. an auth cookie or ECB-encrypted image) recovers repeated blocks and can cut-and-paste ciphertext blocks to forge a valid message without the key.",
+  "negative_test_hint": ["encrypt the repeated-block plaintext \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\" and assert the ciphertext has no repeated 16-byte blocks, which ECB would echo"],
+  "exemplar": {
+    "noncompliant": "cipher = AES.new(key, AES.MODE_ECB)",
+    "compliant": "cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)",
+    "explanation": "ECB encrypts identical plaintext blocks to identical ciphertext blocks, leaking the structure of the data and letting an attacker cut and paste ciphertext blocks to forge a valid message without the key. GCM (or any mode with a random IV and authentication) provides semantic security and integrity, so repeated plaintext blocks never repeat in ciphertext."
+  }
+}

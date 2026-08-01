@@ -1,0 +1,27 @@
+{
+  "cwe_id": "CWE-522",
+  "name": "Keychain item stored with kSecAttrAccessibleAlways",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "storing credentials or tokens in the Keychain",
+    "choosing a kSecAttrAccessible protection class",
+    "reviewing SecItemAdd / keychain wrapper code"
+  ],
+  "patterns": [
+    {
+      "lang": "objc",
+      "confidence": "high",
+      "re": "(?i)kSecAttrAccessibleAlways"
+    }
+  ],
+  "attack_scenario": "An attacker who obtains a locked device or an unencrypted backup extracts the keychain item without the passcode, because 'Always' items are decrypted with a key not tied to device unlock \u2014 yielding the stored token or password.",
+  "negative_test_hint": [
+    "store a token with the \"kSecAttrAccessibleAlways\" protection class and assert reading it back from a locked device or an unencrypted backup fails"
+  ],
+  "exemplar": {
+    "noncompliant": "NSDictionary *q = @{\n  (id)kSecClass: (id)kSecClassGenericPassword,\n  (id)kSecAttrAccount: @\"authToken\",\n  (id)kSecValueData: tokenData,\n  (id)kSecAttrAccessible: (id)kSecAttrAccessibleAlways,\n};\nSecItemAdd((CFDictionaryRef)q, NULL);",
+    "compliant": "NSDictionary *q = @{\n  (id)kSecClass: (id)kSecClassGenericPassword,\n  (id)kSecAttrAccount: @\"authToken\",\n  (id)kSecValueData: tokenData,\n  (id)kSecAttrAccessible: (id)kSecAttrAccessibleWhenUnlockedThisDeviceOnly,\n};\nSecItemAdd((CFDictionaryRef)q, NULL);",
+    "explanation": "kSecAttrAccessibleAlways (and its AlwaysThisDeviceOnly variant) makes the keychain item decryptable even while the device is locked, so it is not protected by the passcode-derived key and is included in unencrypted backups. kSecAttrAccessibleWhenUnlockedThisDeviceOnly ties decryption to device unlock and keeps the item off backups and off other devices, which is what Apple, OWASP MSTG-STORAGE-2, and CWE-522 require."
+  }
+}

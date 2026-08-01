@@ -1,0 +1,48 @@
+{
+  "cwe_id": "CWE-732",
+  "name": "Overly permissive privilege grant",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "GRANT statement",
+    "database privilege management",
+    "role/user provisioning",
+    "bootstrap/migration granting access"
+  ],
+  "patterns": [
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)grant\\s+all\\s+privileges"
+    },
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)grant\\s+all\\s+on\\s+\\*\\.\\*"
+    },
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)on\\s+\\*\\.\\*\\s+to"
+    },
+    {
+      "lang": "sql",
+      "confidence": "medium",
+      "re": "(?i)with\\s+grant\\s+option"
+    },
+    {
+      "lang": "sql",
+      "confidence": "medium",
+      "re": "(?i)grant\\b[^;]*\\bto\\s+public\\b"
+    }
+  ],
+  "attack_scenario": "Attacker steals the app's DB password; because it holds ALL PRIVILEGES ON *.* WITH GRANT OPTION they read every schema, DROP tables, create new superuser-like accounts, and grant themselves persistence across other databases.",
+  "negative_test_hint": [
+    "connect as the application account and run \"DROP TABLE users\" and assert permission is denied because the account holds only the specific privileges it needs"
+  ],
+  "exemplar": {
+    "noncompliant": "GRANT ALL PRIVILEGES ON *.* TO 'app'@'%' WITH GRANT OPTION;",
+    "compliant": "GRANT SELECT, INSERT ON app.orders TO 'app'@'10.0.0.5';",
+    "explanation": "OWASP Database Security and CIS benchmarks require least-privilege grants. GRANT ALL, ON *.*, TO PUBLIC, or WITH GRANT OPTION hands an application account (or every account) full DDL/DML plus the ability to re-delegate rights, so a single compromised credential owns the whole server (CWE-732)."
+  }
+}

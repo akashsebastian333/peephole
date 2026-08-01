@@ -1,0 +1,23 @@
+{
+  "cwe_id": "CWE-676",
+  "name": "Dangerous C Function",
+  "owasp": ["A06"],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": ["buffer", "string copy", "parse", "input", "c", "memory"],
+  "patterns": [
+    {"lang": "c", "confidence": "high", "re": "\\b(?:gets|strcpy|strcat|sprintf|vsprintf|scanf|sscanf|realpath|getwd)\\s*\\("},
+    {"lang": "c", "confidence": "high", "re": "\\b(?:system|popen|execlp|execvp)\\s*\\("},
+    {"lang": "c", "confidence": "medium", "re": "\\b(?:alloca|strncpy|strncat|memcpy)\\s*\\("},
+    {"lang": "rust", "confidence": "high", "re": "\\bmem::transmute\\b|\\btransmute::<"},
+    {"lang": "rust", "confidence": "medium", "re": "\\bunsafe\\s*\\{"}
+  ],
+  "attack_scenario": "an unbounded string/format function (gets, strcpy, sprintf, scanf) copies attacker-controlled input past a fixed buffer, corrupting the stack/heap for a classic buffer-overflow exploit",
+  "negative_test_hint": ["feed a 4096-byte \"AAAA...AAAA\" input into a 64-byte destination and assert bounded copy (truncation or rejection), never overflow"],
+  "exemplar": {
+    "noncompliant": "char buf[64];\nstrcpy(buf, user_input);",
+    "compliant": "char buf[64];\nsnprintf(buf, sizeof(buf), \"%s\", user_input);",
+    "explanation": "use bounded functions (snprintf, strlcpy, fgets) with an explicit size; never gets/strcpy/sprintf on untrusted input"
+  }
+}

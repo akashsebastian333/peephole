@@ -1,0 +1,20 @@
+{
+  "cwe_id": "CWE-829",
+  "name": "Dangerous Low-Level Primitive (Solidity)",
+  "owasp": ["A08"],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": ["delegatecall", "callcode", "proxy", "upgrade", "selfdestruct", "suicide", "kill", "implementation", "smart contract", "solidity"],
+  "patterns": [
+    {"lang": "solidity", "confidence": "medium", "re": "\\.(?:delegatecall|callcode)\\s*\\("},
+    {"lang": "solidity", "confidence": "high", "re": "\\b(?:selfdestruct|suicide)\\s*\\("}
+  ],
+  "attack_scenario": "delegatecall runs a target's code in the caller's storage context — if the target is user-controlled it can rewrite the owner slot or selfdestruct the contract; an unguarded selfdestruct lets anyone destroy the contract and seize its balance (SWC-106/SWC-112)",
+  "negative_test_hint": ["call the function as a non-owner supplying an \"attacker-controlled implementation address\" and assert it reverts"],
+  "exemplar": {
+    "noncompliant": "function forward(address impl, bytes calldata data) external {\n  impl.delegatecall(data);\n}",
+    "compliant": "// call a fixed, audited contract through its typed interface, never raw delegatecall on caller data\nfunction upgrade(uint version) external onlyOwner {\n  IAudited(TRUSTED).performUpgrade(version);\n}",
+    "explanation": "do not delegatecall (or forward calldata to) a caller-controlled address; invoke a fixed, audited contract through its interface behind access control, and avoid selfdestruct"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "cwe_id": "CWE-668",
+  "name": "compose-db-admin-port-on-all-interfaces",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "editing docker-compose.yml",
+    "publishing ports for a service",
+    "exposing a database or admin port"
+  ],
+  "patterns": [
+    {
+      "lang": "yaml",
+      "confidence": "medium",
+      "re": "(?im)^\\s*-\\s*[\"']?0\\.0\\.0\\.0:\\d+:(3306|5432|6379|27017|9200|9300|5984|11211|1433|2375|2376|5672|15672|8086|9042|2181|9092|7199)\\b"
+    },
+    {
+      "lang": "yaml",
+      "confidence": "medium",
+      "re": "(?im)^\\s*host_ip\\s*:\\s*[\"']?0\\.0\\.0\\.0[\"']?\\s*$"
+    }
+  ],
+  "attack_scenario": "A Redis (6379) or Mongo (27017) bound to 0.0.0.0 with no auth is trivially discovered by internet scanners and read/dumped, or used to write keys/webshells; port 2375 exposes the Docker API directly for full host takeover.",
+  "negative_test_hint": ["start the stack and attempt to reach the database from an external interface, asserting no \"0.0.0.0:5432\" style binding exists and the connection is refused"],
+  "exemplar": {
+    "noncompliant": "services:\n  db:\n    ports:\n      - \"0.0.0.0:5432:5432\"",
+    "compliant": "services:\n  db:\n    ports:\n      - \"127.0.0.1:5432:5432\"",
+    "explanation": "Explicitly binding a database or infra-management port (Postgres, MySQL, Redis, Mongo, Elasticsearch, RabbitMQ mgmt, Docker API, etc.) to 0.0.0.0 publishes it on every host interface, exposing an unauthenticated or default-credential backend to the LAN or internet. The pattern matches only when the container-side port is a known backend port and word-anchors it, so app ports (0.0.0.0:8080:8080) and near-miss ports (54320, 63790) are not flagged."
+  }
+}

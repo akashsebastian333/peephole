@@ -1,0 +1,30 @@
+{
+  "cwe_id": "CWE-94",
+  "name": "HuggingFace trust_remote_code=True",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "huggingface",
+    "transformers",
+    "from_pretrained",
+    "trust_remote_code",
+    "auto model",
+    "pipeline"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "trust_remote_code\\s*=\\s*True"
+    }
+  ],
+  "attack_scenario": "A popular community model's repo is compromised; every from_pretrained(..., trust_remote_code=True) pulls the malicious modeling_x.py and runs it in the caller's process.",
+  "negative_test_hint": [
+    "load a community repo with \"trust_remote_code=True\" and assert the review or sandbox rejects the flag instead of executing the repo's modeling code"
+  ],
+  "exemplar": {
+    "noncompliant": "model = AutoModel.from_pretrained(\"some/community-repo\", trust_remote_code=True)",
+    "compliant": "model = AutoModel.from_pretrained(\"some/community-repo\")",
+    "explanation": "trust_remote_code=True downloads and executes the repo's own modeling_*.py at import time, so loading a model equals running attacker-controlled Python. Pin to vetted first-party repos and omit the flag."
+  }
+}

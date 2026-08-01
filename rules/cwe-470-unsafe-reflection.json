@@ -1,0 +1,21 @@
+{
+  "cwe_id": "CWE-470",
+  "name": "Unsafe Reflection",
+  "owasp": ["A03"],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": ["reflection", "getattr", "plugin", "dynamic", "handler", "dispatch", "factory", "module"],
+  "patterns": [
+    {"lang": "python", "confidence": "high", "re": "\\bgetattr\\(\\s*[A-Za-z_]\\w*\\s*,\\s*(?:request\\.|req\\.|input\\(|self\\.request)"},
+    {"lang": "javascript", "confidence": "high", "re": "\\brequire\\(\\s*(?:req\\.|request\\.|`[^`]*\\$\\{)"},
+    {"lang": "", "confidence": "high", "re": "\\bClass\\.forName\\([^)]*(?:getParameter|request|param|input)"}
+  ],
+  "attack_scenario": "user input names the attribute/module/class to resolve, so an attacker selects a method or module the developer never exposed, escalating to arbitrary code paths or command execution",
+  "negative_test_hint": ["submit action = a dangerous name (e.g. 'system' / 'os') and assert only the allowlisted handlers are reachable"],
+  "exemplar": {
+    "noncompliant": "handler = getattr(controllers, request.args[\"action\"])",
+    "compliant": "handlers = {\"list\": list_view, \"detail\": detail_view}\nhandler = handlers[request.args[\"action\"]]",
+    "explanation": "map user input through a fixed allowlist to a known target; never resolve it through reflection directly"
+  }
+}

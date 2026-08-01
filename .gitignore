@@ -1,0 +1,28 @@
+# Runtime state (per-project; never committed)
+.peephole/
+.peephole-rules.json
+
+# Launcher cache (runtime; excluded from the integrity manifest)
+bin/.peephole-exe
+
+# Go build artifacts
+*.test
+*.out
+/coverage.txt
+/dist/
+
+# Editor / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# NOTE: bin/peephole-* and bin/manifest.sha256 ARE committed — they are the
+# shipped, integrity-pinned plugin binaries. Rebuild with ./build.sh.
+
+# stray local build (use bin/ instead)
+/peephole
+
+# Python
+__pycache__/
+*.pyc

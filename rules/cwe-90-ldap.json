@@ -1,0 +1,21 @@
+{
+  "cwe_id": "CWE-90",
+  "name": "LDAP Injection",
+  "owasp": ["A03"],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": ["ldap", "directory", "active directory", "authenticate", "bind", "distinguished name", "login"],
+  "patterns": [
+    {"lang": "python", "confidence": "high", "re": "f[\"'][^\"']*\\((?:uid|cn|mail|sAMAccountName|sn|givenName|objectClass)=\\{"},
+    {"lang": "", "confidence": "high", "re": "[\"'][^\"']*\\((?:uid|cn|mail|sAMAccountName|objectClass)=[^\"']*[\"']\\s*(?:\\+|%|\\.format\\()"},
+    {"lang": "javascript", "confidence": "high", "re": "`[^`]*\\((?:uid|cn|mail|sAMAccountName)=[^`]*\\$\\{"}
+  ],
+  "attack_scenario": "attacker submits a username like '*)(uid=*))(|(uid=*' to break out of the intended filter, turning a single-user lookup into a wildcard match or an authentication bypass",
+  "negative_test_hint": ["submit username = \"*)(uid=*\" and assert the search does not match all entries"],
+  "exemplar": {
+    "noncompliant": "conn.search_s(base, ldap.SCOPE_SUBTREE, f\"(uid={username})\")",
+    "compliant": "tmpl = \"(uid=%s)\"\nsafe = ldap.filter.escape_filter_chars(username)\nconn.search_s(base, ldap.SCOPE_SUBTREE, tmpl % safe)",
+    "explanation": "escape user input with escape_filter_chars before placing it in an LDAP filter"
+  }
+}

@@ -1,0 +1,117 @@
+{
+  "cwe_id": "CWE-502",
+  "name": "Unsafe Deserialization",
+  "owasp": [
+    "A08"
+  ],
+  "rank": 16,
+  "kev": true,
+  "severity": "critical",
+  "task_triggers": [
+    "serialize",
+    "deserialize",
+    "pickle",
+    "cache",
+    "session",
+    "cookie",
+    "redis",
+    "rpc",
+    "yaml",
+    "checkpoint",
+    "load model"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\b(?:pickle|cPickle|_pickle|dill|jsonpickle)\\.loads?\\("
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\byaml\\.load\\(",
+      "reject_re": "SafeLoader|safe_load"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\byaml\\.(?:unsafe_load|full_load)\\("
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\bmarshal\\.loads?\\("
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "\\btorch\\.load\\(",
+      "reject_re": "weights_only\\s*=\\s*True"
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "\\bjoblib\\.load\\(|\\b(?:pd|pandas)\\.read_pickle\\(|\\b(?:np|numpy)\\.load\\([^)]*allow_pickle\\s*=\\s*True"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\b(?:serialize|node_serialize)\\.unserialize\\(|require\\(\\s*[\"']node-serialize[\"']"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\b(?:unserialize|deserialize)\\(\\s*(?:req\\.|request\\.|body|payload)"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.readObject\\s*\\(\\s*\\)|\\bXMLDecoder\\s*\\(|enableDefaultTyping\\s*\\(|new\\s+Yaml\\s*\\(\\s*\\)\\s*\\.load\\(|\\bXStream\\b[^\\n]*\\.fromXML\\("
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "JSON\\.parseObject\\([^)]*(?:Feature\\.SupportAutoType|,\\s*[A-Za-z_]\\w*\\.class)|@JsonTypeInfo"
+    },
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "\\bunserialize\\s*\\(\\s*\\$_(?:GET|POST|REQUEST|COOKIE)"
+    },
+    {
+      "lang": "php",
+      "confidence": "medium",
+      "re": "\\bunserialize\\s*\\("
+    },
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "\\bMarshal\\.load\\(|\\bOj\\.load\\("
+    },
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "\\bYAML\\.load\\(",
+      "reject_re": "safe_load|safe:\\s*true"
+    },
+    {
+      "lang": "csharp",
+      "confidence": "high",
+      "re": "\\bBinaryFormatter\\b|\\bLosFormatter\\b|\\bNetDataContractSerializer\\b|TypeNameHandling\\s*[.=]\\s*(?:TypeNameHandling\\.)?(?:All|Auto|Objects)|\\bJavaScriptSerializer\\b[^\\n]*\\.Deserialize"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\bshelve\\.open\\("
+    }
+  ],
+  "attack_scenario": "attacker crafts a serialized blob containing a gadget (pickle __reduce__, a YAML python/object tag, a node-serialize IIFE) so the act of deserializing executes attacker code",
+  "negative_test_hint": [
+    "feed a YAML payload '!!python/object/apply:os.system [\"id\"]' and assert it is rejected"
+  ],
+  "exemplar": {
+    "noncompliant": "cfg = yaml.load(open(path))",
+    "compliant": "cfg = yaml.safe_load(open(path))",
+    "explanation": "safe_load constructs only plain data types; it cannot instantiate arbitrary Python objects"
+  }
+}

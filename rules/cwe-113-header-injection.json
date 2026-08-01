@@ -1,0 +1,50 @@
+{
+  "cwe_id": "CWE-113",
+  "name": "HTTP Header / Response Splitting (CRLF)",
+  "owasp": [
+    "A03"
+  ],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": [
+    "header",
+    "response",
+    "location",
+    "cookie",
+    "download",
+    "content-disposition",
+    "cors"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\.headers\\[\\s*[\"'][^\"']+[\"']\\s*\\]\\s*=\\s*(?:request\\.|f[\"'])"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\.(?:setHeader|set|append)\\(\\s*[\"'][^\"']+[\"']\\s*,\\s*(?:req\\.(?:query|params|body|headers|cookies)|`[^`]*\\$\\{)"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.setHeader\\(\\s*\"[^\"]+\"\\s*,\\s*request\\."
+    },
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "\\.Header\\(\\)\\.Set\\([^)]*r\\.(?:FormValue|URL\\.Query)"
+    }
+  ],
+  "attack_scenario": "a request value copied into a response header without stripping CR/LF lets the attacker split the response — injecting extra headers, a forged body, or a poisoned cache entry",
+  "negative_test_hint": [
+    "submit a header-bound value containing \"%0d%0aSet-Cookie: admin=1\" and assert the injected header/body is not emitted"
+  ],
+  "exemplar": {
+    "noncompliant": "resp.headers[\"X-Requested-User\"] = request.args[\"name\"]",
+    "compliant": "val = request.args[\"name\"].replace(\"\\r\", \"\").replace(\"\\n\", \"\")\nresp.headers[\"X-Requested-User\"] = val",
+    "explanation": "reject or strip CR/LF from any user value placed in a response header"
+  }
+}

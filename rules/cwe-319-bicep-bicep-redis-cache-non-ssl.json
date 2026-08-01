@@ -1,0 +1,32 @@
+{
+  "cwe_id": "CWE-319",
+  "name": "Bicep: Redis Cache non-SSL port enabled",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "azure",
+    "bicep",
+    "redis",
+    "cache",
+    "ssl",
+    "enableNonSslPort",
+    "tls",
+    "transport"
+  ],
+  "patterns": [
+    {
+      "lang": "bicep",
+      "confidence": "high",
+      "re": "(?im)^\\s*enableNonSslPort\\s*:\\s*true\\b"
+    }
+  ],
+  "attack_scenario": "a network attacker sniffs or connects to the plaintext 6379 port and reads or injects cached session tokens, credentials, and application data with no TLS in the way",
+  "negative_test_hint": [
+    "deploy a template with \"enableNonSslPort: true\" and assert the policy check rejects it and the plaintext port 6379 is not reachable"
+  ],
+  "exemplar": {
+    "noncompliant": "  enableNonSslPort: true",
+    "compliant": "  enableNonSslPort: false",
+    "explanation": "On Microsoft.Cache/Redis, enableNonSslPort:true opens the cleartext Redis port 6379 alongside the TLS port 6380, so clients (and any on-path attacker) can talk to the cache without encryption. CIS Azure and Microsoft guidance require SSL-only access (non-SSL port disabled)."
+  }
+}
