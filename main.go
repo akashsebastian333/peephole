@@ -55,6 +55,7 @@ func main() {
 			fmt.Println("manifest written:", manifestPath())
 			return
 		case "hook":
+			setDialect(args[1:])
 			// fall through
 		}
 	}
@@ -315,26 +316,67 @@ func spawnWarmcache(e Event) {
 
 // cliScan scans one or more files and prints CWE findings. Exit 0 always (a
 // scoring/dogfooding tool, not an enforcement path).
-func cliScan(paths []string) {
+// cliScan scans files and prints CWE findings. Flags:
+//
+//	--gate     exit 2 if any HIGH-confidence finding (for a git pre-commit hook)
+//	--staged   scan the git-staged files (--diff-filter=ACM) instead of args
+func cliScan(args []string) {
+	gate := false
+	var paths []string
+	for _, a := range args {
+		switch a {
+		case "--gate":
+			gate = true
+		case "--staged":
+			paths = append(paths, stagedFiles()...)
+		default:
+			paths = append(paths, a)
+		}
+	}
 	kb := loadKB()
-	total := 0
+	total, high := 0, 0
 	for _, p := range paths {
 		b, err := os.ReadFile(p)
 		if err != nil {
-			fmt.Printf("%s: unreadable\n", p)
 			continue
 		}
 		findings := kb.scan(p, string(b))
 		if len(findings) == 0 {
-			fmt.Printf("%s: clean\n", p)
+			if !gate {
+				fmt.Printf("%s: clean\n", p)
+			}
 			continue
 		}
 		for _, f := range findings {
 			total++
+			if f.Confidence == "high" {
+				high++
+			}
 			fmt.Printf("%s: %s %s (%s)\n", p, f.Rule.CWE, f.Rule.Name, f.Confidence)
 		}
 	}
-	fmt.Printf("total findings: %d\n", total)
+	fmt.Printf("total findings: %d (%d high-confidence)\n", total, high)
+	if gate && high > 0 {
+		fmt.Fprintln(os.Stderr, "peephole: blocking - high-confidence security findings above. Fix them, or commit with --no-verify to override.")
+		os.Exit(2)
+	}
+}
+
+// stagedFiles returns the git-staged (added/copied/modified) file paths.
+func stagedFiles() []string {
+	out, err := exec.Command("git", "diff", "--cached", "--name-only", "--diff-filter=ACM").Output()
+	if err != nil {
+		return nil
+	}
+	var files []string
+	for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if l != "" {
+			if _, e := os.Stat(l); e == nil {
+				files = append(files, l)
+			}
+		}
+	}
+	return files
 }
 
 // cliStatusline prints the peephole badge for the Claude Code status line:

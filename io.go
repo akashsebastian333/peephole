@@ -86,7 +86,27 @@ func emitJSON(v any) {
 	select {} // unreachable: the process exited inside Do (or a timeout won the race)
 }
 
+// dialectExit2 selects the universal hook contract (reason on stderr + exit 2 on
+// a block) instead of Claude Code's permissionDecision JSON. Every hook-based
+// agent (Gemini CLI, Codex, Qwen, Crush, Goose, Cursor, ...) honors exit 2, so
+// this one flag lets the same binary gate all of them. Set via `hook --exit2`.
+var dialectExit2 bool
+
 func emitPreDecision(decision, reason string) {
+	if dialectExit2 {
+		switch decision {
+		case "deny":
+			hardBlock(reason) // stderr + exit 2: the universal block signal
+		case "ask":
+			// exit-code hosts have no "ask"; surface it as a loud warning and allow.
+			exitOnce.Do(func() {
+				os.Stderr.WriteString(provenance + " REVIEW: " + reason + "\n")
+				os.Exit(0)
+			})
+			select {}
+		}
+		// allow: fall through to the normal (empty) emit
+	}
 	emitJSON(map[string]any{"hookSpecificOutput": map[string]any{
 		"hookEventName":            "PreToolUse",
 		"permissionDecision":       decision,
@@ -97,12 +117,24 @@ func emitPreDecision(decision, reason string) {
 // emitPreDecisionInput emits a decision that also proposes a modified tool input
 // (the secure-default rewrite). The host shows it as ask-with-preview.
 func emitPreDecisionInput(decision, reason string, updatedInput json.RawMessage) {
+	if dialectExit2 {
+		emitPreDecision(decision, reason) // exit-code hosts can't render a rewrite preview
+	}
 	emitJSON(map[string]any{"hookSpecificOutput": map[string]any{
 		"hookEventName":            "PreToolUse",
 		"permissionDecision":       decision,
 		"permissionDecisionReason": reason,
 		"updatedInput":             updatedInput,
 	}})
+}
+
+// setDialect reads the output dialect from the hook subcommand arguments.
+func setDialect(args []string) {
+	for _, a := range args {
+		if a == "--exit2" || a == "--dialect=exit2" {
+			dialectExit2 = true
+		}
+	}
 }
 
 func injectContext(eventName, text string) {

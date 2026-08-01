@@ -1,0 +1,4 @@
+#!/bin/sh
+# Universal backstop: install as .git/hooks/pre-commit (chmod +x).
+# Blocks the commit if a staged file has a high-confidence security finding.
+peephole scan --gate --staged

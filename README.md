@@ -19,7 +19,14 @@ on disk — with a CWE-mapped, tamper-evident audit log. *Never open the door
 before checking who's on the other side, and never ship code before checking
 what's in it.*
 
-**Docs:** [Design](docs/DESIGN.md) · [Benchmark](docs/BENCHMARK.md) · [Review history](docs/REVIEW.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
+**Docs:** [Design](docs/DESIGN.md) · [Benchmark](docs/BENCHMARK.md) · [Integrations](docs/INTEGRATIONS.md) · [Review history](docs/REVIEW.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
+
+> **Not just Claude Code.** The same binary gates writes in any hook-based agent —
+> Gemini CLI, OpenAI Codex CLI, Qwen Code, Charm Crush, Block Goose, Cursor,
+> OpenCode, Amp — via `peephole hook --exit2` (exit code 2 is the universal block
+> signal), plus a universal `git pre-commit` backstop for everything else. See
+> [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) for drop-in configs and an honest
+> coverage matrix (which agents block pre-write vs. only advise).
 
 ## The difference
 

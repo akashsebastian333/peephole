@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [ { "command": "peephole hook --exit2", "matcher": "Write|Edit|MultiEdit", "timeout": 5000 } ],
+    "beforeShellExecution": [ { "command": "peephole hook --exit2" } ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "hooks": {
+    "BeforeTool": [
+      { "matcher": ".*",
+        "hooks": [ { "type": "command", "command": "peephole hook --exit2", "timeout": 5000 } ] }
+    ]
+  }
+}
