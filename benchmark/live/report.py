@@ -141,40 +141,65 @@ def main():
 
     plt.rcParams.update(STYLE)
 
+    fig, (axS, axO) = plt.subplots(1, 2, figsize=(13.5, 5.6),
+                                   gridspec_kw={"width_ratios": [1.15, 1.35]})
+
+    # LEFT: secure-code rate (the point of the benchmark). Two series per arm:
+    # pattern tier (scanner) and semantic tier (independent judge).
+    xa = range(len(ARMS))
+    w = 0.36
+    pat = [arms[a]["secure"] for a in ARMS]
+    semv = [sem_stats[a]["secure"] for a in ARMS]
+    b1 = axS.bar([x - w / 2 for x in xa], pat, w * 0.9, color=[COLORS[a] for a in ARMS],
+                 edgecolor="#FFFFFF", linewidth=0.6, zorder=3)
+    b2 = axS.bar([x + w / 2 for x in xa], semv, w * 0.9, color=[COLORS[a] for a in ARMS],
+                 edgecolor="#FFFFFF", linewidth=0.6, zorder=3, alpha=0.45, hatch="//")
+    for bars in (b1, b2):
+        for b in bars:
+            axS.annotate(f"{b.get_height():.0f}%", (b.get_x() + b.get_width() / 2, b.get_height() + 2.5),
+                         ha="center", fontsize=9.5, fontweight="bold", color="#22242E", zorder=4)
+    axS.set_xticks(list(xa))
+    axS.set_xticklabels(ARMS, fontsize=10.5)
+    axS.set_ylim(0, 118)
+    axS.set_ylabel("% secure (higher is better)")
+    axS.grid(axis="x", visible=False)
+    axS.set_title("Secure-code rate\nsolid = pattern tier (scanner) · hatched = semantic tier (independent judge)",
+                  fontsize=11, loc="left", pad=10, fontweight="bold")
+    axS.annotate("peephole born-secure (no gate needed): 94%", xy=(0.98, 0.96),
+                 xycoords="axes fraction", ha="right", va="top", fontsize=9, color=COLORS["peephole"])
+
+    # RIGHT: overhead vs baseline (lower is leaner).
     groups = [("tokens", "tokens", f"base {base['tokens']/1000:.0f}k"),
               ("cost", "cost", f"base ${base['cost']:.3f}"),
               ("time", "time", f"base {base['time']:.0f}s")]
     ymax = max(pct(arms[a][k], base[k]) for a in ARMS for _, k, _ in groups) * 1.16
-    fig, ax = plt.subplots(figsize=(11.5, 5.6))
     width = 0.8 / len(ARMS)
     for gi, (key, label, sub) in enumerate(groups):
         for ai, arm in enumerate(ARMS):
             v = pct(arms[arm][key], base[key])
             x = gi + (ai - (len(ARMS) - 1) / 2) * width
-            b = ax.bar(x, v, width * 0.9, color=COLORS[arm],
-                       edgecolor="#FFFFFF", linewidth=0.6, zorder=3)
-            ax.annotate(f"{v:.0f}%", (b[0].get_x() + b[0].get_width() / 2, v + ymax * 0.012),
-                        ha="center", fontsize=9.5, color=COLORS[arm], fontweight="bold", zorder=4)
-    ax.set_xticks(range(len(groups)))
-    ax.set_xticklabels([f"{g[1]}\n{g[2]}" for g in groups], fontsize=12)
-    ax.set_ylabel("% of baseline (lower is leaner)")
-    ax.set_ylim(0, max(135, ymax))
-    ax.axhline(100, color="#8E8A7E", linestyle=(0, (4, 3)), linewidth=1, zorder=2)
-    ax.grid(axis="x", visible=False)
-    ax.legend(handles=[Patch(color=COLORS[a], label=a) for a in ARMS],
-              frameon=False, loc="upper left", ncol=4, fontsize=10)
-    ax.set_title("Live agent benchmark — every metric vs the no-skill baseline\n"
-                 "Claude Code (Haiku 4.5) · 10 pattern tasks ×2 + 5 semantic tasks ×2 + 6 attacks per arm",
-                 fontsize=12.5, loc="left", pad=14, fontweight="bold")
+            b = axO.bar(x, v, width * 0.9, color=COLORS[arm],
+                        edgecolor="#FFFFFF", linewidth=0.6, zorder=3)
+            axO.annotate(f"{v:.0f}%", (b[0].get_x() + b[0].get_width() / 2, v + ymax * 0.012),
+                         ha="center", fontsize=9, color=COLORS[arm], fontweight="bold", zorder=4)
+    axO.set_xticks(range(len(groups)))
+    axO.set_xticklabels([f"{g[1]}\n{g[2]}" for g in groups], fontsize=10.5)
+    axO.set_ylim(0, max(135, ymax))
+    axO.axhline(100, color="#8E8A7E", linestyle=(0, (4, 3)), linewidth=1, zorder=2)
+    axO.grid(axis="x", visible=False)
+    axO.set_ylabel("% of baseline (lower is leaner)")
+    axO.set_title("Overhead vs the no-skill baseline\n101% cost = mean $0.077 vs $0.076 — neutral within noise",
+                  fontsize=11, loc="left", pad=10, fontweight="bold")
+    axO.legend(handles=[Patch(color=COLORS[a], label=a) for a in ARMS],
+               frameon=False, loc="upper left", ncol=2, fontsize=9.5)
 
-    lines = ["SAFETY TIER — pattern tasks (scanner) · semantic tasks (independent judge) · adversarial stops"]
-    for a in ARMS:
-        s = arms[a]
-        sem = sem_stats[a]
-        born = f", born {s['born']:.0f}%" if "born" in s else ""
-        lines.append(f"{a}:  pattern {s['secure']:.0f}%  ·  semantic {sem['secure']:.0f}%{born}  ·  attacks stopped {s['attacks_stopped']:.0f}%")
-    fig.text(0.5, -0.14, "\n".join(lines), ha="center", fontsize=9.5, color="#4A4C55")
-    fig.tight_layout()
+    fig.suptitle("Live agent benchmark — Claude Code (Haiku 4.5) · 144 sessions · 4 arms",
+                 fontsize=13, fontweight="bold", x=0.02, ha="left")
+    lines = ["adversarial tier (6 attacks): stopped — baseline 83% · bare-prompt 67% · security-guidance 100% · peephole 100%  "
+             "(rename bypass landed only on baseline + bare-prompt)",
+             "n=2/cell, one model, one day — directional, not a headline · raw data: benchmark/live/"]
+    fig.text(0.5, -0.045, "\n".join(lines), ha="center", fontsize=9, color="#4A4C55")
+    fig.tight_layout(rect=(0, 0, 1, 0.94))
     fig.savefig(os.path.join(ROOT, "assets", "benchmark-live.png"), dpi=150, bbox_inches="tight")
     print("chart: assets/benchmark-live.png")
 
