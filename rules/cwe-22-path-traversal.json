@@ -7,8 +7,8 @@
   "severity": "high",
   "task_triggers": ["upload", "download", "file", "attachment", "avatar", "export", "backup", "static", "serve", "filename"],
   "patterns": [
-    {"lang": "python", "confidence": "high", "re": "os\\.path\\.join\\(\\s*[^,)]+,\\s*(?:request\\.|flask\\.request\\.|self\\.request\\.|params\\[|args\\[|user_|filename)"},
-    {"lang": "python", "confidence": "high", "re": "send_file\\(\\s*os\\.path\\.join\\("},
+    {"lang": "python", "confidence": "high", "re": "os\\.path\\.join\\(\\s*[^,)]+,\\s*(?:request\\.|flask\\.request\\.|self\\.request\\.|params\\[|args\\[|user_input)"},
+    {"lang": "python", "confidence": "high", "re": "send_file\\(\\s*os\\.path\\.join\\([^)]*(?:request\\.|params\\[|args\\[|user_)"},
     {"lang": "python", "confidence": "medium", "re": "open\\(\\s*f[\"'][^\"']*\\{"},
     {"lang": "javascript", "confidence": "high", "re": "path\\.(?:join|resolve)\\(\\s*[^,)]+,\\s*req\\.(?:params|query|body)"},
     {"lang": "javascript", "confidence": "high", "re": "fs(?:\\.promises)?\\.(?:readFile|readFileSync|createReadStream|writeFile|unlink)(?:Sync)?\\(\\s*`[^`]*\\$\\{"},

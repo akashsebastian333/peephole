@@ -20,7 +20,7 @@
     {
       "lang": "python",
       "confidence": "high",
-      "re": "\\.headers\\[\\s*[\"'][^\"']+[\"']\\s*\\]\\s*=\\s*(?:request\\.|f[\"'])"
+      "re": "\\.headers\\[\\s*[\"'][^\"']+[\"']\\s*\\]\\s*=\\s*(?:request\\.|f[\"'][^\"']*\\{[^}]*(?:request|req)\\b)"
     },
     {
       "lang": "javascript",

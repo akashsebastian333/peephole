@@ -274,6 +274,33 @@ func stripShellNoise(s string) string {
 	return reShellNoise.ReplaceAllString(s, "")
 }
 
+var (
+	reShellAssign = regexp.MustCompile(`(?:^|[;&|]|\bexport\s+)\s*([A-Za-z_]\w*)=('[^']*'|"[^"]*"|[^\s;&|)]*)`)
+	reShellVar    = regexp.MustCompile(`\$\{?([A-Za-z_]\w*)\}?`)
+)
+
+// resolveAssignments substitutes simple `VAR=value` shell assignments into later
+// `$VAR`/`${VAR}` uses, so self-protection cannot be evaded by aliasing the
+// peephole binary through a variable (e.g. `P=peephole; $P mode off`). Only
+// literal, single-token assignments are resolved; this is a detection aid, not a
+// shell interpreter.
+func resolveAssignments(cmd string) string {
+	vals := map[string]string{}
+	for _, m := range reShellAssign.FindAllStringSubmatch(cmd, -1) {
+		vals[m[1]] = strings.Trim(m[2], `"'`)
+	}
+	if len(vals) == 0 {
+		return cmd
+	}
+	return reShellVar.ReplaceAllStringFunc(cmd, func(tok string) string {
+		name := strings.Trim(strings.TrimPrefix(tok, "$"), "{}")
+		if v, ok := vals[name]; ok {
+			return v
+		}
+		return tok
+	})
+}
+
 // unescapeShell undoes the common backslash escapes bash introduces inside a
 // double-quoted echo argument, so the scanner sees `f"` not `f\"`.
 func unescapeShell(s string) string {

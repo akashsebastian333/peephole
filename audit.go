@@ -71,13 +71,20 @@ func foldEntry(running string, ent logEntry) string {
 // proceeds anyway, logging must never block enforcement.
 func withLock(sd string, fn func()) {
 	lp := filepath.Join(sd, "log.lock")
-	for i := 0; i < 200; i++ {
+	for i := 0; i < 400; i++ {
 		f, err := os.OpenFile(lp, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 		if err == nil {
 			f.Close()
 			defer os.Remove(lp)
 			fn()
 			return
+		}
+		// Steal a stale lock left by a hook the watchdog killed mid-append, so a
+		// crashed holder can't force every later append to run lockless (which
+		// would interleave and desync the hash chain into a false tamper alarm).
+		if st, serr := os.Stat(lp); serr == nil && time.Since(st.ModTime()) > 3*time.Second {
+			os.Remove(lp)
+			continue
 		}
 		time.Sleep(time.Millisecond)
 	}
@@ -120,6 +127,9 @@ func appendLog(sd string, ent logEntry) {
 func verifyChain(sd string) (bool, int) {
 	f, err := os.Open(logPath(sd))
 	if err != nil {
+		if _, hN := readHead(sd); hN > 0 {
+			return false, 0 // head records prior entries but the log is gone: deletion
+		}
 		return true, -1 // no log yet
 	}
 	defer f.Close()

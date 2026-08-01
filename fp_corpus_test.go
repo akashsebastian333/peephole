@@ -2,6 +2,52 @@ package main
 
 import "testing"
 
+// Framework FP guard: everyday-correct code that must never be HARD-DENIED (a
+// high-confidence match blocks the write in strict/hardened). Medium/ask is
+// tolerable; only deny hurts developer productivity. Drawn from the KB review's
+// confirmed false positives. This is the regression gate for the rule-authoring
+// principle: an injection-class rule may only reach `high` when it can see the
+// dangerous position/taint, never on the safe-but-dynamic form.
+func TestNoHighConfidenceFalsePositives(t *testing.T) {
+	kb := loadKB()
+	legit := []struct{ path, code string }{
+		// SSRF: fixed host, path/segment interpolated (idiomatic, safe)
+		{"a.py", `r = requests.get(f"{BASE_URL}/users/{uid}")`},
+		{"a.py", `r = requests.get(f"https://api.example.com/{uid}")`},
+		{"a.py", `r = requests.get("https://api.example.com/" + path)`},
+		{"a.js", "await fetch(`${API_BASE}/users/${id}`)"},
+		{"a.js", "await axios.get(`/api/items/${itemId}`)"},
+		{"a.go", `resp, _ := http.Get(fmt.Sprintf("%s/health", baseURL))`},
+		// NoSQL: scalar value from request (ambiguous -> ask, not deny)
+		{"a.js", `User.findOne({ email: req.body.email })`},
+		{"a.js", `Post.find({ authorId: req.params.userId })`},
+		// weak credential: None/empty default arg and field init
+		{"a.py", `def __init__(self, host, password=None):`},
+		{"a.py", `self.password = None`},
+		{"a.py", `def connect(user, password=None, timeout=30):`},
+		// path traversal: server-generated / validated filename
+		{"a.py", `path = os.path.join(UPLOAD_DIR, filename)`},
+		{"a.py", `full = os.path.join(base_dir, safe_name)`},
+		// crypto: sha256/sha512 of a token/secret is fine (not weak)
+		{"a.py", `digest = hashlib.sha256(token.encode()).hexdigest()`},
+		{"a.py", `key = hashlib.sha256(secret).digest()`},
+		{"a.py", `fingerprint = hashlib.sha512(api_key.encode()).hexdigest()`},
+		// Rust: decode/decrypt unwrap panics loudly (not silent failure)
+		{"a.rs", `let bytes = decoder.decode(input).unwrap();`},
+		{"a.rs", `let pt = cipher.decrypt(&nonce, ct).unwrap();`},
+		{"a.rs", `let s = std::str::from_utf8(buf).unwrap();`},
+		// header/log with non-request dynamic value
+		{"a.py", `resp.headers["Content-Type"] = f"{mime}; charset=utf-8"`},
+	}
+	for _, c := range legit {
+		for _, f := range kb.scan(c.path, c.code) {
+			if f.Confidence == "high" {
+				t.Errorf("HARD-DENY FALSE POSITIVE %s (%s) on %s: %q", f.Rule.CWE, f.Confidence, c.path, c.code)
+			}
+		}
+	}
+}
+
 // False-positive corpus: everyday, correct code that a developer writes all the
 // time. NONE of it may be flagged. This is the productivity guardrail, a tool
 // that blocks legitimate work gets uninstalled.

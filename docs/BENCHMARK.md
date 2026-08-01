@@ -124,23 +124,36 @@ security-guidance (its own hooks.json wiring, verbatim), peephole (strict).
 - **Adversarial tier:** 6 gate-evasion attacks × 1 (heredoc, base64 write,
   disable-the-tool, sec-debt self-waiver, rename extension, slopsquat install).
 
-**Result (2026-08):**
+**Result (2026-08, honest aggregation — regenerate with `python benchmark/live/report.py`):**
 
-| arm | pattern tier (scan / semgrep) | semantic tier (judge) | born-secure | tokens | cost | time | attacks stopped |
+The secure-rate is graded by an INDEPENDENT tool (Semgrep) over sessions that
+actually wrote code; peephole's own scanner is shown only as a circular
+reference. Empty output (the model refused / wrote no file) is not counted as
+"secure". Timeouts are not dropped — completion rate is a first-class column.
+
+| arm | completed | wrote code | secure — INDEPENDENT (Semgrep) | semantic judge | own-scanner (circular) | cost | time |
 |---|---|---|---|---|---|---|---|
-| baseline | 42% / 68% | 0% (8 judged) | — | 74k (100%) | $0.076 (100%) | 105s (100%) | 83% |
-| bare-prompt | 68% / 74% | 25% (8 judged) | — | 64k (86%) | $0.067 (88%) | 278s (264%) | 67% |
-| security-guidance | 65% / 85% | 0% (7 judged) | — | 67k (91%) | $0.070 (92%) | 168s (160%) | 100% |
-| peephole | **100% / 94%** | **43% (7 judged)** | **94%** | 74k (100%) | $0.077 (101%) | 202s (192%) | 100% |
+| baseline | 95% | 14 | 57% | 0% (8 judged) | 21% | $0.076 (100%) | 105s (100%) |
+| bare-prompt | 95% | 19 | 74% | 25% (8 judged) | 68% | $0.067 (88%) | 278s (264%) |
+| security-guidance | 100% | 11 | 73% | 0% (7 judged) | 36% | $0.070 (92%) | 168s (160%) |
+| peephole | **85%** | 10 | **90%** | **25% (12 judged)** | 100% | $0.077 (101%) | 202s (192%) |
 
 ![live benchmark](../assets/benchmark-live.png)
 
-**Honest reading:**
+**Honest reading (this table replaces an earlier version whose headline used
+peephole's own scanner, counted refusals as "secure", and dropped peephole's
+timeouts — all of which inflated it):**
 
-- **Semantic tier: everyone fails; peephole fails least.** 0% (baseline,
-  security-guidance), 25% (bare-prompt), 43% (peephole — ladder + Stop-time
-  self-review got bizlogic, csrf, and one race right; IDOR and rate-limiting
-  still missed). This is peephole's documented absence-of-guard ceiling,
+- **Peephole genuinely helps, at 90% not 100%.** Independently graded (Semgrep),
+  over code-writing sessions, peephole is 90% vs 57% baseline — a real ~33-point
+  gain from the guidance plane. The 100% in the "own-scanner" column is peephole
+  grading itself (circular) and is not the headline.
+- **The gate hard-denied 0 of 6 adversarial attacks** — the guidance plane, not
+  the gate, does the work here; Haiku also refuses most blatant attacks
+  unprompted (baseline "safe" 83%). The gate's value is the subtle rename bypass.
+- **Peephole has the lowest completion rate (85%): its Stop-loop causes timeouts.**
+- **Semantic tier: everyone fails; peephole ties bare-prompt at 25%** (baseline &
+  security-guidance 0%). This is peephole's documented absence-of-guard ceiling,
   measured in public: an independent semantic review layer remains necessary.
 - **security-guidance's 0% is a design consequence, not necessarily a ceiling:**
   its LLM Stop-review is advisory and post-write; in these sessions it did not

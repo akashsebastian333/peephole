@@ -25,12 +25,12 @@
     {
       "lang": "python",
       "confidence": "high",
-      "re": "hashlib\\.(?:md5|sha1|sha256|sha512)\\(\\s*(?i:password|passwd|pwd|secret|pw|token|pin)"
+      "re": "hashlib\\.(?:md5|sha1)\\(\\s*(?i:password|passwd|pwd|pw)\\b"
     },
     {
       "lang": "python",
       "confidence": "high",
-      "re": "(?i)(?:password|passwd|pwd|secret|token)[\\w\\[\\]'\".]*\\s*=\\s*hashlib\\.(?:md5|sha1|sha256|sha512)\\("
+      "re": "(?i)(?:password|passwd|pwd)[\\w\\[\\]'\".]*\\s*=\\s*hashlib\\.(?:md5|sha1)\\("
     },
     {
       "lang": "python",

@@ -20,13 +20,15 @@
   "patterns": [
     {
       "lang": "javascript",
-      "confidence": "high",
-      "re": "\\.(?:find|findOne|findOneAndUpdate|updateOne|deleteOne|deleteMany)\\(\\s*\\{[^}]*:\\s*req\\.(?:body|query|params)"
+      "confidence": "medium",
+      "re": "\\.(?:find|findOne|findOneAndUpdate|updateOne|deleteOne|deleteMany)\\(\\s*\\{[^}]*:\\s*req\\.(?:body|query|params)",
+      "reject_re": "String\\(|Number\\(|parseInt|ObjectId\\(|\\.toString\\("
     },
     {
       "lang": "python",
-      "confidence": "high",
-      "re": "\\.(?:find|find_one|delete_one|update_one)\\(\\s*\\{[^}]*:\\s*(?:request\\.(?:json|args|form|data)|req\\.)"
+      "confidence": "medium",
+      "re": "\\.(?:find|find_one|delete_one|update_one)\\(\\s*\\{[^}]*:\\s*(?:request\\.(?:json|args|form|data)|req\\.)",
+      "reject_re": "\\bstr\\(|\\bint\\(|ObjectId\\("
     },
     {
       "lang": "javascript",

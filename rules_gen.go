@@ -14,7 +14,7 @@ var generatedRules = []Rule{
 		Patterns: []Pattern{
 			{
 				Lang:       "python",
-				Re:         "\\.headers\\[\\s*[\"'][^\"']+[\"']\\s*\\]\\s*=\\s*(?:request\\.|f[\"'])",
+				Re:         "\\.headers\\[\\s*[\"'][^\"']+[\"']\\s*\\]\\s*=\\s*(?:request\\.|f[\"'][^\"']*\\{[^}]*(?:request|req)\\b)",
 				Confidence: "high",
 				prefilter:  []string{"headers"},
 			},
@@ -589,13 +589,13 @@ var generatedRules = []Rule{
 		Patterns: []Pattern{
 			{
 				Lang:       "python",
-				Re:         "os\\.path\\.join\\(\\s*[^,)]+,\\s*(?:request\\.|flask\\.request\\.|self\\.request\\.|params\\[|args\\[|user_|filename)",
+				Re:         "os\\.path\\.join\\(\\s*[^,)]+,\\s*(?:request\\.|flask\\.request\\.|self\\.request\\.|params\\[|args\\[|user_input)",
 				Confidence: "high",
 				prefilter:  []string{"path"},
 			},
 			{
 				Lang:       "python",
-				Re:         "send_file\\(\\s*os\\.path\\.join\\(",
+				Re:         "send_file\\(\\s*os\\.path\\.join\\([^)]*(?:request\\.|params\\[|args\\[|user_)",
 				Confidence: "high",
 				prefilter:  []string{"send_file"},
 			},
@@ -1445,13 +1445,13 @@ var generatedRules = []Rule{
 		Patterns: []Pattern{
 			{
 				Lang:       "python",
-				Re:         "hashlib\\.(?:md5|sha1|sha256|sha512)\\(\\s*(?i:password|passwd|pwd|secret|pw|token|pin)",
+				Re:         "hashlib\\.(?:md5|sha1)\\(\\s*(?i:password|passwd|pwd|pw)\\b",
 				Confidence: "high",
 				prefilter:  []string{"hashlib"},
 			},
 			{
 				Lang:       "python",
-				Re:         "(?i)(?:password|passwd|pwd|secret|token)[\\w\\[\\]'\".]*\\s*=\\s*hashlib\\.(?:md5|sha1|sha256|sha512)\\(",
+				Re:         "(?i)(?:password|passwd|pwd)[\\w\\[\\]'\".]*\\s*=\\s*hashlib\\.(?:md5|sha1)\\(",
 				Confidence: "high",
 				prefilter:  []string{"hashlib"},
 			},
@@ -2872,9 +2872,9 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "",
-				Re:         "(?i)(?:password|passwd|pwd)\\s*[:=]\\s*(?:[\"']{2}|None|null|['\"]?\\s*$)",
-				Confidence: "high",
-				prefilter:  []string{"password", "passwd", "pwd"},
+				Re:         "(?im)^\\s*(?:password|passwd|pwd|db_password)\\s*[:=]\\s*[\"']{2}\\s*$",
+				Confidence: "medium",
+				prefilter:  []string{"password", "passwd", "pwd", "db_password"},
 			},
 			{
 				Lang:       "",
@@ -3827,9 +3827,9 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "rust",
-				Re:         "\\.(?:verify|verify_signature|decrypt|decode|validate|authenticate|check_password|from_pem|from_der)\\w*\\([^)]*\\)\\s*\\.(?:unwrap|expect)\\(",
+				Re:         "\\.(?:verify|verify_signature|authenticate|check_password)\\w*\\([^)]*\\)\\s*\\.(?:unwrap|expect)\\(",
 				Confidence: "high",
-				prefilter:  []string{"verify", "verify_signature", "decrypt", "decode", "validate", "authenticate", "check_password", "from_pem", "from_der"},
+				prefilter:  []string{"verify", "verify_signature", "authenticate", "check_password"},
 			},
 		},
 		Absence:        nil,
@@ -6364,19 +6364,25 @@ var generatedRules = []Rule{
 		Patterns: []Pattern{
 			{
 				Lang:       "go",
-				Re:         "http\\.(?:Get|Post|Head|PostForm)\\(\\s*fmt\\.Sprintf\\(",
+				Re:         "http\\.(?:Get|Post|Head|PostForm)\\(\\s*fmt\\.Sprintf\\(\\s*\"[^\"]*://%",
 				Confidence: "high",
 				prefilter:  []string{"sprintf"},
 			},
 			{
 				Lang:       "go",
-				Re:         "http\\.(?:Get|Post|Head)\\(\\s*\"[^\"]*\"\\s*\\+",
+				Re:         "http\\.(?:Get|Post|Head)\\(\\s*\"[^\"]*://\"\\s*\\+",
 				Confidence: "high",
 				prefilter:  []string{"http"},
 			},
 			{
 				Lang:       "go",
-				Re:         "http\\.NewRequest(?:WithContext)?\\([^;\\n]*,\\s*(?:fmt\\.Sprintf\\(|\"[^\"]*\"\\s*\\+)",
+				Re:         "http\\.(?:Get|Post|Head|PostForm)\\(\\s*fmt\\.Sprintf\\(",
+				Confidence: "medium",
+				prefilter:  []string{"sprintf"},
+			},
+			{
+				Lang:       "go",
+				Re:         "http\\.NewRequest(?:WithContext)?\\([^;\\n]*,\\s*(?:fmt\\.Sprintf\\(\\s*\"[^\"]*://%|\"[^\"]*://\"\\s*\\+)",
 				Confidence: "high",
 				prefilter:  []string{"newrequest"},
 			},
@@ -6510,32 +6516,46 @@ var generatedRules = []Rule{
 		Patterns: []Pattern{
 			{
 				Lang:       "python",
-				Re:         "\\b(?:requests|httpx|session)\\.(?:get|post|put|delete|head|patch|request)\\(\\s*f[\"']",
+				Re:         "\\b(?:requests|httpx|session)\\.(?:get|post|put|delete|head|patch|request)\\(\\s*f[\"'][^\"']*://\\{",
 				Confidence: "high",
 				prefilter:  []string{"requests", "httpx", "session"},
 			},
 			{
 				Lang:       "python",
-				Re:         "urllib\\.request\\.urlopen\\(\\s*(?:f[\"']|[^)]*\\+)",
+				Re:         "\\b(?:requests|httpx|session|urllib\\.request)\\.(?:get|post|put|delete|head|patch|request|urlopen)\\(\\s*[\"'][^\"']*://[\"']\\s*\\+",
 				Confidence: "high",
-				prefilter:  []string{"request"},
+				prefilter:  []string{"requests", "httpx", "session", "urllib.request"},
 			},
 			{
 				Lang:       "python",
-				Re:         "\\b(?:requests|httpx)\\.(?:get|post)\\(\\s*[\"'][^\"']*[\"']\\s*\\+",
-				Confidence: "high",
-				prefilter:  []string{"requests", "httpx"},
+				Re:         "\\b(?:requests|httpx|session)\\.(?:get|post|put|delete|head|patch|request)\\(\\s*f[\"']\\{",
+				Confidence: "medium",
+				RejectRe:   "f[\"']\\{[A-Z][A-Z0-9_]{2,}[\\}.]",
+				prefilter:  []string{"requests", "httpx", "session"},
+			},
+			{
+				Lang:       "python",
+				Re:         "urllib\\.request\\.urlopen\\(\\s*(?:f[\"']\\{|[A-Za-z_]\\w*\\s*\\))",
+				Confidence: "medium",
+				prefilter:  []string{"request"},
 			},
 			{
 				Lang:       "javascript",
-				Re:         "\\b(?:fetch|got|axios(?:\\.\\w+)?)\\(\\s*`[^`]*\\$\\{",
+				Re:         "\\b(?:fetch|got|axios(?:\\.\\w+)?)\\(\\s*`[^`]*://\\$\\{",
 				Confidence: "high",
 				prefilter:  nil,
 			},
 			{
 				Lang:       "javascript",
-				Re:         "\\b(?:fetch|got|axios(?:\\.\\w+)?)\\(\\s*[\"'][^\"']*[\"']\\s*\\+",
+				Re:         "\\b(?:fetch|got|axios(?:\\.\\w+)?)\\(\\s*[\"'][^\"']*://[\"']\\s*\\+",
 				Confidence: "high",
+				prefilter:  nil,
+			},
+			{
+				Lang:       "javascript",
+				Re:         "\\b(?:fetch|got|axios(?:\\.\\w+)?)\\(\\s*`\\$\\{",
+				Confidence: "medium",
+				RejectRe:   "`\\$\\{[A-Z][A-Z0-9_]{2,}[\\}.]",
 				prefilter:  nil,
 			},
 		},
@@ -6951,13 +6971,15 @@ var generatedRules = []Rule{
 			{
 				Lang:       "javascript",
 				Re:         "\\.(?:find|findOne|findOneAndUpdate|updateOne|deleteOne|deleteMany)\\(\\s*\\{[^}]*:\\s*req\\.(?:body|query|params)",
-				Confidence: "high",
+				Confidence: "medium",
+				RejectRe:   "String\\(|Number\\(|parseInt|ObjectId\\(|\\.toString\\(",
 				prefilter:  []string{"req"},
 			},
 			{
 				Lang:       "python",
 				Re:         "\\.(?:find|find_one|delete_one|update_one)\\(\\s*\\{[^}]*:\\s*(?:request\\.(?:json|args|form|data)|req\\.)",
-				Confidence: "high",
+				Confidence: "medium",
+				RejectRe:   "\\bstr\\(|\\bint\\(|ObjectId\\(",
 				prefilter:  []string{"find", "find_one", "delete_one", "update_one"},
 			},
 			{

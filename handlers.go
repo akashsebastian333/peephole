@@ -18,7 +18,7 @@ var writeTools = map[string]bool{
 var (
 	reSecDebt   = regexp.MustCompile(`(?i)(#|//|/\*)\s*sec-debt:\s*\S`)
 	reModeCmd   = regexp.MustCompile(`^/peephole\s+(off|audit|strict|hardened)$`)
-	reModeLower = regexp.MustCompile(`(?i)peephole[^;&|]*\bmode\b[^;&|]*\b(?:off|audit)\b`)
+	reModeLower = regexp.MustCompile(`(?i)peephole[^;&|]*\bmode\b[^;&|]*\b(?:off|audit|strict)\b`)
 	// write-ish verb touching peephole's own state/plugin dir
 	reSelfTamper = regexp.MustCompile(`(?i)\b(?:rm|rmdir|mv|cp|chmod|chown|truncate|ln|dd|tee|sed|shred)\b[^;&|]*\.peephole|>>?\s*[^\s;&|]*\.peephole`)
 )
@@ -798,8 +798,11 @@ func selfProtectViolation(e Event, ti ToolInput) (bool, string) {
 		// enforcement-lowering guard cannot be slipped by quoting. The legitimate
 		// launcher is `peephole.sh` (no leading dot), so this doesn't fire on
 		// mode RAISING via the CLI.
+		// Resolve simple variable aliases first so `P=peephole; $P mode off` cannot
+		// slip the guards, then normalize away shell no-op metacharacters.
 		norm := strings.ToLower(stripShellNoise(cmd))
-		if referencesPeepholeState(norm) {
+		exp := strings.ToLower(stripShellNoise(resolveAssignments(cmd)))
+		if referencesPeepholeState(norm) || referencesPeepholeState(exp) {
 			return true, "refusing a Bash command that references peephole's state directory (.peephole)"
 		}
 		a := analyzeBash(cmd)
@@ -808,11 +811,11 @@ func selfProtectViolation(e Event, ti ToolInput) (bool, string) {
 				return true, "refusing a Bash write to peephole's own path (" + t + ")"
 			}
 		}
-		if reSelfTamper.MatchString(cmd) || reSelfTamper.MatchString(norm) {
+		if reSelfTamper.MatchString(cmd) || reSelfTamper.MatchString(norm) || reSelfTamper.MatchString(exp) {
 			return true, "refusing a Bash command that targets peephole's own files"
 		}
-		if reModeLower.MatchString(cmd) || reModeLower.MatchString(norm) {
-			return true, "lowering enforcement (off/audit) must come from the user via a /peephole message, not an agent command"
+		if reModeLower.MatchString(cmd) || reModeLower.MatchString(norm) || reModeLower.MatchString(exp) {
+			return true, "changing enforcement mode must come from the user via a /peephole message, not an agent command"
 		}
 	}
 	return false, ""

@@ -175,6 +175,9 @@ func branchLiteralSet(branch string) []string {
 		if end < 0 {
 			continue
 		}
+		if after := j + end + 1; after < len(branch) && (branch[after] == '?' || branch[after] == '*') {
+			continue // optional group: its literals are not guaranteed in a match
+		}
 		body := branch[j : j+end]
 		if strings.ContainsAny(body, "()[]{}") {
 			continue // nested group or class content - not pure literals

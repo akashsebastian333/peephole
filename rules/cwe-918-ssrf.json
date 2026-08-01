@@ -7,11 +7,13 @@
   "severity": "high",
   "task_triggers": ["fetch", "url", "webhook", "proxy", "request", "download", "callback", "http client", "scrape", "image url", "avatar url"],
   "patterns": [
-    {"lang": "python", "confidence": "high", "re": "\\b(?:requests|httpx|session)\\.(?:get|post|put|delete|head|patch|request)\\(\\s*f[\"']"},
-    {"lang": "python", "confidence": "high", "re": "urllib\\.request\\.urlopen\\(\\s*(?:f[\"']|[^)]*\\+)"},
-    {"lang": "python", "confidence": "high", "re": "\\b(?:requests|httpx)\\.(?:get|post)\\(\\s*[\"'][^\"']*[\"']\\s*\\+"},
-    {"lang": "javascript", "confidence": "high", "re": "\\b(?:fetch|got|axios(?:\\.\\w+)?)\\(\\s*`[^`]*\\$\\{"},
-    {"lang": "javascript", "confidence": "high", "re": "\\b(?:fetch|got|axios(?:\\.\\w+)?)\\(\\s*[\"'][^\"']*[\"']\\s*\\+"}
+    {"lang": "python", "confidence": "high", "re": "\\b(?:requests|httpx|session)\\.(?:get|post|put|delete|head|patch|request)\\(\\s*f[\"'][^\"']*://\\{"},
+    {"lang": "python", "confidence": "high", "re": "\\b(?:requests|httpx|session|urllib\\.request)\\.(?:get|post|put|delete|head|patch|request|urlopen)\\(\\s*[\"'][^\"']*://[\"']\\s*\\+"},
+    {"lang": "python", "confidence": "medium", "re": "\\b(?:requests|httpx|session)\\.(?:get|post|put|delete|head|patch|request)\\(\\s*f[\"']\\{", "reject_re": "f[\"']\\{[A-Z][A-Z0-9_]{2,}[\\}.]"},
+    {"lang": "python", "confidence": "medium", "re": "urllib\\.request\\.urlopen\\(\\s*(?:f[\"']\\{|[A-Za-z_]\\w*\\s*\\))"},
+    {"lang": "javascript", "confidence": "high", "re": "\\b(?:fetch|got|axios(?:\\.\\w+)?)\\(\\s*`[^`]*://\\$\\{"},
+    {"lang": "javascript", "confidence": "high", "re": "\\b(?:fetch|got|axios(?:\\.\\w+)?)\\(\\s*[\"'][^\"']*://[\"']\\s*\\+"},
+    {"lang": "javascript", "confidence": "medium", "re": "\\b(?:fetch|got|axios(?:\\.\\w+)?)\\(\\s*`\\$\\{", "reject_re": "`\\$\\{[A-Z][A-Z0-9_]{2,}[\\}.]"}
   ],
   "absence_requirements": [
     "If the request URL is derived from user input, validate it against an allowlist of hosts and reject internal/link-local targets (169.254.169.254, 127.0.0.0/8, 10/8, 192.168/16) to prevent access to cloud metadata and internal services."
