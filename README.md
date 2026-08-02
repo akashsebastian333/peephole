@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="assets/wordmark.svg" alt="peephole" width="420">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/wordmark-dark.svg">
+    <img src="assets/wordmark-light.svg" alt="peephole" width="420">
+  </picture>
 </p>
 
 <p align="center">
@@ -94,9 +97,9 @@ full setup and the coverage rationale are in
 
 Caveat: hooks and in-process plugins are the only surfaces that can *veto*
 a write pre-emptively. Most editors (VS Code/Copilot, Cursor file-edits,
-Windsurf, Zed, the Chinese IDE cohort) expose only post-hoc events or
-diagnostics, so there peephole *advises* (MCP/LSP) and the real block is the git
-pre-commit hook.
+Windsurf, Zed, Trae, Tongyi Lingma, Comate, CodeGeeX, iFlyCode, Qoder) expose
+only post-hoc events or diagnostics, so there peephole *advises* (MCP/LSP) and
+the real block is the git pre-commit hook.
 
 ## Modes
 
