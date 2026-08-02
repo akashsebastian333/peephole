@@ -66,6 +66,7 @@ func TestNoFalsePositives(t *testing.T) {
 		{"a.go", `exec.Command("ping", "-c", "1", host)`},
 		// safe crypto / random
 		{"a.py", `digest = hashlib.sha256(file_bytes).hexdigest()`},
+		{"a.py", `etag = hashlib.md5(body, usedforsecurity=False).hexdigest()`}, // explicit non-security checksum
 		{"a.py", `import bcrypt; bcrypt.hashpw(pw.encode(), bcrypt.gensalt(12))`},
 		{"a.py", `dice = random.randint(1, 6)`},
 		{"a.py", `import secrets; token = secrets.token_urlsafe(32)`},

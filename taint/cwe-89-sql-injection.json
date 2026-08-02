@@ -15,6 +15,10 @@
     {
       "lang": "python",
       "re": "\\.execute(?:many|script)?\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
+    },
+    {
+      "lang": "javascript",
+      "re": "\\.(?:query|execute)\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"
     }
   ],
   "exemplar": {

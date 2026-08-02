@@ -36,7 +36,10 @@ import (
 
 var (
 	tlWord   = regexp.MustCompile(`[A-Za-z_$][\w$]*`)
-	tlAssign = regexp.MustCompile(`(?m)^[ \t]*([A-Za-z_$][\w$]*)\s*(?::=|=)\s*(.+)$`)
+	// An optional const/let/var lets JS/TS declarations bind the real variable
+	// (const q = ...) instead of capturing the keyword; \s+ after it means a name
+	// like `constant` is not mistaken for the keyword.
+	tlAssign = regexp.MustCompile(`(?m)^[ \t]*(?:(?:const|let|var)\s+)?([A-Za-z_$][\w$]*)\s*(?::=|=)\s*(.+)$`)
 
 	// A quoted string literal with an optional prefix (f/r/b/u...), plus JS
 	// template literals. Used to strip literal text before reference extraction.

@@ -15,6 +15,10 @@
     {
       "lang": "python",
       "re": "(?:open|send_file|send_from_directory)\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
+    },
+    {
+      "lang": "javascript",
+      "re": "fs(?:\\.promises)?\\.(?:readFile|readFileSync|createReadStream|writeFile|writeFileSync|unlink)\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"
     }
   ],
   "exemplar": {

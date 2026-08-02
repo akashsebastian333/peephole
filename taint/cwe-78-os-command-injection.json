@@ -24,6 +24,10 @@
     {
       "lang": "javascript",
       "re": "child_process\\.exec\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"
+    },
+    {
+      "lang": "python",
+      "re": "subprocess\\.(?:run|call|check_output|check_call|Popen)\\s*\\(\\s*([A-Za-z_]\\w*)\\s*,[^)\\n]*shell\\s*=\\s*True"
     }
   ],
   "exemplar": {

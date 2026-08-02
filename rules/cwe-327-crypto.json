@@ -35,7 +35,8 @@
     {
       "lang": "python",
       "confidence": "medium",
-      "re": "\\bhashlib\\.(?:md5|sha1)\\("
+      "re": "\\bhashlib\\.(?:md5|sha1)\\(",
+      "reject_re": "usedforsecurity\\s*=\\s*False"
     },
     {
       "lang": "python",

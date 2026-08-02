@@ -1512,6 +1512,7 @@ var generatedRules = []Rule{
 				Lang:       "python",
 				Re:         "\\bhashlib\\.(?:md5|sha1)\\(",
 				Confidence: "medium",
+				RejectRe:   "usedforsecurity\\s*=\\s*False",
 				prefilter:  []string{"hashlib"},
 			},
 			{
@@ -7392,6 +7393,7 @@ var generatedTaintSpecs = []TaintSpec{
 		Triggers:   []string{"user"},
 		Sinks: []taintSinkPat{
 			{Lang: "python", Re: "(?:open|send_file|send_from_directory)\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"},
+			{Lang: "javascript", Re: "fs(?:\\.promises)?\\.(?:readFile|readFileSync|createReadStream|writeFile|writeFileSync|unlink)\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"},
 		},
 		Noncompliant: "fn = request.args.get('file')\ndata = open(fn).read()",
 		Compliant:    "fn = secure_filename(request.args.get('file'))\ndata = open(fn).read()",
@@ -7457,6 +7459,7 @@ var generatedTaintSpecs = []TaintSpec{
 			{Lang: "python", Re: "os\\.system\\s*\\(\\s*([A-Za-z_]\\w*)\\s*\\)"},
 			{Lang: "python", Re: "os\\.popen\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"},
 			{Lang: "javascript", Re: "child_process\\.exec\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"},
+			{Lang: "python", Re: "subprocess\\.(?:run|call|check_output|check_call|Popen)\\s*\\(\\s*([A-Za-z_]\\w*)\\s*,[^)\\n]*shell\\s*=\\s*True"},
 		},
 		Noncompliant: "host = request.args.get('host')\ncmd = \"ping \" + host\nos.system(cmd)",
 		Compliant:    "host = request.args.get('host')\nsubprocess.run([\"ping\", \"-c\", \"1\", host], shell=False)",
@@ -7504,6 +7507,7 @@ var generatedTaintSpecs = []TaintSpec{
 		Triggers:   []string{"user"},
 		Sinks: []taintSinkPat{
 			{Lang: "python", Re: "\\.execute(?:many|script)?\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"},
+			{Lang: "javascript", Re: "\\.(?:query|execute)\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"},
 		},
 		Noncompliant: "uid = request.args.get('id')\nq = f\"SELECT * FROM users WHERE id={uid}\"\ncur.execute(q)",
 		Compliant:    "q = \"SELECT * FROM users WHERE id = ?\"\ncur.execute(q, (request.args.get('id'),))",
