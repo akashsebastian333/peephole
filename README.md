@@ -149,6 +149,9 @@ classes so nobody is measured only on home turf:
 | security-guidance (PostToolUse) | 21% | 12% | its 25 shipped regexes, PostToolUse |
 | Semgrep OSS (public rules) | 16% | 2% | 21 unauthenticated registry packs |
 
+![Detection recall and false-positive rate across engines](assets/benchmark-overall.png)
+![Per-category recall across engines](assets/benchmark-categories.png)
+
 Caveats matter here (Semgrep is architecturally handicapped on 1–2-line hunks;
 security-guidance's LLM diff-review layer is out of scope for this harness) — see
 [docs/BENCHMARK.md](docs/BENCHMARK.md).
@@ -164,6 +167,8 @@ tier:
 | bare-prompt | 16% (raw 16%) | 84% | 25% | 17s (90%) |
 | security-guidance | 50% (raw 52%) | 36% | 0% | 17s (90%) |
 | **peephole** | **0%** (raw 10%) | **98%** | **84%** | 26s (134%) |
+
+![Live agent benchmark: insecure-landed per attempt and the per-attempt outcome mix](assets/benchmark-live.png)
 
 peephole lands insecure code least (0%) *and* writes secure code most (98% of
 attempts), while leading the absence-of-guard semantic tier at 84% via a
