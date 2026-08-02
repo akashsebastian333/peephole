@@ -168,10 +168,37 @@ tier:
 peephole lands insecure code least (0%) *and* writes secure code most (98% of
 attempts), while leading the absence-of-guard semantic tier at 84% via a
 Stop-time adversarial self-review. The cost is ~134% wall time (deny-and-rewrite
-turns; the hook itself is ~8ms). The **0% rests on a uniform Semgrep
-false-positive correction applied to every arm** and holds across four models
-(Haiku/Sonnet/GLM/Kimi) — both disclosed and audited in
-[docs/BENCHMARK.md](docs/BENCHMARK.md).
+turns; the hook itself is ~8ms).
+
+**Across models (is it a Haiku artifact?)** The same corpus, arms, and
+independent Semgrep grader were re-run on three more models — Claude Sonnet 4.5,
+GLM-5.2, and Kimi-K3 (the last two via a gateway). Same uniform correction,
+nothing tuned per model.
+
+![Insecure code landed per attempt across four models](assets/benchmark-multimodel.png)
+
+| model | baseline | bare-prompt | security-guidance | peephole | peephole secure-landed |
+|---|---|---|---|---|---|
+| Haiku 4.5 | 46% | 16% | 50% | **0%** | 98% |
+| Sonnet 4.5 | 45% | 5% | 25% | **0%** | 95% |
+| GLM-5.2 | 45% | 0% | 15% | **0%** | 80% |
+| Kimi-K3 | 35% | 5% | 30% | **0%** | 90% |
+
+*(insecure code landed per attempt, lower is better; 2 runs/task, small n, directional)*
+
+- **peephole lands 0% insecure across all four models** — versus 35-46% baseline,
+  0-16% for a one-line prompt, and 15-50% for security-guidance: the guidance
+  plane is not a Haiku artifact.
+- **The 0% rests on a false-positive correction, and that is disclosed and
+  audited.** Uncorrected, Semgrep flags peephole on 10/15/20/10% of attempts;
+  every one was verified per file as a genuine Semgrep FP on secure code (a JWT
+  secret from `os.environ`, an HTML-escaped `return f"...{escape(x)}..."`, an argv
+  `subprocess(..., shell=False)`). The **same** correction is applied to every arm
+  — it lowers competitors' rates too (Haiku baseline 54→46%), so it is not a
+  peephole thumb on the scale. Full audit: [docs/BENCHMARK.md](docs/BENCHMARK.md).
+- **Productivity holds:** peephole lands secure code on 80-98% of attempts across
+  models. GLM is the low end (80%): its deny on the reflected-XSS task cost two
+  sessions a final file rather than an insecure one — reported, not hidden.
 
 ## How it compares
 
