@@ -208,6 +208,50 @@ func TestBashUninspectableFlagged(t *testing.T) {
 	}
 }
 
+func TestBashCopyMoveWithTrailingSeparator(t *testing.T) {
+	// A cp/mv/dd write is uninspectable and must be flagged even when a command
+	// separator follows it - a trailing $-anchor let `; echo done` hide the write.
+	for _, cmd := range []string{
+		"cp /tmp/evil.py routes.py; echo done",
+		"mv /tmp/evil.py app.py && true",
+		"cp /tmp/evil.py routes.py", // control: still flagged
+	} {
+		a := analyzeBash(cmd)
+		if !a.Uninspectable {
+			t.Errorf("copy/move write not flagged uninspectable: %q -> %+v", cmd, a)
+		}
+	}
+}
+
+func TestBashInterpEscapedQuoteNotTruncated(t *testing.T) {
+	// An embedded \" must not truncate extraction: the payload after it (here
+	// os.system(user)) has to remain visible to the scanner.
+	a := analyzeBash(`python3 -c "x=\"\"; import os; os.system(user)"`)
+	joined := ""
+	for _, p := range a.Payloads {
+		joined += p.Content
+	}
+	if !strings.Contains(joined, "os.system(user)") && !a.Uninspectable {
+		t.Fatalf("escaped-quote interpreter code was dropped: payloads=%+v uninspectable=%v", a.Payloads, a.Uninspectable)
+	}
+}
+
+func TestBashPhpDashRInline(t *testing.T) {
+	// php -r '<code>' is inline execution and must be inspected (was a silent hole).
+	a := analyzeBash(`php -r 'system($_GET[x]);'`)
+	joined := ""
+	for _, p := range a.Payloads {
+		joined += p.Content
+	}
+	if !strings.Contains(joined, "system($_GET") && !a.Uninspectable {
+		t.Fatalf("php -r inline code not inspected: payloads=%+v uninspectable=%v", a.Payloads, a.Uninspectable)
+	}
+	// -r must stay php-only: `node -r module` is a module preload, not inline code.
+	if b := analyzeBash(`node -r ./config.js server.js`); len(b.Payloads) > 0 {
+		t.Errorf("node -r (module preload) wrongly treated as inline code: %+v", b.Payloads)
+	}
+}
+
 func TestLogChainDetectsTampering(t *testing.T) {
 	sd := t.TempDir()
 	for i := 0; i < chainEvery+5; i++ {

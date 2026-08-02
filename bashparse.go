@@ -47,11 +47,18 @@ var (
 	// uninspectable instead.
 	reEchoWrite = regexp.MustCompile(`\b(?:echo|printf)\b\s+([^|]*?)\s*>>?\s*[^\s;&|<>]+`)
 	// no "install" here, it collides with `pip install` / `npm install`.
-	reCopyMove   = regexp.MustCompile(`\b(?:cp|mv|dd|rsync|ln)\b[^;&|]*\s([^\s;&|<>]+)\s*$`)
+	// The target is captured whether the copy ends the line OR is followed by a
+	// command separator (`cp evil.py app.py; echo done`) - a trailing $-only anchor
+	// let a two-token suffix hide the staged write entirely.
+	reCopyMove   = regexp.MustCompile(`\b(?:cp|mv|dd|rsync|ln)\b[^;&|]*\s([^\s;&|<>]+)\s*(?:[;&|]|$)`)
 	reGitApply   = regexp.MustCompile(`\bgit\s+apply\b|\bpatch\b\s+-`)
 	reSedInplace = regexp.MustCompile(`\bsed\b[^|;&]*\s-i\b`)
-	// Allow interpreter flags before -c/-e (e.g. python -B -c "...").
-	reInterp    = regexp.MustCompile(`\b(?:python3?|node|deno|bun|ruby|perl|bash|sh)(?:\s+-[\w-]+)*\s+(?:-c|-e)\s+('([^']*)'|"([^"]*)")`)
+	// Allow interpreter flags before -c/-e (e.g. python -B -c "...") and php's -r
+	// inline flag. The quoted body spans escaped chars ((?:[^'\\]|\\.)*) so an
+	// embedded \" doesn't truncate the extracted code (hiding the rest from scan);
+	// it still stops at the first UNescaped closing quote. -r is php-only: for
+	// node/ruby -r means "preload a module", not inline code.
+	reInterp    = regexp.MustCompile(`\b(?:(?:python3?|node|deno|bun|ruby|perl|bash|sh)(?:\s+-[\w-]+)*\s+(?:-c|-e)|php(?:\s+-[\w-]+)*\s+-r)\s+('((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")`)
 	reInstall   = regexp.MustCompile(`\b(pip3?|uv\s+pip|poetry|pipenv|npm|pnpm|yarn|bun|go)\s+(?:install|add|get|i)\b([^\n;&|]*)`)
 	reUninspect = regexp.MustCompile(`base64\s+-+d|base64\s+--decode|\|\s*(?:sh|bash|zsh|ed|ex|python3?|node|deno|bun|ruby|perl|php|tclsh|Rscript)\b|\b(?:ed|ex)\s+-|eval\s+"?\$\(|xxd\s+-r|(?:curl|wget)\b[^|]*\|\s*(?:sh|bash|zsh|python3?|node|ruby|perl|php)`)
 	// obfuscation/decode primitives inside interpreter -c/-e code
@@ -59,7 +66,7 @@ var (
 	// A redirect/copy target we cannot statically resolve (glob, variable, tilde)
 	// could land anywhere, treat as uninspectable rather than assume it's safe.
 	reUnresolvableTarget = regexp.MustCompile(`[*?\[\]{}$~]`)
-	reInterpDashC        = regexp.MustCompile(`\b(?:python3?|node|deno|bun|ruby|perl|php|bash|sh)(?:\s+-[\w-]+)*\s+(?:-c|-e)\b`)
+	reInterpDashC        = regexp.MustCompile(`\b(?:(?:python3?|node|deno|bun|ruby|perl|bash|sh)(?:\s+-[\w-]+)*\s+(?:-c|-e)|php(?:\s+-[\w-]+)*\s+-r)\b`)
 	reShellNoise         = regexp.MustCompile("[\"'\\\\\\[\\]{}]")
 	reCmdSubst           = regexp.MustCompile(`\$\(|` + "`" + `|\$[A-Za-z_]`)
 	rePkgClean           = regexp.MustCompile(`^[@A-Za-z0-9._/-]+`)
