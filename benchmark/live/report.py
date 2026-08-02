@@ -212,11 +212,13 @@ def chart(A, base):
                          fontsize=8.5, color="#FFF", fontweight="bold")
     axC.set_xticks(list(xa))
     axC.set_xticklabels([LABEL[a] for a in ARMS], fontsize=9, rotation=12, ha='right')
-    axC.set_ylim(0, 105)
+    axC.set_ylim(0, 124)
     axC.set_ylabel("% of attempts")
-    axC.legend(frameon=False, fontsize=7.5, loc="lower center")
+    # legend inside the empty band above the bars (stacks max at 100), single row
+    axC.legend(fontsize=7.5, loc="upper center", ncol=3, frameon=False,
+               handlelength=1.2, columnspacing=1.0)
     axC.set_title("Per-attempt outcome (red = insecure landed = the security metric)",
-                  fontsize=10.5, loc="left", fontweight="bold")
+                  fontsize=10.5, loc="left", fontweight="bold", pad=10)
 
     n = len({r["arm"] + r["task"] + str(r["run"]) + r["tier"] for r in load("results.jsonl")})
     fig.suptitle(f"Live agent benchmark — Claude Code · {n} sessions · 4 arms · honest aggregation",
