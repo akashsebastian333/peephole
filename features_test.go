@@ -77,6 +77,48 @@ func TestManifestDepExtraction(t *testing.T) {
 	if !names["react"] || !names["jest"] {
 		t.Fatalf("package.json extraction missed deps: %v", names)
 	}
+	// E2: an Edit/MultiEdit new_string is a package.json FRAGMENT (invalid JSON),
+	// so the parse fails; the regex fallback must still surface the added dep while
+	// ignoring script/metadata string pairs.
+	deps = extractManifestDeps("package.json",
+		"  \"evil-frag-pkg\": \"^1.0.0\",\n  \"build\": \"webpack --mode production\",\n  \"name\": \"myapp\",\n")
+	names = map[string]bool{}
+	for _, d := range deps {
+		names[d.Pkg] = true
+	}
+	if !names["evil-frag-pkg"] {
+		t.Fatalf("package.json fragment: hallucinated dep not extracted: %v", names)
+	}
+	if names["build"] || names["name"] || names["myapp"] {
+		t.Fatalf("package.json fragment: script/metadata wrongly treated as dep: %v", names)
+	}
+	// E4: PEP 508 allows leading whitespace inside the quotes.
+	deps = extractManifestDeps("pyproject.toml", `dependencies = [" evil-space-pkg>=1"]`)
+	if len(deps) == 0 || deps[0].Pkg != "evil-space-pkg" {
+		t.Fatalf("pyproject leading-space dep dropped: %v", deps)
+	}
+	// E1: extraction returns every dep (the gate bounds the live-check to 8; the
+	// overflow must not be silently dropped there - regression precondition).
+	big := `{"dependencies":{"a1":"1","a2":"1","a3":"1","a4":"1","a5":"1","a6":"1","a7":"1","a8":"1","a9":"1"}}`
+	if got := len(extractManifestDeps("package.json", big)); got != 9 {
+		t.Fatalf("expected all 9 deps extracted, got %d", got)
+	}
+}
+
+func TestManifestHallucinatedDepViaEditFragment(t *testing.T) {
+	// The common path: an agent ADDS a dep by editing package.json, so the hook
+	// sees only the new_string fragment. A cached-404 package must still be caught.
+	p := newProject(t, "hardened")
+	os.WriteFile(filepath.Join(p, ".peephole", "pkgcache.json"),
+		[]byte(`{"npm:evil-frag-xyz":{"v":1,"ts":9999999999}}`), 0o600)
+	ev := map[string]any{
+		"hook_event_name": "PreToolUse", "tool_name": "Edit", "cwd": p,
+		"tool_input": map[string]any{"file_path": "package.json", "new_string": `  "evil-frag-xyz": "^1.0.0",`},
+	}
+	ho, _, raw := runHookJSON(t, ev)
+	if ho.HookSpecificOutput.PermissionDecision != "deny" {
+		t.Fatalf("hardened must deny a hallucinated dep added via Edit fragment, got %q (%s)", ho.HookSpecificOutput.PermissionDecision, raw)
+	}
 }
 
 func TestManifestHallucinatedDepDenied(t *testing.T) {

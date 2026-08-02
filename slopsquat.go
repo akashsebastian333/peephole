@@ -309,21 +309,24 @@ func registryExistsTimeout(manager, name string, secs int) pkgVerdict {
 // short enough that established packages never trip it.
 const freshWindow = 45 * 24 * time.Hour
 
-var reISODate = regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
+// Scoped to real publication fields (PyPI upload_time_iso_8601 / npm time.created)
+// so an attacker-controlled date in the readme/description body cannot spoof the
+// package into looking old and skipping the freshness ask.
+var reCreatedDate = regexp.MustCompile(`"(?:created|upload_time_iso_8601)"\s*:\s*"(\d{4}-\d{2}-\d{2})`)
 
-// freshlyCreated reports whether the earliest date in a PyPI/npm registry
-// response (PyPI upload_time_iso_8601 / npm time.created) is within freshWindow.
-// ISO YYYY-MM-DD strings compare lexicographically in date order, so the min
-// string is the earliest publication. No date found -> not flagged (don't guess).
+// freshlyCreated reports whether the earliest publication date in a PyPI/npm
+// registry response is within freshWindow. ISO YYYY-MM-DD strings compare
+// lexicographically in date order, so the min string is the earliest
+// publication. No date found -> not flagged (don't guess).
 func freshlyCreated(body string) bool {
-	dates := reISODate.FindAllString(body, -1)
-	if len(dates) == 0 {
+	matches := reCreatedDate.FindAllStringSubmatch(body, -1)
+	if len(matches) == 0 {
 		return false
 	}
-	min := dates[0]
-	for _, d := range dates[1:] {
-		if d < min {
-			min = d
+	min := matches[0][1]
+	for _, m := range matches[1:] {
+		if m[1] < min {
+			min = m[1]
 		}
 	}
 	t, err := time.Parse("2006-01-02", min)

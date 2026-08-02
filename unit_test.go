@@ -138,9 +138,15 @@ func TestFreshnessCheck(t *testing.T) {
 	if freshlyCreated(`{"info":{"name":"x"}}`) {
 		t.Error("no date present must NOT be flagged fresh")
 	}
-	// earliest date wins: a recent "created" alongside an old date -> min is old -> not fresh
-	if freshlyCreated(`{"created":"` + recent + `T00:00:00","first":"2000-01-01T00:00:00"}`) {
-		t.Error("earliest date (2000) should make it not-fresh")
+	// earliest PUBLICATION date wins: with multiple uploads, the oldest determines
+	// age (a package first published in 2000 is not fresh even if re-uploaded today).
+	if freshlyCreated(`{"urls":[{"upload_time_iso_8601":"` + recent + `T00:00:00"},{"upload_time_iso_8601":"2000-01-01T00:00:00"}]}`) {
+		t.Error("earliest upload (2000) should make it not-fresh")
+	}
+	// A date in an attacker-controlled body field (readme/description) must NOT be
+	// treated as the publication date - only created / upload_time_iso_8601 count.
+	if !freshlyCreated(`{"time":{"created":"` + recent + `T00:00:00Z"},"readme":"stable since 1999-01-01"}`) {
+		t.Error("a date in the readme must not spoof a fresh package into looking old")
 	}
 }
 

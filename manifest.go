@@ -16,7 +16,16 @@ import (
 
 var (
 	reReqLine   = regexp.MustCompile(`(?m)^\s*([A-Za-z0-9][A-Za-z0-9._-]+)`)
-	rePyproj    = regexp.MustCompile(`["']([A-Za-z0-9][A-Za-z0-9._-]+)\s*(?:[<>=!~;\[].*)?["']`)
+	// Fallback for a package.json Edit/MultiEdit: the new_string is a fragment, not
+	// valid JSON, so json.Unmarshal yields nothing and the dep slips the gate.
+	// Match "name": "version-spec" pairs; the version filter below keeps script /
+	// metadata string pairs out.
+	reJSONDepPair = regexp.MustCompile(`"(@?[A-Za-z0-9][\w.@/-]*)"\s*:\s*"([^"]*)"`)
+	reNpmVersion  = regexp.MustCompile(`^(?:[\^~*=<>]|\d|latest$|next$|git|https?:|file:|npm:|link:|workspace:)`)
+	// Keys that carry a version-looking string but are not dependencies.
+	npmNonDepKeys = map[string]bool{"name": true, "version": true, "node": true, "npm": true,
+		"yarn": true, "pnpm": true, "type": true, "main": true, "module": true, "engines": true}
+	rePyproj    = regexp.MustCompile(`["']\s*([A-Za-z0-9][A-Za-z0-9._-]+)\s*(?:[<>=!~;\[].*)?["']`)
 	rePoetryKey = regexp.MustCompile(`(?m)^\s*([A-Za-z0-9][A-Za-z0-9._-]+)\s*=\s*["{]`)
 	manifestPy  = map[string]bool{"requirements.txt": true, "pyproject.toml": true, "Pipfile": true}
 	manifestJs  = map[string]bool{"package.json": true}
@@ -57,6 +66,15 @@ func extractManifestDeps(path, content string) []Install {
 				for name := range m {
 					out = append(out, Install{Manager: "npm", Pkg: name})
 				}
+			}
+		}
+		if len(out) == 0 { // fragment (Edit/MultiEdit) or deps-less file: regex fallback
+			for _, m := range reJSONDepPair.FindAllStringSubmatch(content, -1) {
+				name, ver := m[1], m[2]
+				if npmNonDepKeys[name] || strings.ContainsAny(ver, " ") || !reNpmVersion.MatchString(ver) {
+					continue // metadata/script pair, not a dependency spec
+				}
+				out = append(out, Install{Manager: "npm", Pkg: name})
 			}
 		}
 	case base == "requirements.txt" || base == "Pipfile":
@@ -122,6 +140,17 @@ func gateManifestDeps(e Event, mode string, ti ToolInput, content string, cands 
 		}
 	}
 	if len(live) > 0 {
+		// checkPackagesLive is bounded to 8 lookups. Deps beyond that must not be
+		// dropped (an evasion: pad 8 benign deps, hide a malicious 9th) nor indexed
+		// past the returned verdicts (a panic that fails the whole manifest closed
+		// on any real package.json with 9+ deps): route the overflow to unverified
+		// (ask) and only index the checked prefix.
+		if len(live) > 8 {
+			for _, in := range live[8:] {
+				unver = append(unver, in.Pkg)
+			}
+			live = live[:8]
+		}
 		verdicts := checkPackagesLive(sd, live)
 		for i, in := range live {
 			switch verdicts[i] {
