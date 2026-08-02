@@ -1,0 +1,18 @@
+{
+  "cwe_id": "CWE-79",
+  "name": "Reflected XSS (user input returned in a raw response string)",
+  "severity": "high",
+  "owasp": ["A03"],
+  "kev": false,
+  "mode": "call",
+  "triggers": ["user"],
+  "confidence": "high",
+  "sinks": [
+    {"lang": "python", "re": "return\\s+(f[\"'][^\\n]*\\{[^\\n]*|[\"'][^\"'\\n]*[\"']\\s*\\+[^\\n]*|[A-Za-z_]\\w*\\s*\\+\\s*[\"'][^\\n]*)"}
+  ],
+  "exemplar": {
+    "noncompliant": "host = request.args.get('host')\nreturn f\"Pinged {host}\"",
+    "compliant": "host = request.args.get('host')\nreturn jsonify({'pinged': host})",
+    "explanation": "return JSON (jsonify) or HTML-escape user input; never return a raw string that interpolates unescaped user input as the HTTP response"
+  }
+}

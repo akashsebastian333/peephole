@@ -7479,6 +7479,21 @@ var generatedTaintSpecs = []TaintSpec{
 		Compliant:    "el.textContent = userInput;",
 	},
 	{
+		CWE:        "CWE-79",
+		Name:       "Reflected XSS (user input returned in a raw response string)",
+		Severity:   "high",
+		OWASP:      []string{"A03"},
+		KEV:        false,
+		Mode:       "call",
+		Confidence: "high",
+		Triggers:   []string{"user"},
+		Sinks: []taintSinkPat{
+			{Lang: "python", Re: "return\\s+(f[\"'][^\\n]*\\{[^\\n]*|[\"'][^\"'\\n]*[\"']\\s*\\+[^\\n]*|[A-Za-z_]\\w*\\s*\\+\\s*[\"'][^\\n]*)"},
+		},
+		Noncompliant: "host = request.args.get('host')\nreturn f\"Pinged {host}\"",
+		Compliant:    "host = request.args.get('host')\nreturn jsonify({'pinged': host})",
+	},
+	{
 		CWE:        "CWE-89",
 		Name:       "SQL Injection (user-derived query variable)",
 		Severity:   "critical",

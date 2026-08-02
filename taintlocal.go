@@ -148,8 +148,22 @@ func taintSpecHits(s *TaintSpec, lang, lc, content string, user, dyn, sens map[s
 			continue // sink's required literal absent
 		}
 		if s.Mode == "call" {
-			if tlArgScan(content, sp.re, sens) {
-				return true
+			// whole-arglist scan: fire when any reference in the captured text is
+			// tainted per THIS spec's triggers (sens for log/exfil, user for a
+			// reflected value returned to the client, etc.), and not redacted.
+			for _, m := range sp.re.FindAllStringSubmatch(content, -1) {
+				args := strings.Join(m[1:], "")
+				// output-encoding / redaction in the sink clears it (escape() for a
+				// returned value, mask()/hash() for a logged secret).
+				if args == "" || tlRedact.MatchString(args) || tlSanitizer.MatchString(args) {
+					continue
+				}
+				for _, id := range tlWord.FindAllString(tlRefs(args), -1) {
+					if (s.tSens && (sens[id] || tlSensName.MatchString(id))) ||
+						(s.tUser && user[id]) || (s.tDyn && dyn[id]) {
+						return true
+					}
+				}
 			}
 			continue
 		}
@@ -230,24 +244,6 @@ func tlTaint(content string) (user, dyn, sens map[string]bool) {
 		}
 	}
 	return
-}
-
-// tlArgScan reports whether any sink call (matched by re, whose capture groups
-// hold the call's argument text) carries a sensitive reference — a sens-tainted
-// variable or an identifier that is a secret by name — and is not redacted.
-func tlArgScan(content string, re *regexp.Regexp, sens map[string]bool) bool {
-	for _, m := range re.FindAllStringSubmatch(content, -1) {
-		args := strings.Join(m[1:], "")
-		if args == "" || tlRedact.MatchString(args) {
-			continue
-		}
-		for _, id := range tlWord.FindAllString(tlRefs(args), -1) {
-			if sens[id] || tlSensName.MatchString(id) {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 // taintScan returns cross-line taint findings for sinks fed a tainted variable.
