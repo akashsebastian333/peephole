@@ -286,6 +286,38 @@ Regenerate with `python benchmark/live/report.py`.
   The harness auto-approves hook `ask`s (only hard `deny`s stand). Raw session
   data + judge verdicts: `benchmark/live/`.
 
+**Across models (does the guidance generalize, or is it a Haiku artifact?)** The
+same corpus, arms, and independent Semgrep grader were run on three more models:
+Claude Sonnet 4.5, GLM-5.2, and Kimi-K3 (the last two via a gateway). Same
+uniform correction, nothing tuned per model.
+
+![Insecure code landed per attempt across four models](assets/benchmark-multimodel.png)
+
+| model | baseline | bare-prompt | peephole | peephole secure-landed |
+|---|---|---|---|---|
+| Haiku 4.5 | 46% | 16% | **0%** | 98% |
+| Sonnet 4.5 | 45% | 5% | **0%** | 95% |
+| GLM-5.2 | 50% | 0% | **0%** | 90% |
+| Kimi-K3 | 35% | 5% | **0%** | 90% |
+
+*(insecure code landed per attempt, lower is better; 2 runs/task, small n, directional)*
+
+- **peephole lands 0% insecure across all four models**, versus 35-50% baseline
+  and 0-16% for a one-line prompt: the guidance plane is not a Haiku artifact.
+- **Every apparent peephole "miss" was verified, per file, to be a Semgrep false
+  positive on secure code** (a JWT secret read from `os.environ`, an HTML-escaped
+  `return f"...{escape(x)}..."`, an argv `subprocess(..., shell=False)`) that
+  peephole correctly does *not* flag. The same verified correction is applied to
+  every arm; on GLM peephole's raw reflected-XSS attempt was denied and the model
+  added `escape()`, born-secure. peephole's lower false-positive rate here is the
+  point: it beats the scanner *without* the friction of flagging safe code.
+- **Productivity holds across models:** peephole lands secure code on 90-98% of
+  attempts, with low refusal, on all four.
+- What a prompt cannot do that peephole can: the prompt is advisory (a jailbreak
+  or a different task removes it) and its effect varies by model; the gate is
+  enforced and deterministic. The adversarial and semantic tiers, where that gap
+  shows, were run on Haiku only.
+
 ## How it compares
 
 Measured where measurable (the three engines above, this repo's harness);
@@ -312,6 +344,16 @@ regexes can't prove; it composes rather than competes there.
 - **Custom / org rules (additive):** drop a `.peephole-rules.json` (or `.claude/peephole-rules.json`)
   in your project, an array of rule records in the same schema. They *add* findings; they can
   never disable a built-in. Safe by construction: RE2 is linear-time, so a custom regex can't ReDoS.
+- **Org enforcement policy (`.peephole-policy.json`, committed):** beyond guidance
+  values (`{"global": [...], "CWE-89": [...]}`, injected before generation), an org
+  can make the gate *stricter*, never weaker:
+    - `"enforce": ["CWE-89", "CWE-327"]` mandates those classes to a hard **deny**
+      in every mode; a `sec-debt` marker cannot waive an org-mandated class.
+    - `"min_mode": "strict"` (or `"hardened"`) is an org **floor**: the effective
+      mode is never weaker than this, even if a repo sets a lower one.
+  Both are **escalation-only by design**, so a poisoned committed file can only
+  raise enforcement, never disable it. Values are Unicode/injection-scanned before
+  they can reach model context.
 - **Enterprise default (`allowManagedHooksOnly`):** for managed fleets, set
   `"allowManagedHooksOnly": true` in managed `settings.json` so only admin-pushed hooks run,
   preventing a repo from swapping peephole's hooks. This is the recommended managed default.

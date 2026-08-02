@@ -268,6 +268,10 @@ func enforceMarked(e Event, mode string, c cand) {
 
 func handleWriteFamily(e Event, kb *KB, mode string, ti ToolInput) {
 	content := ti.newContent()
+	// Org policy can only make enforcement STRICTER: raise the mode to the org
+	// floor, and mandate specific CWEs to hard-deny. It can never weaken the gate.
+	pol := loadPolicy(projectDir(e))
+	mode = pol.floor(mode)
 	var cands []cand
 
 	// Manifest edits introduce dependencies too (N5). Offline signals first
@@ -306,6 +310,9 @@ func handleWriteFamily(e Event, kb *KB, mode string, ti ToolInput) {
 	if len(findings) > 0 {
 		f := findings[0]
 		decision, marked := decisionFor(mode, f, content)
+		if pol.mustDeny(f.Rule.CWE) && decision != "deny" {
+			decision, marked = "deny", false // org mandate: not waivable by a marker
+		}
 		if marked {
 			recordMarker(stateDir(e), e.SessionID, ti.targetPath(), content, f)
 		}

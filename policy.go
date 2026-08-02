@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 )
 
 // Org policy loading (N3's policy plane, blueprint §4.1 policy_hooks / §5 N3).
@@ -18,8 +19,10 @@ import (
 // committed file is untrusted input: values are Unicode/injection-scanned and
 // length-capped before they can reach model context.
 type policy struct {
-	global []string
-	byCWE  map[string][]string
+	global  []string
+	byCWE   map[string][]string
+	enforce map[string]bool // CWE -> always deny (org mandate). ESCALATION ONLY.
+	minMode string          // org floor: the effective mode is never weaker than this
 }
 
 const (
@@ -27,8 +30,26 @@ const (
 	maxPolicyLen     = 240
 )
 
+var reCWEid = regexp.MustCompile(`^CWE-\d{1,4}$`)
+
+var modeRank = map[string]int{"off": 0, "audit": 1, "strict": 2, "hardened": 3}
+
+// mustDeny reports whether the org policy mandates a hard deny for this CWE,
+// regardless of the built-in confidence (an escalation, always safe).
+func (p policy) mustDeny(cwe string) bool { return cwe != "" && p.enforce[cwe] }
+
+// floor raises the mode to the org minimum when the local mode is weaker. It only
+// ever makes enforcement STRICTER: a committed policy cannot downgrade the mode,
+// so a poisoned repo cannot use it to disable the gate.
+func (p policy) floor(mode string) string {
+	if p.minMode != "" && modeRank[p.minMode] > modeRank[mode] {
+		return p.minMode
+	}
+	return mode
+}
+
 func loadPolicy(projectDir string) policy {
-	p := policy{byCWE: map[string][]string{}}
+	p := policy{byCWE: map[string][]string{}, enforce: map[string]bool{}}
 	var b []byte
 	var err error
 	for _, path := range []string{
@@ -45,6 +66,26 @@ func loadPolicy(projectDir string) policy {
 	var raw map[string]json.RawMessage
 	if json.Unmarshal(b, &raw) != nil {
 		return p
+	}
+	// Escalation directives (safe: they can only make peephole stricter, so a
+	// poisoned committed file cannot use them to weaken the gate).
+	if v, ok := raw["enforce"]; ok {
+		var cwes []string
+		if json.Unmarshal(v, &cwes) == nil {
+			for _, c := range cwes {
+				if reCWEid.MatchString(c) {
+					p.enforce[c] = true
+				}
+			}
+		}
+		delete(raw, "enforce")
+	}
+	if v, ok := raw["min_mode"]; ok {
+		var m string
+		if json.Unmarshal(v, &m) == nil && (m == "strict" || m == "hardened") {
+			p.minMode = m
+		}
+		delete(raw, "min_mode")
 	}
 	total := 0
 	add := func(cwe, s string) {
