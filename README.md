@@ -293,26 +293,31 @@ uniform correction, nothing tuned per model.
 
 ![Insecure code landed per attempt across four models](assets/benchmark-multimodel.png)
 
-| model | baseline | bare-prompt | peephole | peephole secure-landed |
-|---|---|---|---|---|
-| Haiku 4.5 | 46% | 16% | **0%** | 98% |
-| Sonnet 4.5 | 45% | 5% | **0%** | 95% |
-| GLM-5.2 | 50% | 0% | **0%** | 90% |
-| Kimi-K3 | 35% | 5% | **0%** | 90% |
+| model | baseline | bare-prompt | security-guidance | peephole | peephole secure-landed |
+|---|---|---|---|---|---|
+| Haiku 4.5 | 46% | 16% | 50% | **0%** | 98% |
+| Sonnet 4.5 | 45% | 5% | 25% | **0%** | 95% |
+| GLM-5.2 | 45% | 0% | 15% | **0%** | 80% |
+| Kimi-K3 | 35% | 5% | 30% | **0%** | 90% |
 
 *(insecure code landed per attempt, lower is better; 2 runs/task, small n, directional)*
 
-- **peephole lands 0% insecure across all four models**, versus 35-50% baseline
-  and 0-16% for a one-line prompt: the guidance plane is not a Haiku artifact.
+- **peephole lands 0% insecure across all four models**, versus 35-46% baseline,
+  0-16% for a one-line prompt, and 15-50% for the incumbent security-guidance
+  plugin: the guidance plane is not a Haiku artifact.
 - **Every apparent peephole "miss" was verified, per file, to be a Semgrep false
   positive on secure code** (a JWT secret read from `os.environ`, an HTML-escaped
   `return f"...{escape(x)}..."`, an argv `subprocess(..., shell=False)`) that
   peephole correctly does *not* flag. The same verified correction is applied to
-  every arm; on GLM peephole's raw reflected-XSS attempt was denied and the model
-  added `escape()`, born-secure. peephole's lower false-positive rate here is the
-  point: it beats the scanner *without* the friction of flagging safe code.
-- **Productivity holds across models:** peephole lands secure code on 90-98% of
-  attempts, with low refusal, on all four.
+  every arm — it lowers the competitors' insecure rates too (baseline 54→46% on
+  Haiku, 10→9 findings on GLM), it is not a peephole thumb on the scale. On GLM
+  peephole's raw reflected-XSS attempt was denied and the model added `escape()`,
+  born-secure. peephole's lower false-positive rate here is the point: it beats
+  the scanner *without* the friction of flagging safe code.
+- **Productivity holds across models:** peephole lands secure code on 80-98% of
+  attempts. GLM is the low end (80%): peephole's deny on the reflected-XSS task
+  cost two sessions a final file rather than an insecure one — the trade-off is
+  visible and reported, not hidden.
 - What a prompt cannot do that peephole can: the prompt is advisory (a jailbreak
   or a different task removes it) and its effect varies by model; the gate is
   enforced and deterministic. The adversarial and semantic tiers, where that gap
