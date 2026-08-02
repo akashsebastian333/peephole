@@ -3,6 +3,36 @@
 All notable changes to Peephole are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-08
+
+### New capability: intra-file cross-line taint (framework-level)
+- The single-line presence patterns missed the shape where a dangerous value is
+  built into a variable on one line and reaches a sink on another (`tmpl = f"..{req}.."`
+  then `render_template_string(tmpl)`). A new additive taint pass tracks
+  user-derived and dynamically-built variables (propagating through interpolation
+  and concatenation, cleared by `int()`/`shlex.quote()`/`escape()`/... sanitizers)
+  and flags them at **every** sink class: SSTI, SQLi, OS-command, code-eval,
+  deserialization, and XSS. It checks the actual variable in the sink, not
+  proximity, so an unrelated dynamic string near a static-const sink does not
+  misfire. Strictly additive: it never changes existing rule behavior.
+- Measured on the live-benchmark corpus, this raises the gate's catch rate on
+  insecure code that landed from 45/64 to **57/64** across all arms, and takes
+  peephole's own cross-line SSTI misses to zero. `TestTaintCrossLineCatches` /
+  `TestTaintNoFalsePositives` lock the behavior.
+
+### Benchmark honesty
+- The headline live metric is now **insecure-landed per attempt** (the security
+  outcome), with a refusal shown as safe-but-unproductive rather than counted as
+  a failure. "secure over code-writers" is kept but labeled as the conditional
+  quality it is, since it flatters arms that refuse less. Re-run at 5 runs/arm
+  (200 main sessions) for a stable ranking.
+- Competing arm named as itself (`security-guidance`); completion chart replaced
+  with a per-attempt outcome view now that all arms complete (0 timeouts).
+
+### Distribution
+- Tag-triggered release workflow ships signed binaries (5 platforms + SHA256SUMS).
+  CI `setup-go` cache disabled (a zero-`go.sum` module hard-failed the runner).
+
 ## [0.3.0] - 2026-08
 
 Driven by a deep read-only review (Go code, rules, benchmark validity, repo

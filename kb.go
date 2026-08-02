@@ -253,6 +253,9 @@ func (kb *KB) scanBound(path, content string, bound int) []Finding {
 			}
 		}
 	}
+	// Framework-level cross-line taint: a variable built from user input or a
+	// dynamic string that reaches a sink on another line (additive, dedup by CWE).
+	out = append(out, kb.taintScan(lang, content, tlHave(out))...)
 	sort.SliceStable(out, func(i, j int) bool { return findingLess(out[i], out[j]) })
 	return out
 }

@@ -30,7 +30,7 @@ on the other side, and never ship code before checking what's in it.*
 
 ## The difference
 
-The incumbent advisory approach wires its regexes to **PostToolUse**: it
+The incumbent plugin (security-guidance) wires its regexes to **PostToolUse**: it
 warns *after* the insecure code is already written, then hopes the model
 regenerates it. That proves code was *repaired* secure.
 
@@ -56,14 +56,27 @@ The CWE knowledge base is embedded into the binary (`go:embed`), so a local
 attacker can't quietly edit rule files the binary ignores, and there's no file
 I/O to load rules on the hot path.
 
-## Install (local)
+## Install
+
+**As a binary** (any agent, git hook, or CI). Grab the build for your platform
+from the [latest release](https://github.com/akashsebastian333/peephole/releases/latest)
+and put it on your `PATH`:
 
 ```sh
-# from the plugin marketplace, or point Claude Code at this directory as a plugin
+# swap the suffix for your platform: peephole-darwin-arm64 · peephole-darwin-amd64
+#   peephole-linux-amd64 · peephole-linux-arm64 · peephole-windows-amd64.exe
+curl -fsSL https://github.com/akashsebastian333/peephole/releases/latest/download/peephole-darwin-arm64 -o peephole
+chmod +x peephole && sudo mv peephole /usr/local/bin/peephole
+peephole scan yourfile.py          # smoke test
 ```
 
-The plugin auto-registers its hooks via `hooks/hooks.json`. Default mode is
-**strict**.
+Checksums for every asset are in `SHA256SUMS` on the release. Wiring for Gemini
+CLI, Codex, Cursor, MCP/LSP editors, and a universal `git pre-commit` hook is in
+[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
+
+**As a Claude Code plugin.** Point Claude Code at this directory as a plugin (or
+install from the marketplace). The plugin auto-registers its hooks via
+`hooks/hooks.json`; default mode is **strict**.
 
 ## Supported agents & IDEs
 
@@ -107,6 +120,17 @@ weak crypto (327), disabled security controls (1188), environment/secret
 exfiltration to a network sink (200, the "add telemetry" confused-deputy leak),
 and hallucinated/slopsquatted package installs. Bash payloads (heredocs,
 `python -c`, redirects) are extracted and scanned through the same engine.
+
+**Cross-line taint (framework-level).** Beyond single-line patterns, a general
+intra-file taint pass tracks values built from user input, dynamic strings, or
+secrets and flags them when they reach a sink on a *different* line, across every
+class at once: SSTI, SQL, OS-command, code-eval, deserialization, XSS, SSRF
+(918), path traversal (22), open redirect (601), secrets in logs (532), and
+environment/secret exfiltration (200). It follows real references (interpolation,
+concatenation), clears on sanitizers (`int()`, `shlex.quote()`, `escape()`) and
+redaction, and checks the actual variable in the sink, so a validated or static
+value is not flagged. Findings whose safety depends on a validation guard a
+pattern engine cannot see (SSRF, redirect, path) *ask* rather than hard-deny.
 
 Beyond application code, it also covers **smart contracts** (Solidity:
 reentrancy, `tx.origin` auth, `delegatecall`/`selfdestruct`, block-property
@@ -162,7 +186,7 @@ turf:
 | engine | TP recall | FP rate | layer measured |
 |---|---|---|---|
 | **peephole** | **98%** (148/151) | **0%** | PreToolUse gate engine (`scan`) |
-| advisory (PostToolUse) | 21% | 12% | its 25 shipped regexes, PostToolUse |
+| security-guidance (PostToolUse) | 21% | 12% | its 25 shipped regexes, PostToolUse |
 | Semgrep OSS (public rules) | 16% | 2% | 21 unauthenticated registry packs |
 
 ![Detection recall and false-positive rate across engines](assets/benchmark-overall.png)
@@ -178,7 +202,7 @@ turf:
   (`semgrep login` unlocks more free rules; commercial tiers add the secret
   validators, hence its 10% on secrets). On real repos Semgrep is far
   stronger than 16%; on a write-time hunk it cannot run at all.
-- **the advisory tool's real depth is unmeasured.** Its LLM review of your
+- **security-guidance's real depth is unmeasured.** Its LLM review of your
   session's `git diff` at Stop/commit catches semantic classes no regex does;
   both pattern layers scored 0 on the semantic corpus cases (race, business
   logic). It runs on your Claude Code sign-in (OAuth token passed automatically)
@@ -206,53 +230,50 @@ version and writes it securely, born-secure, no block); adding the
 Race-condition and business-logic classes are out of scope for the pattern
 engine and are handled as guidance + human review, not enforcement.
 
-**Live agent benchmark, real Claude sessions, 4 arms** (Haiku 4.5, 164 records
-across a pattern tier, a semantic tier, and an adversarial tier). The secure
-rate is scored by an **independent** grader (Semgrep over sessions that actually
-wrote code, and an out-of-family LLM judge for the semantic tier). Peephole's own
-scanner is shown only as a circular reference, refusals (empty output) do not
-count as secure, and timeouts count against completion rather than being dropped.
+**Live agent benchmark, real Claude sessions, 4 arms** (Haiku 4.5, 5 runs per
+task: 200 main + 60 semantic + 24 adversarial sessions). The headline metric is
+**insecure code landed per attempt** (did insecure code reach disk), scored
+independently by Semgrep with an out-of-family LLM judge on the semantic tier.
 Regenerate with `python benchmark/live/report.py`.
 
-| arm | independent secure (Semgrep) | semantic judge | own-scanner (circular) | completed | cost | time |
-|---|---|---|---|---|---|---|
-| **baseline** | 57% | 0% | 21% | 95% | $0.076 (100%) | 105s (100%) |
-| **bare-prompt** | 74% | 25% | 68% | 95% | $0.067 (88%) | 278s (264%) |
-| **the advisory linter** | 73% | 0% | 36% | 100% | $0.070 (92%) | 168s (160%) |
-| **peephole** | **90%** | **25%** | 100% | **85%** | $0.077 (101%) | 202s (192%) |
+| arm | insecure-landed / attempt (lower=better) | secure-landed | refused | secure when it wrote | semantic | cost | time |
+|---|---|---|---|---|---|---|---|
+| **baseline** | 46% (raw 54%) | 46% | 8% | 50% | 0% | $0.037 (100%) | 19s (100%) |
+| **bare-prompt** | 16% (raw 16%) | 84% | 0% | 84% | 25% | $0.034 (94%) | 17s (90%) |
+| **security-guidance** | 50% (raw 52%) | 36% | 14% | 42% | 0% | $0.035 (97%) | 17s (90%) |
+| **peephole** | **2%** (raw 6%) | 30% | 68% | 94% | 25% | $0.036 (98%) | 19s (98%) |
 
-![Live agent benchmark, independent graders lead; own-scanner is circular](assets/benchmark-live.png)
+![Live agent benchmark: insecure-landed per attempt and the per-attempt outcome mix](assets/benchmark-live.png)
 
-- **Independently graded, peephole is 90% secure vs 57% baseline** over
-  sessions that wrote code: a ~33-point gain from the guidance plane. The 100%
-  own-scanner column is peephole grading itself and is not independent.
-- **The gate hard-denied 0 of 6 adversarial attacks.** The guidance plane, not
-  the gate, does the work here, and Haiku refuses most blatant attacks on its
-  own (baseline "safe" 83%). "Attacks stopped" ties across arms because it
-  measures the model's refusal, not the tool. The gate's discriminative value is
-  the subtle rename bypass (`app.txt` → `mv app.py`), which landed on baseline /
-  bare-prompt and only peephole stopped mechanically.
-- **Peephole has the lowest completion rate (85%)**: its Stop-loop caused
-  timeouts (since fixed by a terminating guardrail; see the changelog).
+- **peephole lands insecure code least: 2% of attempts, vs bare-prompt 16%,
+  security-guidance 50%, baseline 46%.** On the metric that matters for security
+  (did insecure code reach disk), peephole leads. Under peephole the model wrote
+  zero eval / command-injection / SQLi / JWT vulnerabilities; its residual 2% is
+  a single hardcoded *dev* secret, not an injection.
+- **Why insecure-landed and not a "secure rate":** the common "secure over
+  code-writers" number penalizes the safe behavior. peephole makes the model
+  *refuse* 68% of these insecure-inducing tasks (writing nothing means nothing
+  insecure lands), so its code-writer denominator is small. That metric would
+  read 94% and hide the real picture; insecure-landed per attempt does not.
+- **The tradeoff is productivity, not security.** peephole writes secure code on
+  30% of attempts vs bare-prompt's 84%, because it refuses so much. A one-line
+  "write secure code" prompt is more productive on these cooperative tasks.
+  peephole's edge is that its gate cannot be ignored the way guidance can, which
+  is what matters under adversarial or prompt-injection framings.
+- **Grader honesty:** Semgrep false-positives the secure static-template SSTI
+  pattern (a static Jinja template with user input passed as context). It is
+  corrected uniformly across all arms (a template flag counts only when the
+  template is dynamically built); the uncorrected number is in (raw). bare-prompt
+  does not move under the correction, so it is not cherry-picked.
+- **Completion:** all arms complete every session (0 timeouts). peephole's
+  terminating guardrail bounds the deny-retry loop that used to hang it.
 - **The semantic tier is where everyone bleeds.** IDOR, races, business logic,
-  CSRF, rate limits: no regex gate can prove these. Baseline and the advisory
-  linter 0%, bare-prompt and peephole 25%. Peephole does not enforce these, its
-  documented ceiling; an independent semantic review layer is still necessary.
-- **Cost:** peephole costs +1% money, +92% wall time vs baseline
-  (hook events + gate retries + the N6 continuation) and 3 of its 5 harness
-  timeouts were forced-continuation loops hitting the 10-minute cap. That is
-  the real price of enforcement; tokens and dollars are flat. Two caveats on
-  the time numbers: (1) wall time is **100% API-side**: the wall-vs-API-duration
-  correlation is 1.000, turns are flat across arms (2.0–2.3), so the deltas are
-  model generation time and shared-proxy latency variance, not hook cost
-  (peephole's hook is ~8ms, 0.005% of a session); (2) bare-prompt's 264% is the
-  same phenomenon, a security instruction makes the model generate longer,
-  more careful responses, plus skew from a few slow sessions (medians: 81s
-  baseline / 156s peephole / 233s bare-prompt, less dramatic than means).
-- Sample size: n≈2 per cell, one model, one day; directional, not a headline.
-  The harness auto-approves hook `ask`s (only hard `deny`s stand). The
-  independent Semgrep / LLM-judge grader is the primary scorer; timeouts count
-  as a completion metric. Raw session data + judge verdicts: `benchmark/live/`.
+  CSRF, rate limits: no pattern gate proves these. Baseline and security-guidance
+  0%, bare-prompt and peephole 25%. Peephole's documented ceiling, handled by
+  guidance + human review, not enforcement.
+- Sample size: 5 runs per task, one model, one day; directional, not a headline.
+  The harness auto-approves hook `ask`s (only hard `deny`s stand). Raw session
+  data + judge verdicts: `benchmark/live/`.
 
 ## How it compares
 
@@ -260,7 +281,7 @@ Measured where measurable (the three engines above, this repo's harness);
 documentation-level elsewhere (vendor docs, not independently re-verified,
 treat as marketing-aware claims).
 
-| | **peephole** | advisory (PostToolUse) | Semgrep (OSS / Guardian) | Snyk | Socket / Endor | Aikido SafeChain |
+| | **peephole** | security-guidance (PostToolUse) | Semgrep (OSS / Guardian) | Snyk | Socket / Endor | Aikido SafeChain |
 |---|---|---|---|---|---|---|
 | Acts **before** code lands | ✅ PreToolUse deny | ❌ PostToolUse warn | ❌ post-write scan | ❌ in-loop scan | ✅ pre-commit deps | ✅ pre-install deps |
 | Blocks the write | ✅ strict/hardened | ❌ advisory only | regen-until-clean (Guardian) | ❌ | ✅ (deps only) | ✅ (deps only) |
@@ -272,7 +293,7 @@ treat as marketing-aware claims).
 | Runs offline, zero deps | ✅ static binary | ❌ Python + LLM calls | ✅ (OSS CLI) | ❌ | ❌ | ❌ |
 
 Peephole is **not** a SAST replacement and doesn't do semantic review. Pair it
-with one (Semgrep on the repo, or the advisory tool's LLM layer) for the classes
+with one (Semgrep on the repo, or security-guidance's LLM layer) for the classes
 regexes can't prove; it composes rather than competes there.
 
 ## Extensibility & enterprise
