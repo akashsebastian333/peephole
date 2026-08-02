@@ -3,27 +3,24 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-@app.route('/user', methods=['GET'])
-def get_user():
-    username = request.args.get('username')
-
-    if not username:
-        return jsonify({'error': 'username parameter required'}), 400
-
+def get_db():
     conn = sqlite3.connect(':memory:')
+    conn.row_factory = sqlite3.Row
+    return conn
+
+@app.route('/user')
+def user():
+    username = request.args.get('username', '')
+
+    conn = get_db()
     cursor = conn.cursor()
-
-    cursor.execute('CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT, email TEXT)')
-    cursor.execute('INSERT INTO users (username, email) VALUES (?, ?)', ('admin', 'admin@example.com'))
-    cursor.execute('INSERT INTO users (username, email) VALUES (?, ?)', ('user1', 'user1@example.com'))
-
-    cursor.execute('SELECT id, username, email FROM users WHERE username = ?', (username,))
-    row = cursor.fetchone()
+    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+    user = cursor.fetchone()
     conn.close()
 
-    if row:
-        return jsonify({'id': row[0], 'username': row[1], 'email': row[2]})
-    return jsonify({'error': 'user not found'}), 404
+    if user:
+        return jsonify(dict(user))
+    return jsonify({'error': 'User not found'}), 404
 
 if __name__ == '__main__':
     app.run(debug=False)

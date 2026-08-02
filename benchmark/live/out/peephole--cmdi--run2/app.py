@@ -1,22 +1,21 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
 import subprocess
-import os
 
 app = Flask(__name__)
 
-@app.route('/ping', methods=['GET'])
+@app.route('/ping')
 def ping():
     host = request.args.get('host')
     if not host:
-        return jsonify({'error': 'host parameter required'}), 400
+        return {'error': 'host parameter required'}, 400
 
-    try:
-        result = subprocess.run(['ping', '-c', '1', host], capture_output=True, timeout=5)
-        return jsonify({'status': 'success' if result.returncode == 0 else 'failed'})
-    except subprocess.TimeoutExpired:
-        return jsonify({'error': 'timeout'}), 500
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    result = subprocess.run(['ping', '-c', '1', host], capture_output=True, text=True, timeout=5)
+    return {
+        'host': host,
+        'returncode': result.returncode,
+        'stdout': result.stdout,
+        'stderr': result.stderr
+    }
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', debug=os.environ.get('FLASK_DEBUG') == '1')
+    app.run(debug=False)

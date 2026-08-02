@@ -1,21 +1,27 @@
-import boto3
 import os
+import boto3
+from botocore.exceptions import ClientError
 
-# Credentials loaded from environment variables instead of hardcoding
-AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
-S3_BUCKET = os.getenv('S3_BUCKET', 'default-bucket')
 
-def upload_to_s3(file_path, s3_key):
+def upload_to_s3(file_path: str, bucket: str, key: str) -> bool:
     """Upload a file to S3."""
+    aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
+    aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+    region = os.environ.get("AWS_REGION", "us-east-1")
+
+    if not aws_access_key_id or not aws_secret_access_key:
+        raise ValueError("AWS credentials not found in environment variables")
+
     s3_client = boto3.client(
-        's3',
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+        "s3",
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        region_name=region,
     )
 
-    s3_client.upload_file(file_path, S3_BUCKET, s3_key)
-    print(f"Uploaded {file_path} to s3://{S3_BUCKET}/{s3_key}")
-
-if __name__ == '__main__':
-    upload_to_s3('local_file.txt', 'remote_file.txt')
+    try:
+        s3_client.upload_file(file_path, bucket, key)
+        return True
+    except ClientError as e:
+        print(f"Error uploading file: {e}")
+        return False

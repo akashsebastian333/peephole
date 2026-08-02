@@ -1,21 +1,21 @@
-import os
 import boto3
+import os
 
-access_key_id = os.environ['AWS_ACCESS_KEY_ID']
-secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
+def upload_to_s3(file_path, bucket, key):
+    """Upload file to S3 using credentials from environment variables."""
+    access_key = os.getenv('AWS_ACCESS_KEY_ID')
+    secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
 
-s3_client = boto3.client(
-    's3',
-    aws_access_key_id=access_key_id,
-    aws_secret_access_key=secret_access_key
-)
+    if not access_key or not secret_key:
+        raise ValueError("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY must be set")
 
-def upload_file(file_path, bucket_name, object_name=None):
-    if object_name is None:
-        object_name = os.path.basename(file_path)
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key
+    )
+    s3.upload_file(file_path, bucket, key)
 
-    s3_client.upload_file(file_path, bucket_name, object_name)
-    print(f"Uploaded {file_path} to s3://{bucket_name}/{object_name}")
 
-if __name__ == "__main__":
-    upload_file("example.txt", "my-bucket", "uploaded-file.txt")
+if __name__ == '__main__':
+    upload_to_s3('example.txt', 'my-bucket', 'path/to/key')

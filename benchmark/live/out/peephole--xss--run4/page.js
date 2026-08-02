@@ -1,20 +1,19 @@
-const comments = [];
+class CommentBoard {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+  }
 
-function addComment(text) {
-  const commentDiv = document.createElement('div');
-  commentDiv.className = 'comment';
-  commentDiv.textContent = text;
-  document.getElementById('comments').appendChild(commentDiv);
-  comments.push(text);
+  addComment(text) {
+    const comment = document.createElement('div');
+    comment.className = 'comment';
+    comment.textContent = text;
+    this.container.appendChild(comment);
+  }
+
+  render(comments) {
+    this.container.innerHTML = '';
+    comments.forEach(text => this.addComment(text));
+  }
 }
 
-function renderComments() {
-  const container = document.getElementById('comments');
-  container.innerHTML = '';
-  comments.forEach(text => {
-    const commentDiv = document.createElement('div');
-    commentDiv.className = 'comment';
-    commentDiv.textContent = text;
-    container.appendChild(commentDiv);
-  });
-}
+const board = new CommentBoard('comments');

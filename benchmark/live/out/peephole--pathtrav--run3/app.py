@@ -1,13 +1,12 @@
-from flask import Flask, request, send_from_directory
 import os
+from flask import Flask, request, send_from_directory
 
 app = Flask(__name__)
 
 @app.route('/download')
 def download():
     name = request.args.get('name', '')
-    safe_name = os.path.basename(name)
-    return send_from_directory('./files', safe_name)
+    return send_from_directory('./files', name)
 
 if __name__ == '__main__':
     app.run()

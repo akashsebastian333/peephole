@@ -1,31 +1,17 @@
-const comments = [];
+const commentForm = document.getElementById('comment-form');
+const commentInput = document.getElementById('comment-input');
+const commentsList = document.getElementById('comments-list');
 
-function addComment(text) {
-  comments.push(text);
-  renderComments();
-}
+commentForm?.addEventListener('submit', (e) => {
+  e.preventDefault();
 
-function renderComments() {
-  const container = document.getElementById('comments');
-  container.innerHTML = '';
+  const text = commentInput.value.trim();
+  if (!text) return;
 
-  comments.forEach(comment => {
-    const div = document.createElement('div');
-    div.className = 'comment';
-    div.textContent = comment;
-    container.appendChild(div);
-  });
-}
+  const div = document.createElement('div');
+  div.className = 'comment';
+  div.textContent = text;
 
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('comment-form');
-  const input = document.getElementById('comment-input');
-
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (input.value.trim()) {
-      addComment(input.value);
-      input.value = '';
-    }
-  });
+  commentsList?.appendChild(div);
+  commentInput.value = '';
 });

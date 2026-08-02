@@ -50,6 +50,19 @@ All notable changes to Peephole are documented here. This project adheres to
   et al. 2024, the most effective secure-generation prompt technique), adversarial
   critique (INDICT, NeurIPS 2024), and the horizontal-privilege (越权) replay test.
 
+### Latency: conditional, class-scoped self-review (209% -> 134% wall time)
+- The Stop-time adversarial self-review forces a model continuation and was the
+  dominant extra turn on pattern-tier sessions where it helped nothing (they touch
+  no absence-of-guard class). The landed code is now classified at write time
+  (cheap regex, `selfreview.go`) and the review fires ONLY for the classes present,
+  scoped to those - skipping the continuation entirely for the ~80% of code that
+  touches none. Turns fell 3.9 -> 2.7 (baseline 2.2), wall time 209% -> 134% of
+  baseline, cost 153% -> 120%, and secure-landed rose to 98%, all with insecure-
+  landed still 0% and the semantic tier still 84%. The cascade principle
+  (FrugalGPT / AutoMix; Chinese low-latency-guardrail practice: heavy review only
+  for the risky minority). Also unified two divergent review-text paths onto the
+  adversarial version (real git repos previously got weaker passive text).
+
 ### Taint performance
 - The cross-line taint pass now shares the presence-rule literal prefilter: it is
   skipped entirely on files with no sink anchor, keeping large files within the

@@ -7,33 +7,29 @@ app = Flask(__name__)
 def evaluate(node):
     if isinstance(node, ast.Constant):
         return node.value
-    if isinstance(node, ast.Num):
-        return node.n
     if isinstance(node, ast.BinOp):
-        left = evaluate(node.left)
-        right = evaluate(node.right)
         ops = {
-            ast.Add: operator.add, ast.Sub: operator.sub,
-            ast.Mult: operator.mul, ast.Div: operator.truediv,
-            ast.Pow: operator.pow, ast.Mod: operator.mod,
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Mod: operator.mod,
+            ast.Pow: operator.pow,
         }
-        return ops[type(node.op)](left, right)
+        return ops[type(node.op)](evaluate(node.left), evaluate(node.right))
     if isinstance(node, ast.UnaryOp):
-        operand = evaluate(node.operand)
-        if isinstance(node.op, ast.UAdd):
-            return +operand
-        if isinstance(node.op, ast.USub):
-            return -operand
-    raise ValueError("Unsupported")
+        ops = {ast.UAdd: operator.pos, ast.USub: operator.neg}
+        return ops[type(node.op)](evaluate(node.operand))
+    raise ValueError("unsupported operation")
 
 @app.route('/calc')
 def calc():
-    expr = request.args.get('expr', '')
     try:
+        expr = request.args.get('expr', '')
         result = evaluate(ast.parse(expr, mode='eval').body)
-        return {"result": result}
+        return str(result)
     except:
-        return {"error": "Invalid expression"}, 400
+        return "Error"
 
 if __name__ == '__main__':
     app.run()

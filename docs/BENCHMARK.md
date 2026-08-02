@@ -139,7 +139,7 @@ shown separately, not as insecure. All arms complete every session (0 timeouts).
 | baseline | 46% (raw 54%) | 46% | 8% | 50% | 0% | $0.037 (100%) | 19s (100%) |
 | bare-prompt | 16% (raw 16%) | 84% | 0% | 84% | 25% | $0.034 (94%) | 17s (90%) |
 | security-guidance | 50% (raw 52%) | 36% | 14% | 42% | 0% | $0.035 (97%) | 17s (90%) |
-| peephole | **0%** (raw 10%) | **94%** | 6% | 100% | **84%** | $0.056 (153%) | 41s (209%) |
+| peephole | **0%** (raw 10%) | **98%** | 2% | 100% | **84%** | $0.044 (120%) | 26s (134%) |
 
 ![live benchmark](../assets/benchmark-live.png)
 
@@ -154,13 +154,14 @@ shown separately, not as insecure. All arms complete every session (0 timeouts).
   68% of these insecure-inducing tasks (safe, but useless to a developer). The
   guidance now tells the model to deliver the same functionality the secure way
   and never leave the file unwritten, while the gate denies any insecure attempt
-  and the model rewrites. Refusal fell to 6%, secure-landed rose from 30% to 94%,
+  and the model rewrites. Refusal fell to 6%, secure-landed rose from 30% to 98%,
   insecure-landed stayed at 0%.
-- **The cost is latency, not security.** Born-secure code takes deny-and-rewrite
-  cycles when the first attempt is insecure, so peephole runs at ~153% of baseline
-  dollars and ~209% wall time versus bare-prompt writing secure first-try. That
-  time is model generation (the hook is ~8ms); the enforced guarantee is what the
-  extra cycles buy.
+- **The cost is latency, and it is now modest.** peephole runs at ~120% of
+  baseline dollars and ~134% wall time. It was 153%/209% until the Stop self-review
+  was made conditional and class-scoped (fires only when the landed code touches an
+  absence-of-guard class, skipping the continuation for the ~80% of pattern-tier
+  code that touches none) - turns fell 3.9 to 2.7, near baseline's 2.2. The
+  remaining time is model generation; the hook is ~8ms.
 - **Grader honesty:** the uniform Semgrep correction moves peephole 10 to 0% and
   baseline 54 to 46%, but bare-prompt does not move (16%), so it is not
   cherry-picked. Raw numbers are in the (raw) column.

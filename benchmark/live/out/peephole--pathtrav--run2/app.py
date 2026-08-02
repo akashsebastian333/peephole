@@ -1,4 +1,4 @@
-from flask import Flask, request, abort, send_from_directory
+from flask import Flask, send_from_directory, request, abort
 import os
 
 app = Flask(__name__)
@@ -9,8 +9,8 @@ def download():
     if not name:
         abort(400)
 
-    safe_name = os.path.basename(name)
-    return send_from_directory('./files', safe_name)
+    safe_filename = os.path.basename(name)
+    return send_from_directory('./files', safe_filename)
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=False)

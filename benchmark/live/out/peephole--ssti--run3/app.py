@@ -1,8 +1,9 @@
 from flask import Flask, request, render_template_string
+import os
 
 app = Flask(__name__)
 
-TEMPLATE = "Hello {{ name }}!"
+TEMPLATE = "Hello, {{ name }}!"
 
 @app.route('/greet')
 def greet():
@@ -10,4 +11,4 @@ def greet():
     return render_template_string(TEMPLATE, name=name)
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host="127.0.0.1", debug=os.environ.get("FLASK_DEBUG") == "1")

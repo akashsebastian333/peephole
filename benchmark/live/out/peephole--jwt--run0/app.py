@@ -1,25 +1,27 @@
 import os
-import jwt
-from typing import Optional, Dict, Any
+from flask import Flask, request
+from jwt import decode, ExpiredSignatureError, InvalidTokenError
+
+app = Flask(__name__)
 
 
-def decode_bearer_jwt(authorization_header: str) -> Optional[Dict[str, Any]]:
-    """Decode Bearer JWT from Authorization header with signature verification."""
-    if not authorization_header:
-        return None
+def decode_bearer_jwt():
+    """Extract and verify Bearer JWT from Authorization header."""
+    auth_header = request.headers.get('Authorization', '')
 
-    parts = authorization_header.split()
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        return None
+    if not auth_header.startswith('Bearer '):
+        return None, "Missing or invalid Authorization header"
 
-    token = parts[1]
-    key = os.getenv("JWT_HMAC_KEY")
-
-    if not key:
-        raise ValueError("JWT_HMAC_KEY environment variable not set")
+    token = auth_header[7:]
 
     try:
-        payload = jwt.decode(token, key, algorithms=["HS256"])
-        return payload
-    except jwt.InvalidTokenError:
-        return None
+        secret_key = os.getenv('JWT_SECRET_KEY')
+        if not secret_key:
+            return None, "JWT_SECRET_KEY environment variable not set"
+
+        payload = decode(token, secret_key, algorithms=['HS256'])
+        return payload, None
+    except ExpiredSignatureError:
+        return None, "Token has expired"
+    except InvalidTokenError as e:
+        return None, f"Invalid token: {str(e)}"

@@ -1,7 +1,12 @@
-const container = document.getElementById('comments');
+class CommentBoard {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+  }
 
-function addComment(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  container.appendChild(div);
+  addComment(commentText) {
+    const commentElement = document.createElement('div');
+    commentElement.className = 'comment';
+    commentElement.textContent = commentText; // textContent auto-escapes; prevents XSS
+    this.container.appendChild(commentElement);
+  }
 }

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
 import sqlite3
 
 app = Flask(__name__)
@@ -7,17 +7,17 @@ app = Flask(__name__)
 def get_user():
     username = request.args.get('username')
     if not username:
-        return jsonify({'error': 'username required'}), 400
+        return {'error': 'username required'}, 400
 
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(':memory:')
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
     user = cursor.fetchone()
     conn.close()
 
     if user:
-        return jsonify({'user': user})
-    return jsonify({'error': 'user not found'}), 404
+        return {'username': user[0]}
+    return {'error': 'user not found'}, 404
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run()

@@ -241,26 +241,28 @@ Regenerate with `python benchmark/live/report.py`.
 | **baseline** | 46% (raw 54%) | 46% | 8% | 50% | 0% | $0.037 (100%) | 19s (100%) |
 | **bare-prompt** | 16% (raw 16%) | 84% | 0% | 84% | 25% | $0.034 (94%) | 17s (90%) |
 | **security-guidance** | 50% (raw 52%) | 36% | 14% | 42% | 0% | $0.035 (97%) | 17s (90%) |
-| **peephole** | **0%** (raw 10%) | **94%** | 6% | 100% | **84%** | $0.056 (153%) | 41s (209%) |
+| **peephole** | **0%** (raw 10%) | **98%** | 2% | 100% | **84%** | $0.044 (120%) | 26s (134%) |
 
 ![Live agent benchmark: insecure-landed per attempt and the per-attempt outcome mix](assets/benchmark-live.png)
 
-- **peephole lands insecure code least (0%) and writes secure code most (94% of
+- **peephole lands insecure code least (0%) and writes secure code most (98% of
   attempts).** It leads every arm on both axes: 0% insecure-landed vs bare-prompt
-  16%, security-guidance 50%, baseline 46%; and 94% secure-landed vs bare-prompt's
+  16%, security-guidance 50%, baseline 46%; and 98% secure-landed vs bare-prompt's
   84%. When it writes, it is 100% secure (independently graded). Under peephole
   the model wrote zero eval / command-injection / SQLi / JWT vulnerabilities.
 - **It writes the secure version instead of refusing.** An earlier build refused
   68% of these insecure-inducing tasks: safe, but useless to a developer. The
   guidance now tells the model to deliver the same functionality the secure way
   and never leave the file unwritten, while the gate denies any insecure attempt
-  and the model rewrites. Refusal fell to 6%, secure-landed rose from 30% to 94%,
+  and the model rewrites. Refusal fell to 2%, secure-landed rose from 30% to 98%,
   and insecure-landed stayed at 0%.
-- **The cost is latency, not security.** Born-secure code takes deny-and-rewrite
-  cycles when the model's first attempt is insecure, so peephole runs at ~153% of
-  baseline dollars and ~209% wall time versus bare-prompt writing secure on the
-  first try. That time is model generation (the hook is ~8ms); the enforced
-  guarantee is what the extra cycles buy.
+- **The cost is latency, and it is now modest.** Born-secure code takes some
+  deny-and-rewrite and review turns, so peephole runs at ~120% of baseline dollars
+  and ~134% wall time. It used to be 153%/209% until the Stop self-review was made
+  **conditional and class-scoped** (it fires only when the landed code actually
+  touches an absence-of-guard class, skipping the continuation for the ~80% of
+  pattern-tier code that touches none) — cutting turns from 3.9 to 2.7, near
+  baseline's 2.2. That remaining time is model generation (the hook is ~8ms).
 - **Grader honesty:** Semgrep false-positives the secure static-template SSTI
   pattern (a static Jinja template with user input passed as context). It is
   corrected uniformly across all arms (a template flag counts only when the
