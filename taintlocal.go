@@ -253,11 +253,11 @@ func tlArgScan(content string, re *regexp.Regexp, sens map[string]bool) bool {
 // taintScan returns cross-line taint findings for sinks fed a tainted variable.
 // have holds CWEs already reported by the presence patterns, so the same class
 // is not double-flagged on one file.
-func (kb *KB) taintScan(lang, content string, have map[string]bool) []Finding {
+func (kb *KB) taintScan(lang, content, lc string, have map[string]bool) []Finding {
 	if content == "" || (lang != "python" && lang != "javascript" && lang != "") {
 		return nil
 	}
-	lc := strings.ToLower(content)
+	// lc is the caller-lowercased content (avoids a second pass)
 	// Fast path: if no sink's literal prefilter survives, no taint finding is
 	// possible - skip the whole pass (and its O(assignments) taint computation)
 	// so large sink-free files stay cheap.
