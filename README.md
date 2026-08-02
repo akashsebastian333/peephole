@@ -43,14 +43,13 @@ misses.
 ## How it's built
 
 A single **static Go binary**, cross-compiled for macOS/Linux/Windows and shipped
-in `bin/`. You install **no runtime**: not Node, not Python. The full hook path
-(launcher + binary + scan) measures **~8.5ms per event** on this machine (46%
-faster after three optimizations: the launcher hot path execs the cached binary
-with zero extra shell, the KB ships as build-time-generated Go literals with
-precomputed prefilters, `loadKB` is ~7µs, not ~2ms, and a detached SessionStart
-`warmcache` pre-warms the slopsquat cache so the first install verdict skips the
-cold-registry ~500ms). If your platform has no matching binary, the launcher exits
-cleanly with a notice and never blocks your work.
+in `bin/`; you install **no runtime** (not Node, not Python). The full hook path
+measures **under 10ms per event**: the launcher execs the cached binary directly,
+the CWE knowledge base ships as build-time-generated Go literals with precomputed
+prefilters (so `loadKB` is ~7µs, not ~2ms), and a detached SessionStart
+`warmcache` pre-warms the slopsquat cache so the first install verdict skips a
+cold ~500ms registry round-trip. If your platform has no matching binary, the
+launcher exits cleanly with a notice and never blocks your work.
 
 The CWE knowledge base is embedded into the binary (`go:embed`), so a local
 attacker can't quietly edit rule files the binary ignores, and there's no file
