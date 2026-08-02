@@ -64,6 +64,16 @@
       "re": "\\.(?:Query|QueryRow|Exec)(?:Context)?\\(\\s*(?:ctx\\s*,\\s*)?[\"'](?i:SELECT|INSERT|UPDATE|DELETE)[^\"']*[\"']\\s*\\+"
     },
     {
+      "lang": "go",
+      "confidence": "high",
+      "re": "(?::=|=)\\s*fmt\\.Sprintf\\(\\s*[\"'](?i:SELECT|INSERT|UPDATE|DELETE)"
+    },
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "(?::=|=)\\s*\"(?i:SELECT|INSERT|UPDATE|DELETE)[^\"]*\"\\s*\\+"
+    },
+    {
       "lang": "rust",
       "confidence": "high",
       "re": "(?:\\.|::)(?:query|query_as|execute|batch_execute)\\(\\s*&?format!\\(\\s*[\"'](?i:SELECT|INSERT|UPDATE|DELETE|DROP)"

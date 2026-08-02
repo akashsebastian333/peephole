@@ -21,6 +21,21 @@ func TestRuleCorpus(t *testing.T) {
 		{"CWE-89", "a.py", `logger.info(f"about to run a SELECT for {x}")`, false}, // not execute
 		{"CWE-89", "a.js", "db.query(`SELECT * FROM t WHERE id=${x}`)", true},
 		{"CWE-89", "a.js", "db.query('SELECT * FROM t WHERE id=?', [x])", false}, // parameterized
+		// CWE-89 Go SQL built in a variable (round-2 gap)
+		{"CWE-89", "a.go", "query := \"SELECT * FROM users WHERE name = '\" + name + \"'\"\nrows, _ := db.Query(query)", true},
+		{"CWE-89", "a.go", "query := fmt.Sprintf(\"SELECT * FROM t WHERE id = %d\", id)\nrows, _ := db.Query(query)", true},
+		{"CWE-89", "a.go", "query := \"SELECT * FROM t WHERE id = $1\"\nrows, _ := db.Query(query, id)", false}, // parameterized
+		// CWE-78 Java sh -c wrapper (round-2 gap)
+		{"CWE-78", "a.java", `new ProcessBuilder("bash", "-c", "ping " + host).start();`, true},
+		{"CWE-78", "a.java", "Runtime.getRuntime().exec(new String[]{\"sh\",\"-c\",\"ping \"+host});", true},
+		{"CWE-78", "a.java", `new ProcessBuilder("ping", "-c1", host).start();`, false}, // argv, safe
+		// CWE-732 Terraform publicly-accessible managed DB (round-2 gap)
+		{"CWE-732", "main.tf", "resource \"aws_db_instance\" \"d\" {\n  publicly_accessible = true\n}", true},
+		{"CWE-732", "main.tf", "resource \"aws_db_instance\" \"d\" {\n  publicly_accessible = false\n}", false},
+		// CWE-703 Solidity unchecked .send() (round-2 gap)
+		{"CWE-703", "c.sol", `msg.sender.send(amt);`, true},
+		{"CWE-703", "c.sol", `require(msg.sender.send(amt));`, false}, // return checked
+		{"CWE-703", "c.sol", `bool ok = msg.sender.send(amt);`, false}, // return consumed
 		// CWE-78 command injection
 		{"CWE-78", "a.py", `os.system(f"ping {h}")`, true},
 		{"CWE-78", "a.py", `subprocess.run(["ping", h])`, false}, // argv list

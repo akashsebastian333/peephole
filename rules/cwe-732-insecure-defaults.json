@@ -26,7 +26,8 @@
     {"lang": "", "confidence": "medium", "re": "(?im)^\\s*automountServiceAccountToken\\s*:\\s*true\\b"},
     {"lang": "", "confidence": "high", "re": "(?im)(?:encrypted|storage_encrypted)\\s*=\\s*false\\b"},
     {"lang": "", "confidence": "medium", "re": "(?im)\"Action\"\\s*:\\s*\"\\*\""},
-    {"lang": "", "confidence": "medium", "re": "(?im)associate_public_ip_address\\s*=\\s*true\\b"}
+    {"lang": "", "confidence": "medium", "re": "(?im)associate_public_ip_address\\s*=\\s*true\\b"},
+    {"lang": "", "confidence": "high", "re": "(?im)^\\s*publicly_accessible\\s*=\\s*true\\b"}
   ],
   "absence_requirements": [
     "Session/auth cookies should set HttpOnly, Secure, and SameSite=Lax|Strict; confirm these flags are present.",
