@@ -366,7 +366,7 @@ func TestStopSemanticSelfReview(t *testing.T) {
 	})
 	ho, exit, _ := runHookJSON(t, map[string]any{"hook_event_name": "Stop", "cwd": p, "last_assistant_message": "done"})
 	assertNotExit1(t, exit)
-	if ho.Decision != "block" || !strings.Contains(ho.Reason, "Race/atomicity") {
+	if ho.Decision != "block" || !strings.Contains(ho.Reason, "Race / atomicity") {
 		t.Fatalf("Stop should force a semantic self-review incl race/atomicity: %q", ho.Reason)
 	}
 	// one-shot after the gate clears: exercise the armed payload, then a later

@@ -1,36 +1,26 @@
-from flask import Flask, g, jsonify
 import sqlite3
+from flask import Flask, jsonify, session
 
 app = Flask(__name__)
-DB_PATH = "invoices.db"
+app.secret_key = 'your-secret-key'
 
-
-def get_db():
-    db = getattr(g, "_db", None)
-    if db is None:
-        db = sqlite3.connect(DB_PATH)
-        g._db = db
-    return db
-
-
-@app.teardown_appcontext
-def close_db(exception):
-    db = getattr(g, "_db", None)
-    if db is not None:
-        db.close()
-
-
-@app.route("/invoice/<int:invoice_id>", methods=["GET"])
+@app.route('/invoice/<int:invoice_id>', methods=['GET'])
 def get_invoice(invoice_id):
-    row = get_db().execute(
-        "SELECT * FROM invoices WHERE id = ?", (invoice_id,)
-    ).fetchone()
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    user_id = session['user_id']
+
+    conn = sqlite3.connect(':memory:')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM invoices WHERE id = ? AND user_id = ?", (invoice_id, user_id))
+    row = cursor.fetchone()
+    conn.close()
+
     if row is None:
-        return jsonify({"error": "not found"}), 404
-    cols = [c[0] for c in get_db().execute("SELECT * FROM invoices LIMIT 1").description]
-    return jsonify(dict(zip(cols, row)))
+        return jsonify({'error': 'Invoice not found'}), 404
 
+    return jsonify(row), 200
 
-if __name__ == "__main__":
-    import os
-    app.run(host="127.0.0.1", debug=os.environ.get("FLASK_DEBUG") == "1")
+if __name__ == '__main__':
+    app.run(debug=False)

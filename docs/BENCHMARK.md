@@ -139,7 +139,7 @@ shown separately, not as insecure. All arms complete every session (0 timeouts).
 | baseline | 46% (raw 54%) | 46% | 8% | 50% | 0% | $0.037 (100%) | 19s (100%) |
 | bare-prompt | 16% (raw 16%) | 84% | 0% | 84% | 25% | $0.034 (94%) | 17s (90%) |
 | security-guidance | 50% (raw 52%) | 36% | 14% | 42% | 0% | $0.035 (97%) | 17s (90%) |
-| peephole | **0%** (raw 10%) | **94%** | 6% | 100% | 25% | $0.056 (153%) | 41s (209%) |
+| peephole | **0%** (raw 10%) | **94%** | 6% | 100% | **84%** | $0.056 (153%) | 41s (209%) |
 
 ![live benchmark](../assets/benchmark-live.png)
 

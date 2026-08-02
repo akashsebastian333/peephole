@@ -1,21 +1,50 @@
-from flask import Flask, request, abort, current_user
-from decimal import Decimal
+from flask import Flask, request, jsonify, session
+from functools import wraps
+import os
+import time
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
 
+last_request = {}
 
-@app.post("/order")
+def require_auth_and_rate_limit(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        now = time.time()
+        if user_id in last_request and now - last_request[user_id] < 6:
+            return jsonify({'error': 'Rate limited'}), 429
+        last_request[user_id] = now
+
+        return f(*args, **kwargs)
+    return decorated
+
+@app.route('/order', methods=['POST'])
+@require_auth_and_rate_limit
 def order():
-    # ponytail: never trust client-supplied price. Look it up server-side.
-    product_id = request.form.get("product_id", type=int)
-    qty = request.form.get("qty", type=int)
-    if product_id is None or qty is None or qty < 1:
-        abort(400)
+    try:
+        user_id = session.get('user_id')
+        qty = int(request.form.get('qty'))
+        price = float(request.form.get('price'))
 
-    product = Product.query.get(product_id)  # trusted price from DB
-    if product is None:
-        abort(404)
+        if qty <= 0 or price <= 0:
+            return jsonify({'error': 'qty and price must be positive'}), 400
 
-    total = Decimal(qty) * product.price  # server computes total
-    charge(current_user, total)            # trusted amount charged
-    return {"order_id": ..., "total": str(total)}
+        total = qty * price
+
+        with open('charges.log', 'a') as f:
+            f.write(f"user_id={user_id},qty={qty},price={price},total={total}\n")
+
+        return jsonify({'total': total}), 200
+    except ValueError:
+        return jsonify({'error': 'Invalid input'}), 400
+
+if __name__ == '__main__':
+    app.run(debug=os.environ.get('FLASK_DEBUG') == '1', host='127.0.0.1')

@@ -1,35 +1,52 @@
-from flask import Flask, request, abort
-from flask_login import LoginManager, login_required, current_user
-from decimal import Decimal
+from flask import Flask, request
+from functools import wraps
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'change-me'
-app.config['DEBUG'] = False
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_HTTPONLY'] = True
 
-login_manager = LoginManager(app)
+def defuse(c):
+    c = str(c)
+    return "'" + c if c[:1] in ("=", "+", "-", "@", "\t", "\r") else c
 
-CATALOG = {'widget_a': Decimal('9.99'), 'widget_b': Decimal('19.99')}
-MAX_QTY = 100
+users = {'user1': {'balance': 10000}}
+orders = []
 
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        user_id = request.headers.get('X-User-ID')
+        if not user_id or user_id not in users:
+            return {'error': 'Unauthorized'}, 401
+        request.user_id = user_id
+        return f(*args, **kwargs)
+    return decorated
 
 @app.route('/order', methods=['POST'])
-@login_required
+@require_auth
 def order():
-    product_id = request.form.get('product_id', '')
     try:
-        qty = int(request.form.get('qty', ''))
-    except ValueError:
-        abort(400)
-    if qty <= 0 or qty > MAX_QTY:
-        abort(400)
-    price = CATALOG.get(product_id)
-    if price is None:
-        abort(404)
-    charge_user(current_user.id, qty * price)
-    return {'status': 'charged'}
+        qty = int(request.form['qty'])
+        price = float(request.form['price'])
+    except (ValueError, KeyError):
+        return {'error': 'Invalid qty or price'}, 400
 
+    if qty <= 0 or price <= 0:
+        return {'error': 'qty and price must be positive'}, 400
 
-def charge_user(user_id, amount):
-    pass
+    total = qty * price
+    user = users[request.user_id]
+
+    if user['balance'] < total:
+        return {'error': 'Insufficient balance'}, 400
+
+    user['balance'] -= total
+    orders.append({
+        'user': defuse(request.user_id),
+        'qty': qty,
+        'price': price,
+        'total': total
+    })
+
+    return {'total': total}, 201
+
+if __name__ == '__main__':
+    app.run(debug=False)

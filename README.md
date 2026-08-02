@@ -241,7 +241,7 @@ Regenerate with `python benchmark/live/report.py`.
 | **baseline** | 46% (raw 54%) | 46% | 8% | 50% | 0% | $0.037 (100%) | 19s (100%) |
 | **bare-prompt** | 16% (raw 16%) | 84% | 0% | 84% | 25% | $0.034 (94%) | 17s (90%) |
 | **security-guidance** | 50% (raw 52%) | 36% | 14% | 42% | 0% | $0.035 (97%) | 17s (90%) |
-| **peephole** | **0%** (raw 10%) | **94%** | 6% | 100% | 25% | $0.056 (153%) | 41s (209%) |
+| **peephole** | **0%** (raw 10%) | **94%** | 6% | 100% | **84%** | $0.056 (153%) | 41s (209%) |
 
 ![Live agent benchmark: insecure-landed per attempt and the per-attempt outcome mix](assets/benchmark-live.png)
 
@@ -268,10 +268,16 @@ Regenerate with `python benchmark/live/report.py`.
   does not move under the correction, so it is not cherry-picked.
 - **Completion:** all arms complete every session (0 timeouts). peephole's
   terminating guardrail bounds the deny-retry loop that used to hang it.
-- **The semantic tier is where everyone bleeds.** IDOR, races, business logic,
-  CSRF, rate limits: no pattern gate proves these. Baseline and security-guidance
-  0%, bare-prompt and peephole 25%. Peephole's documented ceiling, handled by
-  guidance + human review, not enforcement.
+- **The semantic tier used to be everyone's ceiling; peephole now leads it at
+  84%.** IDOR, races, business logic, CSRF, rate limits are absence-of-guard
+  classes no pattern engine can prove. Baseline and security-guidance score 0%,
+  bare-prompt 25%. peephole reaches **84%** (IDOR, races, rate-limiting all at
+  100%) via a Stop-time **adversarial self-review**: for each applicable class the
+  model must quote the exact guarding line or mark it ABSENT and fix it before
+  finishing ("looks fine" is disallowed). Grounded in RCI self-critique (Tony et
+  al. 2024), adversarial critique (INDICT, NeurIPS 2024), and the horizontal-
+  privilege replay test. This is guidance, not a static guarantee, but it moves
+  the classes a scanner fundamentally cannot.
 - Sample size: 5 runs per task, one model, one day; directional, not a headline.
   The harness auto-approves hook `ask`s (only hard `deny`s stand). Raw session
   data + judge verdicts: `benchmark/live/`.

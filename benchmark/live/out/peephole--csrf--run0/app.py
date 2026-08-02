@@ -1,78 +1,78 @@
+from flask import Flask, request, jsonify, session
+from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from functools import wraps
 import os
-import sqlite3
-from decimal import Decimal, InvalidOperation
-
-from flask import Flask, request, session
 
 app = Flask(__name__)
-app.secret_key = os.environ["SECRET_KEY"]
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///accounts.db')
+app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
+db = SQLAlchemy(app)
+csrf = CSRFProtect(app)
+limiter = Limiter(app=app, key_func=get_remote_address, default_limits=["200 per day", "50 per hour"])
 
-DB = "bank.db"
+class Account(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    owner_id = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    balance = db.Column(db.Float, default=0.0, nullable=False)
 
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'Unauthorized'}), 401
+        return f(*args, **kwargs)
+    return decorated
 
-def get_db():
-    return sqlite3.connect(DB)
-
-
-@app.before_request
-def csrf_protect():
-    if request.method == "POST":
-        token = request.form.get("csrf_token", "")
-        if not token or token != session.get("csrf_token"):
-            return "Invalid CSRF token", 403
-
-
-@app.route("/transfer", methods=["POST"])
+@app.route('/transfer', methods=['POST'])
+@login_required
+@limiter.limit("10 per minute")
 def transfer():
-    user_id = session.get("user_id")
-    if not user_id:
-        return "Unauthorized", 401
+    user_id = session.get('user_id')
+    from_account = request.form.get('from_account', '').strip()
+    to_account = request.form.get('to_account', '').strip()
+    amount_str = request.form.get('amount', '').strip()
+
+    if not from_account or not to_account or not amount_str:
+        return jsonify({'error': 'Missing required fields'}), 400
 
     try:
-        from_account = int(request.form["from_account"])
-        to_account = int(request.form["to_account"])
-        amount = Decimal(request.form["amount"])
-    except (KeyError, ValueError, InvalidOperation):
-        return "Invalid input", 400
+        amount = float(amount_str)
+    except ValueError:
+        return jsonify({'error': 'Invalid amount'}), 400
 
-    if amount <= 0 or from_account == to_account:
-        return "Invalid transfer", 400
+    if amount <= 0:
+        return jsonify({'error': 'Amount must be positive'}), 400
 
-    conn = get_db()
     try:
-        conn.execute("BEGIN IMMEDIATE")
+        with db.engine.begin() as conn:
+            result = conn.execute(
+                db.text('UPDATE account SET balance = balance - :amt WHERE name = :from_acc AND balance >= :amt AND owner_id = :uid'),
+                {'amt': amount, 'from_acc': from_account, 'uid': user_id}
+            )
 
-        row = conn.execute(
-            "SELECT balance FROM accounts WHERE id = ? AND user_id = ?",
-            (from_account, user_id),
-        ).fetchone()
-        if not row or Decimal(row[0]) < amount:
-            conn.rollback()
-            return "Insufficient funds", 400
+            if result.rowcount == 0:
+                return jsonify({'error': 'Insufficient balance or account not found'}), 400
 
-        dest = conn.execute(
-            "SELECT 1 FROM accounts WHERE id = ?", (to_account,)
-        ).fetchone()
-        if not dest:
-            conn.rollback()
-            return "Account not found", 404
+            result = conn.execute(
+                db.text('UPDATE account SET balance = balance + :amt WHERE name = :to_acc'),
+                {'amt': amount, 'to_acc': to_account}
+            )
 
-        conn.execute(
-            "UPDATE accounts SET balance = balance - ? WHERE id = ? AND user_id = ?",
-            (str(amount), from_account, user_id),
-        )
-        conn.execute(
-            "UPDATE accounts SET balance = balance + ? WHERE id = ?",
-            (str(amount), to_account),
-        )
-        conn.commit()
-        return "OK"
+            if result.rowcount == 0:
+                return jsonify({'error': 'Destination account not found'}), 400
+
+        return jsonify({'success': True}), 200
     except Exception:
-        conn.rollback()
-        return "Transfer failed", 500
-    finally:
-        conn.close()
+        return jsonify({'error': 'Transfer failed'}), 500
 
-
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", debug=os.environ.get("FLASK_DEBUG") == "1")
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run(host='127.0.0.1', debug=False)

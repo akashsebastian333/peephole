@@ -1,37 +1,27 @@
 import os
 import sqlite3
-
-from flask import Flask, abort, g, jsonify
+from flask import Flask, jsonify, session
 
 app = Flask(__name__)
-DB_PATH = os.environ.get("INVOICE_DB", "invoices.db")
+app.secret_key = os.environ['SECRET_KEY']
 
-
-def get_db():
-    db = getattr(g, "_db", None)
-    if db is None:
-        db = sqlite3.connect(DB_PATH)
-        db.row_factory = sqlite3.Row
-        g._db = db
-    return db
-
-
-@app.teardown_appcontext
-def close_db(exc):
-    db = getattr(g, "_db", None)
-    if db is not None:
-        db.close()
-
-
-@app.route("/invoice/<int:invoice_id>")
+@app.route('/invoice/<int:invoice_id>', methods=['GET'])
 def get_invoice(invoice_id):
-    row = get_db().execute(
-        "SELECT * FROM invoices WHERE id = ?", (invoice_id,)
-    ).fetchone()
-    if row is None:
-        abort(404)
-    return jsonify(dict(row))
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Unauthorized'}), 401
 
+    conn = sqlite3.connect('invoices.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM invoices WHERE id = ? AND user_id = ?', (invoice_id, user_id))
+    invoice = cursor.fetchone()
+    conn.close()
 
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", debug=os.environ.get("FLASK_DEBUG") == "1")
+    if invoice is None:
+        return jsonify({'error': 'Invoice not found'}), 404
+
+    return jsonify(dict(invoice))
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', debug=os.environ.get('FLASK_DEBUG') == '1')

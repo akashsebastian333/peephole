@@ -1,32 +1,33 @@
 import sqlite3
-from flask import Flask, jsonify, g
+from flask import Flask, jsonify, request
+from functools import wraps
 
 app = Flask(__name__)
-DATABASE = "invoices.db"
+DATABASE = 'invoices.db'
 
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        user_id = request.headers.get('X-User-ID')
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        return f(*args, user_id=user_id, **kwargs)
+    return decorated
 
-def get_db():
-    if "db" not in g:
-        g.db = sqlite3.connect(DATABASE)
-        g.db.row_factory = sqlite3.Row
-    return g.db
+@app.route('/invoice/<int:invoice_id>', methods=['GET'])
+@require_auth
+def get_invoice(invoice_id, user_id):
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM invoices WHERE id = ? AND user_id = ?", (invoice_id, user_id))
+    row = cur.fetchone()
+    conn.close()
 
-
-@app.teardown_appcontext
-def close_db(exception):
-    db = g.pop("db", None)
-    if db is not None:
-        db.close()
-
-
-@app.route("/invoice/<int:invoice_id>")
-def get_invoice(invoice_id):
-    db = get_db()
-    row = db.execute("SELECT * FROM invoices WHERE id = ?", (invoice_id,)).fetchone()
     if row is None:
-        return jsonify({"error": "not found"}), 404
+        return jsonify({'error': 'Invoice not found'}), 404
+
     return jsonify(dict(row))
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run()

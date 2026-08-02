@@ -38,6 +38,23 @@ All notable changes to Peephole are documented here. This project adheres to
   `exec` are still injectable and are now caught (the sink spec matches a second
   argument).
 
+### Semantic tier: adversarial self-review (25% -> 84%)
+- The absence-of-guard classes (IDOR, TOCTOU race, CSRF, business logic, rate
+  limiting) that no pattern engine can prove were peephole's documented ceiling.
+  The Stop-time self-review, previously a passive checklist a small model
+  rubber-stamps, is now a **red-team cite-or-exploit review**: for each applicable
+  class the model must quote the exact guarding line or mark it ABSENT and fix it
+  before finishing ("looks fine" is disallowed). Independently judged, peephole's
+  semantic-tier secure rate rose **25% -> 84%** (IDOR, race, rate-limiting all
+  0% -> 100%; CSRF and business-logic 60%). Grounded in RCI self-critique (Tony
+  et al. 2024, the most effective secure-generation prompt technique), adversarial
+  critique (INDICT, NeurIPS 2024), and the horizontal-privilege (越权) replay test.
+
+### Taint performance
+- The cross-line taint pass now shares the presence-rule literal prefilter: it is
+  skipped entirely on files with no sink anchor, keeping large files within the
+  latency budget.
+
 ### Benchmark honesty
 - The headline live metric is now **insecure-landed per attempt** (the security
   outcome), with a refusal shown as safe-but-unproductive rather than counted as
