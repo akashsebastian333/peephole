@@ -169,19 +169,27 @@ func handlePreToolUse(e Event, kb *KB) {
 		emitPreDecision("deny", provenance+" "+why+". This is non-waivable self-protection.")
 	}
 
-	if getMode(e) == "off" {
+	// Read-only tools take no decision - skip policy/mode work entirely.
+	if !writeTools[e.ToolName] && e.ToolName != "Bash" && !strings.HasPrefix(e.ToolName, "mcp__") {
+		passthrough("") // host permission logic runs
+	}
+
+	// Load org policy ONCE so every write surface (Write family, Bash write-path,
+	// MCP) inherits it: the floor raises the mode - even over a repo's "off" - and
+	// enforced CWEs hard-deny inside decisionFor. Escalation-only; never weakens.
+	pol := loadPolicy(projectDir(e))
+	mode := pol.floor(getMode(e))
+	if mode == "off" {
 		passthrough("")
 	}
 
 	switch {
 	case writeTools[e.ToolName]:
-		handleWriteFamily(e, kb, getMode(e), ti)
+		handleWriteFamily(e, kb, mode, ti, pol)
 	case e.ToolName == "Bash":
-		handleBash(e, kb, getMode(e), ti)
+		handleBash(e, kb, mode, ti, pol)
 	case strings.HasPrefix(e.ToolName, "mcp__"):
-		handleUnknownWrite(e, kb, getMode(e))
-	default:
-		passthrough("") // read-only tool: no decision, host permission logic runs
+		handleUnknownWrite(e, kb, mode, pol)
 	}
 }
 
@@ -266,12 +274,8 @@ func enforceMarked(e Event, mode string, c cand) {
 	emitPreDecision(c.decision, c.reason)
 }
 
-func handleWriteFamily(e Event, kb *KB, mode string, ti ToolInput) {
+func handleWriteFamily(e Event, kb *KB, mode string, ti ToolInput, pol policy) {
 	content := ti.newContent()
-	// Org policy can only make enforcement STRICTER: raise the mode to the org
-	// floor, and mandate specific CWEs to hard-deny. It can never weaken the gate.
-	pol := loadPolicy(projectDir(e))
-	mode = pol.floor(mode)
 	var cands []cand
 
 	// Manifest edits introduce dependencies too (N5). Offline signals first
@@ -309,10 +313,7 @@ func handleWriteFamily(e Event, kb *KB, mode string, ti ToolInput) {
 
 	if len(findings) > 0 {
 		f := findings[0]
-		decision, marked := decisionFor(mode, f, content)
-		if pol.mustDeny(f.Rule.CWE) && decision != "deny" {
-			decision, marked = "deny", false // org mandate: not waivable by a marker
-		}
+		decision, marked := decisionFor(mode, f, content, pol)
 		if marked {
 			recordMarker(stateDir(e), e.SessionID, ti.targetPath(), content, f)
 		}
@@ -351,14 +352,14 @@ func rewriteInput(raw json.RawMessage, newContent string) json.RawMessage {
 // handleUnknownWrite gates write-capable MCP tools without knowing their schema:
 // scan every string value in the tool_input for insecure code. No match -> no
 // decision.
-func handleUnknownWrite(e Event, kb *KB, mode string) {
+func handleUnknownWrite(e Event, kb *KB, mode string, pol policy) {
 	content := stringValues(e.ToolInput)
 	findings := kb.scan("", content)
 	if len(findings) == 0 {
 		passthrough("")
 	}
 	f := findings[0]
-	decision, _ := decisionFor(mode, f, content)
+	decision, _ := decisionFor(mode, f, content, pol)
 	enforce(e, mode, decision, f.Rule.CWE, f.Rule.Name, e.ToolName, "", reasonFor(f))
 }
 
@@ -391,7 +392,7 @@ func stringValues(raw json.RawMessage) string {
 	return b.String()
 }
 
-func handleBash(e Event, kb *KB, mode string, ti ToolInput) {
+func handleBash(e Event, kb *KB, mode string, ti ToolInput, pol policy) {
 	a := analyzeBash(ti.Command)
 	var cands []cand
 
@@ -438,7 +439,7 @@ func handleBash(e Event, kb *KB, mode string, ti ToolInput) {
 		}
 	}
 	if worst != nil {
-		decision, marked := decisionFor(mode, *worst, worstContent)
+		decision, marked := decisionFor(mode, *worst, worstContent, pol)
 		if marked {
 			recordMarker(stateDir(e), e.SessionID, "", worstContent, *worst)
 		}
@@ -453,7 +454,7 @@ func handleBash(e Event, kb *KB, mode string, ti ToolInput) {
 	// (chmod 777, umask 0, --acl public-read) that aren't a write payload.
 	if cmdFindings := kb.scanAgnostic(ti.Command); len(cmdFindings) > 0 {
 		f := cmdFindings[0]
-		decision, _ := decisionFor(mode, f, ti.Command)
+		decision, _ := decisionFor(mode, f, ti.Command, pol)
 		cands = append(cands, cand{decision, f.Rule.CWE, f.Rule.Name, "Bash(command)", "", reasonFor(f), false})
 	}
 
@@ -472,8 +473,19 @@ func handleBash(e Event, kb *KB, mode string, ti ToolInput) {
 // file must not waive an unrelated finding. The second return reports whether
 // such a scoped marker was present, so the waiver is audit-logged and Stop can
 // cross-check it against human approval.
-func decisionFor(mode string, f Finding, content string) (string, bool) {
+func decisionFor(mode string, f Finding, content string, pol policy) (string, bool) {
 	marked := secDebtNear(content, firstMatchLine(f.Rule, "", content))
+	decision, mk := baseDecision(mode, f, marked)
+	// Org mandate: an enforced CWE hard-denies in every mode and is not waivable
+	// by a marker. Applied here so it reaches every write surface (Write, Bash
+	// write-path, MCP), not just the Write family.
+	if pol.mustDeny(f.Rule.CWE) && decision != "deny" {
+		return "deny", false
+	}
+	return decision, mk
+}
+
+func baseDecision(mode string, f Finding, marked bool) (string, bool) {
 	switch mode {
 	case "hardened":
 		// Hardened requires typed human confirmation for a waiver, which a hook
