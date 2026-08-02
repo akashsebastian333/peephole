@@ -59,6 +59,8 @@ func TestTaintCrossLineCatches(t *testing.T) {
 			"const id = req.params.id;\nconst q = \"SELECT * FROM users WHERE id = \" + id;\ndb.query(q);\n", "CWE-89"},
 		{"path-js-concat", "app.js",
 			"const name = req.query.file;\nconst full = baseDir + \"/\" + name;\nfs.readFile(full, cb);\n", "CWE-22"},
+		{"cmdi-sanitizer-spoof", "run.py",
+			"host = request.args.get('host')\ncmd = \"ping \" + shlex.quote(other) + host\nos.system(cmd)\n", "CWE-78"},
 		{"code-eval", "calc.py",
 			"expr = request.args.get('expr')\nresult = eval(expr)\n", "CWE-94"},
 		{"deser-yaml-user", "load.py",
@@ -103,6 +105,8 @@ func TestTaintNoFalsePositives(t *testing.T) {
 			"const q = \"SELECT * FROM users WHERE id = ?\";\ndb.query(q, [req.params.id]);\n"},
 		{"path-js-const", "app.js",
 			"const full = CONFIG_PATH;\nfs.readFile(full, cb);\n"},
+		{"cmdi-sanitized-in-concat", "run.py",
+			"host = request.args.get('host')\ncmd = \"ping \" + shlex.quote(host)\nos.system(cmd)\n"},
 		{"sqli-int-cast", "db.py",
 			"uid = int(request.args.get('id'))\nq = f\"SELECT * FROM users WHERE id={uid}\"\ncur.execute(q)\n"},
 		{"unrelated-dynstring-static-sink", "app.py",
@@ -132,7 +136,7 @@ func TestTaintNoFalsePositives(t *testing.T) {
 				"log-nonsensitive": "CWE-532", "log-redacted": "CWE-532",
 				"log-secret-in-string-literal": "CWE-532",
 				"cmdi-subprocess-argv-safe": "CWE-78", "sqli-js-parameterized": "CWE-89",
-				"path-js-const": "CWE-22",
+				"path-js-const": "CWE-22", "cmdi-sanitized-in-concat": "CWE-78",
 			}
 			if cwe := bad[c.name]; cwe != "" && m[cwe] {
 				t.Errorf("false positive: %s raised %s on safe code", c.name, cwe)

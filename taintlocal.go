@@ -52,6 +52,12 @@ var (
 	tlDynStr = regexp.MustCompile("f[\"'][^\"'\\n]*\\{[^}\\n]*\\}|`[^`]*\\$\\{|[\"'][^\"'\\n]*[\"']\\s*[+%]|\\+\\s*[frbu]*[\"']|\\.format\\s*\\(|%\\s*[A-Za-z_(]")
 	// RHS is sanitized/cast: clears taint.
 	tlSanitizer = regexp.MustCompile(`^\s*(?:int|float|bool)\s*\(|shlex\.quote|\bescape\s*\(|markupsafe|bleach\.|re\.escape|secure_filename|\bquote_plus\b|urllib\.parse\.quote|encodeURIComponent`)
+	// A sanitizer applied to an argument, so the wrapped (safe) sub-expression can
+	// be removed before deciding whether a RAW tainted value still reaches the sink.
+	// One level of nested parens is handled (secure_filename(request.args.get('x')));
+	// deeper nesting is best-effort. Defuses sanitizer-spoofing, where a decoy
+	// sanitizer on one sub-expression cleared the taint of a raw one beside it.
+	tlSanitizerCall = regexp.MustCompile(`(?:\bint|\bfloat|\bbool|shlex\.quote|\bescape|\bmarkupsafe\.\w+|\bbleach\.\w+|re\.escape|\bsecure_filename|\bquote_plus|urllib\.parse\.quote|\bencodeURIComponent)\s*\((?:[^()]|\([^()]*\))*\)`)
 
 	// An identifier that IS a secret/PII by name (whole word or trailing segment,
 	// so token_count / secretariat are not swept in). Feeds CWE-532.
@@ -223,6 +229,25 @@ func tlTaint(content string) (user, dyn, sens map[string]bool) {
 					}
 					if dyn[id] {
 						nd = true
+					}
+				}
+			}
+			// A raw source or a previously-tainted var used OUTSIDE any sanitizer call
+			// keeps its taint even when a decoy sanitizer wraps a different
+			// sub-expression (cmd = "x " + shlex.quote(a) + user_raw). Only user taint:
+			// the value genuinely reaches the sink unsanitized. Removing the
+			// sanitizer-wrapped spans first means the legitimate wrapped form
+			// (secure_filename(user)) still clears.
+			if !nu {
+				cleanRefs := tlRefs(tlSanitizerCall.ReplaceAllString(rhs, " "))
+				if tlSource.MatchString(cleanRefs) {
+					nu = true
+				} else {
+					for _, id := range tlWord.FindAllString(cleanRefs, -1) {
+						if user[id] {
+							nu = true
+							break
+						}
 					}
 				}
 			}

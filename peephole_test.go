@@ -152,6 +152,29 @@ func TestStrictAsksMediumConfidence(t *testing.T) {
 	}
 }
 
+func TestDenyBudgetKeepsEarlyDeniesDenied(t *testing.T) {
+	// The terminating guardrail hands off to the human (ask) only after the SAME
+	// rule denies denyHardBudget (3) times in one session; the first denies must
+	// stay deny. A regression lowering that constant would let insecure code land
+	// after a single retry - this is the deny path, the highest-impact place to
+	// lose coverage, and it had none (every other test writes one finding).
+	p := newProject(t, "strict")
+	cases := []struct{ path, content, want string }{
+		{"q1.py", `cur.execute(f"SELECT * FROM users WHERE id={a}")`, "deny"},
+		{"q2.py", `cur.execute(f"SELECT * FROM users WHERE name={b}")`, "deny"},
+		{"q3.py", `cur.execute(f"SELECT * FROM users WHERE email={c}")`, "ask"},
+	}
+	for i, c := range cases {
+		ev := write(p, "Write", c.path, c.content)
+		ev["session_id"] = "budget-sess" // same session so the streak accumulates
+		ho, exit, raw := runHookJSON(t, ev)
+		assertNotExit1(t, exit)
+		if got := ho.HookSpecificOutput.PermissionDecision; got != c.want {
+			t.Fatalf("write %d (%s): want %s, got %s (%s)", i+1, c.path, c.want, got, raw)
+		}
+	}
+}
+
 func TestBashHeredocBypassDenied(t *testing.T) {
 	// Scenario D: model denied on Write retries via heredoc. The write-path
 	// inspection must extract the payload and deny it too.
