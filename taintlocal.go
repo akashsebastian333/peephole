@@ -88,9 +88,10 @@ func tlRefs(rhs string) string {
 //	mode "call": the sink regex captures the whole argument text; the finding
 //	             fires when any sensitive reference appears in it (log / exfil).
 type taintSinkPat struct {
-	Lang string // "python" | "javascript" | "" (any)
-	Re   string
-	re   *regexp.Regexp
+	Lang      string // "python" | "javascript" | "" (any)
+	Re        string
+	re        *regexp.Regexp
+	prefilter []string // lowercase literals, one of which must be present; nil = always run
 }
 
 type TaintSpec struct {
@@ -129,16 +130,22 @@ func (s *TaintSpec) prep() {
 		if re, err := regexp.Compile(s.Sinks[i].Re); err == nil {
 			s.Sinks[i].re = re
 		}
+		// literal prefilter: skip the whole taint pass on files that cannot
+		// contain this sink (keeps large sink-free files off the taint path).
+		s.Sinks[i].prefilter = requiredLiterals(s.Sinks[i].Re)
 	}
 	s.rule = &Rule{CWE: s.CWE, Name: s.Name, Severity: s.Severity, OWASP: s.OWASP, KEV: s.KEV}
 }
 
 // taintSpecHits reports whether the spec's sinks are fed a triggering taint.
-func taintSpecHits(s *TaintSpec, lang, content string, user, dyn, sens map[string]bool) bool {
+func taintSpecHits(s *TaintSpec, lang, lc, content string, user, dyn, sens map[string]bool) bool {
 	for i := range s.Sinks {
 		sp := &s.Sinks[i]
 		if sp.re == nil || (sp.Lang != "" && lang != "" && sp.Lang != lang) {
 			continue
+		}
+		if sp.prefilter != nil && prefilterMiss(sp.prefilter, lc) {
+			continue // sink's required literal absent
 		}
 		if s.Mode == "call" {
 			if tlArgScan(content, sp.re, sens) {
@@ -250,6 +257,13 @@ func (kb *KB) taintScan(lang, content string, have map[string]bool) []Finding {
 	if content == "" || (lang != "python" && lang != "javascript" && lang != "") {
 		return nil
 	}
+	lc := strings.ToLower(content)
+	// Fast path: if no sink's literal prefilter survives, no taint finding is
+	// possible - skip the whole pass (and its O(assignments) taint computation)
+	// so large sink-free files stay cheap.
+	if !anyTaintSinkPresent(lang, lc) {
+		return nil
+	}
 	user, dyn, sens := tlTaint(content)
 	var out []Finding
 	seen := map[string]bool{}
@@ -259,12 +273,31 @@ func (kb *KB) taintScan(lang, content string, have map[string]bool) []Finding {
 		if s.rule == nil || have[s.CWE] || seen[s.CWE] {
 			continue
 		}
-		if taintSpecHits(s, lang, content, user, dyn, sens) {
+		if taintSpecHits(s, lang, lc, content, user, dyn, sens) {
 			out = append(out, Finding{Rule: s.rule, Confidence: s.Confidence})
 			seen[s.CWE] = true
 		}
 	}
 	return out
+}
+
+// anyTaintSinkPresent reports whether any spec sink's prefilter literal is in the
+// (lowercased) content for this language - the cheap gate before tlTaint runs.
+func anyTaintSinkPresent(lang, lc string) bool {
+	for i := range generatedTaintSpecs {
+		s := &generatedTaintSpecs[i]
+		s.prep()
+		for j := range s.Sinks {
+			sp := &s.Sinks[j]
+			if sp.re == nil || (sp.Lang != "" && lang != "" && sp.Lang != lang) {
+				continue
+			}
+			if sp.prefilter == nil || !prefilterMiss(sp.prefilter, lc) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // tlHave collects the CWEs present in a finding slice (for dedup).

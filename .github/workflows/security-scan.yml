@@ -1,0 +1,47 @@
+name: security-scan
+
+# A security tool should scan its own code, but the scanners (gosec / staticcheck
+# / govulncheck) are slow and their `@latest` pins move, so they run once daily
+# on a schedule instead of on every push. Trigger manually with the Actions tab.
+on:
+  schedule:
+    - cron: '17 6 * * *' # daily, 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: false
+
+      - name: govulncheck (known CVEs in our code + dependencies)
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+          "$(go env GOPATH)/bin/govulncheck" ./...
+
+      - name: staticcheck (bug + code-quality analysis)
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
+          "$(go env GOPATH)/bin/staticcheck" ./...
+
+      - name: gosec (security static analysis)
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          # Excluded rules are architectural noise for a tool that manages its own
+          # state files and shells out with fixed argv (never a shell):
+          #   G104 best-effort error ignores on state writes are idiomatic here
+          #   G204 every exec.Command uses a fixed argv list, no shell, no interpolation
+          #   G304/G703 file paths are program-derived state paths, not user traversal
+          #   G306 state files are 0600; the flagged writes are reviewed
+          #   G122 filepath.WalkDir over the project tree
+          # Generated code (rules_gen.go) is skipped. High-value classes (weak
+          # crypto/random, hardcoded secrets, SQL/command injection, SSRF) stay on.
+          "$(go env GOPATH)/bin/gosec" -exclude-generated \
+            -exclude=G104,G204,G304,G703,G306,G122 -severity medium ./...
