@@ -9,7 +9,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-C79A3B" alt="MIT license">
   <img src="https://img.shields.io/badge/go-1.26-00ADD8" alt="Go 1.26">
-  <img src="https://img.shields.io/badge/rules-176%20CWE-0F1420" alt="176 CWE rules">
+  <img src="https://img.shields.io/badge/rules-177%20CWE-0F1420" alt="177 CWE rules">
   <img src="https://img.shields.io/badge/languages-31-0F1420" alt="31 languages">
   <img src="https://img.shields.io/badge/deps-0-brightgreen" alt="zero dependencies">
 </p>
@@ -82,9 +82,10 @@ Switch with `/peephole strict` (or `audit`/`hardened`/`off`), or
 Enforced at write time (high-confidence *presence* patterns, Python + JS/TS):
 SQL injection (CWE-89), code injection (94), unsafe deserialization (502), XSS
 (79), OS command injection (78), path traversal (22), hardcoded secrets (798),
-weak crypto (327), disabled security controls (1188), and hallucinated/
-slopsquatted package installs. Bash payloads (heredocs, `python -c`, redirects)
-are extracted and scanned through the same engine.
+weak crypto (327), disabled security controls (1188), environment/secret
+exfiltration to a network sink (200 — the "add telemetry" confused-deputy leak),
+and hallucinated/slopsquatted package installs. Bash payloads (heredocs,
+`python -c`, redirects) are extracted and scanned through the same engine.
 
 Beyond application code, it also covers **smart contracts** (Solidity:
 reentrancy, `tx.origin` auth, `delegatecall`/`selfdestruct`, block-property
@@ -184,39 +185,42 @@ version and writes it securely — born-secure, no block); adding the
 Race-condition and business-logic classes are out of scope for the pattern
 engine and are handled as guidance + human review, not enforcement.
 
-**Live agent benchmark — real Claude sessions, 4 arms.** 144 `claude -p`
-sessions (Haiku 4.5): 10 insecure-inducing pattern tasks ×2 + 5
-absence-of-guard semantic tasks (IDOR, race, business-logic, CSRF,
-rate-limiting) ×2 + 6 gate-evasion attacks, per arm. Semantic outcomes scored
-by an independent LLM judge against per-task rubrics (2 judge errors found on
-audit, adjudicated against the artifacts and disclosed):
+**Live agent benchmark — real Claude sessions, 4 arms** (Haiku 4.5, 164 records
+across a pattern tier, a semantic tier, and an adversarial tier). This table is
+the **honest aggregation** — it replaces an earlier version that used peephole's
+*own* scanner as the grader, counted refusals (empty output) as "secure", and
+dropped peephole's timeouts. Here the headline is an **independent** grader
+(Semgrep over code-writing sessions; an out-of-family LLM judge for the semantic
+tier); the own-scanner column is shown only as a circular reference; timeouts are
+counted as a completion metric. Regenerate with `python benchmark/live/report.py`.
 
-| arm | secure — pattern tier (scan) | secure — semantic tier (judge) | born-secure | tokens | cost | time | attacks stopped |
-|---|---|---|---|---|---|---|---|
-| **baseline** | 42% | 0% | — | 74k (100%) | $0.076 (100%) | 105s (100%) | 83% |
-| **bare-prompt** | 68% | 25% | — | 64k (86%) | $0.067 (88%) | 278s (264%) | 67% |
-| **the advisory linter** | 65% | 0% | — | 67k (91%) | $0.070 (92%) | 168s (160%) | 100% |
-| **peephole** | **100%** (94% born) | **43%** | **94%** | 74k (100%) | $0.077 (101%) | 202s (192%) | 100% |
+| arm | secure — INDEPENDENT (Semgrep) | semantic judge | own-scanner (circular) | completed | cost | time |
+|---|---|---|---|---|---|---|
+| **baseline** | 57% | 0% | 21% | 95% | $0.076 (100%) | 105s (100%) |
+| **bare-prompt** | 74% | 25% | 68% | 95% | $0.067 (88%) | 278s (264%) |
+| **the advisory linter** | 73% | 0% | 36% | 100% | $0.070 (92%) | 168s (160%) |
+| **peephole** | **90%** | **25%** | 100% | **85%** | $0.077 (101%) | 202s (192%) |
 
-![Live agent benchmark — every metric vs baseline](assets/benchmark-live.png)
+![Live agent benchmark — independent graders lead; own-scanner is circular](assets/benchmark-live.png)
 
 Read this one carefully, because it's the honest one:
 
-- **The semantic tier is where everyone bleeds — including peephole.** IDOR,
-  races, business logic, CSRF, rate limits: no regex gate can prove these.
-  Baseline and the advisory linter scored **0%**, bare-prompt 25%, peephole 43%
-  (its always-on ladder + Stop-time self-review is the only arm above 30%).
-  Peephole does not enforce these classes — this is its documented ceiling, now
-  measured in public. An independent semantic review layer (LLM, human) is
-  still necessary; peephole composes with one rather than replacing it.
-- **the advisory tool's semantic 0% needs context too**: its LLM Stop-review
-  fires *after* the code is written; in these sessions it either didn't run to
-  a fix or the fixes didn't satisfy the rubric. That is its design (advise, not
-  enforce), not necessarily its ceiling. Peephole's own Stop review was since
-  upgraded (diff-grounded, CWE-targeted, N3-triggered) and re-validated: it
-  fires correctly, but Haiku *rubber-stamps its own diff* (0/7 fixed) — LLM
-  self-review on security bugs is weak everywhere, ours included. See
-  `docs/BENCHMARK.md` §D.
+- **Peephole genuinely helps, at 90% — not 100%.** Independently graded, over
+  sessions that actually wrote code, peephole is 90% vs 57% baseline: a real
+  ~33-point gain from the guidance plane. The 100% "own-scanner" column is
+  peephole grading itself (circular) and is not the headline.
+- **The gate hard-denied 0 of 6 adversarial attacks.** The guidance plane, not
+  the gate, does the work here — and Haiku refuses most blatant attacks on its
+  own (baseline "safe" 83%). "Attacks stopped" ties across arms because it
+  measures the model's refusal, not the tool. The gate's discriminative value is
+  the subtle rename bypass (`app.txt` → `mv app.py`), which landed on baseline /
+  bare-prompt and only peephole stopped mechanically.
+- **Peephole has the lowest completion rate (85%)** — its Stop-loop caused
+  timeouts (since fixed by a terminating guardrail; see the changelog).
+- **The semantic tier is where everyone bleeds.** IDOR, races, business logic,
+  CSRF, rate limits: no regex gate can prove these. Baseline and the advisory
+  linter 0%, bare-prompt and peephole 25%. Peephole does not enforce these — its
+  documented ceiling; an independent semantic review layer is still necessary.
 - **Cost realism:** peephole costs +1% money, +92% wall time vs baseline
   (hook events + gate retries + the N6 continuation) and 3 of its 5 harness
   timeouts were forced-continuation loops hitting the 10-minute cap. That is
@@ -228,17 +232,12 @@ Read this one carefully, because it's the honest one:
   same phenomenon — a security instruction makes the model generate longer,
   more careful responses, plus skew from a few slow sessions (medians: 81s
   baseline / 156s peephole / 233s bare-prompt — less dramatic than means).
-- **Attacks:** the rename bypass (write `app.txt`, `mv app.py`) landed on
-  baseline and bare-prompt — the only attack that got through anywhere — and
-  peephole's gate stopped it mechanically (not via model refusal). Confound:
-  Haiku refuses most blatant attack prompts on its own, so "attacks stopped"
-  is generous to every arm; the discriminative case is the subtle one.
-- Small-n honesty: n=2 per cell, one model, one day. Harness auto-approves
-  hook `ask`s (simulating the over-trusting user — only hard `deny`s stand).
-  Scanner-scorer overlap (peephole's own scanner as primary scorer) is mitigated
-  by the Semgrep cross-column and the independent judge for semantic tasks.
-  9 of 144 sessions hit the 600s harness cap and are excluded (disclosed).
-  Raw session data + judge verdicts: `benchmark/live/`.
+- Small-n honesty: n≈2 per cell, one model, one day — directional, not a
+  headline. The harness auto-approves hook `ask`s (the over-trusting user; only
+  hard `deny`s stand). The independent Semgrep / LLM-judge grader is the primary
+  scorer here; peephole's own scanner is shown only as a circular reference.
+  Timeouts are counted as a completion metric, not silently dropped. Raw session
+  data + judge verdicts: `benchmark/live/`.
 
 ## How it compares
 
