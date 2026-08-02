@@ -176,6 +176,13 @@ func (p *Pattern) match(content string) bool {
 	if p.re == nil {
 		return false
 	}
+	// Fast path: ~90% of patterns have no line-scoped refinements, so they only
+	// need "does it match at all". MatchString finds the first hit without
+	// allocating the [][]int of every match - identical result, since the loop
+	// below also returns on the first match when there is nothing to refine.
+	if p.prevNot == nil && p.rejectRe == nil && p.requireRe == nil {
+		return p.re.MatchString(content)
+	}
 	for _, loc := range p.re.FindAllStringIndex(content, -1) {
 		if p.prevNot != nil && loc[0] > 0 && p.prevNot.MatchString(content[loc[0]-1:loc[0]]) {
 			continue
