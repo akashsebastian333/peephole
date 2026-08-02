@@ -119,6 +119,35 @@ func TestSecDebtApprovalExactMatch(t *testing.T) {
 	}
 }
 
+func TestSelfReviewTracksClassesNotOneShot(t *testing.T) {
+	// A semantic class first introduced DURING the forced continuation must still
+	// be reviewed: the reviewed-state is per-class, not a sticky one-shot flag.
+	sd, sid := t.TempDir(), "s1"
+	pending := func() []string {
+		reviewed := map[string]bool{}
+		for _, k := range sessionReviewedClasses(sd, sid) {
+			reviewed[k] = true
+		}
+		var out []string
+		for _, k := range sessionSemReview(sd, sid) {
+			if !reviewed[k] {
+				out = append(out, k)
+			}
+		}
+		return out
+	}
+	markSemReview(sd, sid, []string{"idor"})
+	markReviewedClasses(sd, sid, []string{"idor"}) // first Stop reviewed idor
+	markSemReview(sd, sid, []string{"race"})        // a new class lands during the continuation
+	if p := pending(); len(p) != 1 || p[0] != "race" {
+		t.Fatalf("a class introduced after the first review must still be pending, got %v", p)
+	}
+	markReviewedClasses(sd, sid, []string{"race"})
+	if p := pending(); len(p) != 0 {
+		t.Fatalf("all classes reviewed, nothing should pend, got %v", p)
+	}
+}
+
 func TestRuleIDLogged(t *testing.T) {
 	// The audit log's rule_id carries the rule identity, never the confidence tier.
 	p := newProject(t, "strict")

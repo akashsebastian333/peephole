@@ -722,8 +722,19 @@ func handleStop(e Event, kb *KB) {
 	// Self-review fires only for the absence-of-guard classes the LANDED code
 	// actually touches (classified at write time), scoped to those classes - so
 	// pattern-tier sessions that touch none skip the review continuation entirely.
-	semKeys := sessionSemReview(sd, e.SessionID)
-	needReview := len(semKeys) > 0 && sessionSawWrite(sd, e.SessionID) && !sessionReviewed(sd, e.SessionID)
+	// Review only classes not yet reviewed, so a class first introduced during a
+	// prior forced continuation is not skipped by a sticky one-shot flag.
+	reviewed := map[string]bool{}
+	for _, k := range sessionReviewedClasses(sd, e.SessionID) {
+		reviewed[k] = true
+	}
+	var semKeys []string
+	for _, k := range sessionSemReview(sd, e.SessionID) {
+		if !reviewed[k] {
+			semKeys = append(semKeys, k)
+		}
+	}
+	needReview := len(semKeys) > 0 && sessionSawWrite(sd, e.SessionID)
 	needTest := wantTest && !exercised
 	if needReview || needTest {
 		var msg string
@@ -732,7 +743,7 @@ func handleStop(e Event, kb *KB) {
 			// cite-or-exploit review scoped to the touched classes, with the diff
 			// grounded in when a git diff is available.
 			msg = buildSelfReview(semKeys, sessionDiff(projectDir(e)))
-			markReviewed(sd, e.SessionID)
+			markReviewedClasses(sd, e.SessionID, semKeys)
 		}
 		if needTest {
 			if msg != "" {

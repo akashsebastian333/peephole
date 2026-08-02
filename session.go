@@ -67,12 +67,22 @@ func sessionN3Sec(sd, sid string) (string, bool) {
 // ratelimit) the LANDED code touched this session, accumulated at PostToolUse.
 // The Stop self-review fires only when this is non-empty, scoped to these classes
 // - so pattern-tier code that touches none skips the review continuation entirely.
-func markSemReview(sd, sid string, keys []string) {
+func markSemReview(sd, sid string, keys []string) { addSessionSet(sd, sid, "semreview", keys) }
+func sessionSemReview(sd, sid string) []string    { return readSessionSet(sd, sid, "semreview") }
+
+// reviewedClasses: the semantic classes the Stop self-review has already covered.
+// Tracked per-class (not a one-shot flag) so a class first introduced DURING the
+// forced continuation is still reviewed on the next Stop.
+func markReviewedClasses(sd, sid string, keys []string) { addSessionSet(sd, sid, "reviewed", keys) }
+func sessionReviewedClasses(sd, sid string) []string    { return readSessionSet(sd, sid, "reviewed") }
+
+// addSessionSet unions keys into a comma-joined per-session set file.
+func addSessionSet(sd, sid, name string, keys []string) {
 	if len(keys) == 0 {
 		return
 	}
 	m := map[string]bool{}
-	for _, k := range sessionSemReview(sd, sid) {
+	for _, k := range readSessionSet(sd, sid, name) {
 		m[k] = true
 	}
 	for _, k := range keys {
@@ -83,25 +93,15 @@ func markSemReview(sd, sid string, keys []string) {
 		all = append(all, k)
 	}
 	sort.Strings(all)
-	_ = os.WriteFile(sidFile(sd, sid, "semreview"), []byte(strings.Join(all, ",")), 0o600)
+	_ = os.WriteFile(sidFile(sd, sid, name), []byte(strings.Join(all, ",")), 0o600)
 }
 
-func sessionSemReview(sd, sid string) []string {
-	b, err := os.ReadFile(sidFile(sd, sid, "semreview"))
+func readSessionSet(sd, sid, name string) []string {
+	b, err := os.ReadFile(sidFile(sd, sid, name))
 	if err != nil || len(strings.TrimSpace(string(b))) == 0 {
 		return nil
 	}
 	return strings.Split(strings.TrimSpace(string(b)), ",")
-}
-
-// reviewed: the Stop-time semantic self-review already fired (one-shot).
-func markReviewed(sd, sid string) {
-	_ = os.WriteFile(sidFile(sd, sid, "reviewed"), []byte("1"), 0o600)
-}
-
-func sessionReviewed(sd, sid string) bool {
-	_, err := os.Stat(sidFile(sd, sid, "reviewed"))
-	return err == nil
 }
 
 // armNegTest records the adversarial input a Stop-time test must exercise.
