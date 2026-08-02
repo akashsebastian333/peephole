@@ -5,13 +5,17 @@ Concrete engineering design for the v1 local build of the blueprint
 platform contract each hook relies on. Verified against the real
 advisory PostToolUse plugins installed locally.
 
-## The one-sentence difference
+## The difference
 
-The incumbent advisory approach wires its regexes to **PostToolUse** — it warns
-*after* the insecure code lands on disk (detect-then-regenerate). Peephole wires
-the same class of check to **PreToolUse** and returns `permissionDecision:deny`
-*before* the write lands (born-secure enforcement), plus Bash write-path
-inspection so `cat > f <<EOF` can't route around the Write tool.
+The incumbent plugin (security-guidance) wires its regexes to **PostToolUse**: it
+warns *after* the insecure code is already written, then hopes the model
+regenerates it. That proves code was *repaired* secure.
+
+Peephole wires the same class of check to **PreToolUse** and returns
+`permissionDecision:deny` *before* the write lands. In strict/hardened mode the
+insecure hunk never touches disk. That proves code was *born* secure, and it
+closes the Bash escape hatch (`cat > f <<EOF …`) that a plain Write-tool gate
+misses.
 
 ## Platform contract (verified)
 
@@ -49,6 +53,17 @@ Fail-safe boundary: if no binary matches the platform, the launcher exits 0 with
 a visible notice — peephole never blocks the workflow because it cannot run.
 This is distinct from fail-**closed**, which applies only when the binary ran and
 hit an internal error mid-decision.
+
+**Hot-path performance (< 10ms per event).** PreToolUse fires on every
+Write/Edit/Bash, so the whole path is tuned to stay under the threshold a dev
+would feel: the launcher execs the cached binary directly; the CWE knowledge
+base ships as build-time-generated Go literals with precomputed literal-set
+prefilters, so `loadKB` is ~7µs rather than ~2ms of JSON parsing, and there is
+no file I/O to load rules on the hot path (`go:embed` also means a local
+attacker can't quietly edit rule files the binary would ignore); a detached
+SessionStart `warmcache` pre-warms the slopsquat cache so the first install
+verdict skips a cold ~500ms registry round-trip. Measured hook process ~8ms;
+the rest of any latency is model generation.
 
 ## Scope (what this build includes vs defers)
 
@@ -148,3 +163,56 @@ Deny = structured `permissionDecision:deny` or exit 2. Never exit 1.
 - Self-protection: any Write/Edit/Bash/MCP targeting `.peephole/` or the plugin
   dir is denied in all modes (path-aware: `.peephole-rules.json` and
   `.peephole-policy.json` are committed project files and stay editable).
+
+## Build & test
+
+```sh
+./build.sh      # regenerate rules_gen.go, cross-compile all targets, regen integrity manifest
+go test ./...   # end-to-end hook contract tests + KB self-consistency + tamper tests
+```
+
+## Extensibility & enterprise
+
+- **Custom / org rules (additive):** drop a `.peephole-rules.json` (or
+  `.claude/peephole-rules.json`) in your project — an array of rule records in the
+  same schema. They *add* findings; they can never disable a built-in. Safe by
+  construction: RE2 is linear-time, so a custom regex can't ReDoS.
+- **Org enforcement policy (`.peephole-policy.json`, committed):** beyond guidance
+  values (`{"global": [...], "CWE-89": [...]}`, injected before generation), an org
+  can make the gate *stricter*, never weaker:
+    - `"enforce": ["CWE-89", "CWE-327"]` mandates those classes to a hard **deny**
+      in every mode; a `sec-debt` marker cannot waive an org-mandated class.
+    - `"min_mode": "strict"` (or `"hardened"`) is an org **floor**: the effective
+      mode is never weaker than this, even if a repo sets a lower one.
+  Both are **escalation-only by design**, so a poisoned committed file can only
+  raise enforcement, never disable it. Values are Unicode/injection-scanned before
+  they can reach model context.
+- **Enterprise default (`allowManagedHooksOnly`):** for managed fleets, set
+  `"allowManagedHooksOnly": true` in managed `settings.json` so only admin-pushed
+  hooks run, preventing a repo from swapping peephole's hooks. Recommended managed
+  default.
+- **Statusline badge:** add a `statusLine` command running `peephole statusline` to
+  show `peephole strict | N blocked M flagged | 177 rules` in your status bar.
+- **N7 taint-echo (experimental, off by default):** create `.peephole/taint-echo`
+  to enable provenance escalation (code derived from fetched/README/MCP content
+  reaching a sink → ask). It also requires wiring WebFetch/Read into PostToolUse;
+  left off, it adds zero hot-path cost.
+
+## Limitations
+
+- **Same-user tamper is out of scope.** The binary runs with your privileges; a
+  same-user process can disable it. Peephole provides tamper-*evidence* (self-
+  integrity check, hash-chained log, zero-decision alarm), not a host-level
+  integrity guarantee.
+- **Detection ceiling.** Regexes catch curated *present* patterns, not novel
+  compositions or missing-guard bugs. Obfuscated Bash writes (`base64 -d > f`)
+  can only be bounded (ask/deny + retro-scan), not eliminated.
+- **Integrity, not authenticity.** The SHA-256 self-check detects tampering and
+  corruption; it does not prove publisher authenticity (a self-consistent
+  poisoned build would pass). Real signing is future work.
+- **Not a SAST replacement.** No whole-repo taint, no cross-file analysis, no
+  semantic proof. Pair it with a SAST (Semgrep on the repo) or an LLM diff-review
+  layer for the classes regexes can't prove; it composes rather than competes.
+- **Deferred from the blueprint:** Tier-3 language curation, a live MCP registry
+  server, release signing, and the external eval suites (CodeGuard+/CWEval/
+  BaxBench, Phase 4). N7 taint-provenance ships as an opt-in.

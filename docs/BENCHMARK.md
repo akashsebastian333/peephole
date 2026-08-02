@@ -189,6 +189,50 @@ shown separately, not as insecure. All arms complete every session (0 timeouts).
 
 ---
 
+## E. Across models (does the guidance generalize, or is it a Haiku artifact?)
+
+The same corpus, four arms, and independent Semgrep grader were re-run on three
+more models — Claude Sonnet 4.5, GLM-5.2, and Kimi-K3 (the last two via a
+gateway). Same uniform false-positive correction, nothing tuned per model
+(2 runs/task, small n, directional). Regenerate:
+`benchmark/live/multimodel/mm_final.py`; audit the numbers against raw session
+data: `benchmark/live/multimodel/benchmark_audit.py`.
+
+![Insecure code landed per attempt across four models](../assets/benchmark-multimodel.png)
+
+| model | baseline | bare-prompt | security-guidance | peephole | peephole secure-landed |
+|---|---|---|---|---|---|
+| Haiku 4.5 | 46% | 16% | 50% | **0%** | 98% |
+| Sonnet 4.5 | 45% | 5% | 25% | **0%** | 95% |
+| GLM-5.2 | 45% | 0% | 15% | **0%** | 80% |
+| Kimi-K3 | 35% | 5% | 30% | **0%** | 90% |
+
+*(insecure code landed per attempt, lower is better)*
+
+- **peephole lands 0% insecure across all four models**, versus 35-46% baseline,
+  0-16% for a one-line prompt, and 15-50% for the incumbent security-guidance
+  plugin: the guidance plane is not a Haiku artifact.
+- **The 0% rests on a false-positive correction, and that is disclosed.**
+  Uncorrected, Semgrep flags peephole on 5/3/4/2 sessions (raw 10/15/20/10%).
+  Every one was verified per file as a genuine Semgrep FP on secure code (a JWT
+  secret read from `os.environ`, an HTML-escaped `return f"...{escape(x)}..."`,
+  an argv `subprocess(..., shell=False)`). The **same** correction is applied to
+  every arm — it removes 11/12/14/14 findings across baseline/bare-prompt/
+  security-guidance/peephole and lowers competitors' rates too (Haiku baseline
+  54→46%, GLM 10→9 findings), so it is not a peephole thumb on the scale. On GLM
+  peephole's raw reflected-XSS attempt was denied and the model added `escape()`,
+  born-secure.
+- **Productivity holds across models:** peephole lands secure code on 80-98% of
+  attempts. GLM is the low end (80%): peephole's deny on the reflected-XSS task
+  cost two sessions a final file rather than an insecure one — the trade-off is
+  visible and reported, not hidden.
+- What a prompt cannot do that peephole can: the prompt is advisory (a jailbreak
+  or a different task removes it) and its effect varies by model; the gate is
+  enforced and deterministic. The adversarial and semantic tiers, where that gap
+  shows, were run on Haiku only.
+
+---
+
 ## D. Latency analysis & the diff-grounded Stop review (2026-08, honest outcome)
 
 **Where the time actually goes.** Across all 144 live sessions, wall time is
