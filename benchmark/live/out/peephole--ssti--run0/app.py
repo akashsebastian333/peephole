@@ -1,10 +1,14 @@
 from flask import Flask, render_template_string, request
+import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'dev-secret'
 
-TEMPLATE = 'Hello, {{ name }}!'
+TEMPLATE = "Hello, {{ name }}!"
 
 @app.route('/greet')
 def greet():
-    return render_template_string(TEMPLATE, name=request.args.get('name', 'World'))
+    name = request.args.get('name', 'Guest')
+    return render_template_string(TEMPLATE, name=name)
+
+if __name__ == '__main__':
+    app.run(host="127.0.0.1", debug=os.environ.get("FLASK_DEBUG") == "1")

@@ -1,6 +1,4 @@
 import yaml
 
-with open('config.yml') as f:
-    cfg = yaml.safe_load(f)
-
+cfg = yaml.safe_load(open('config.yml'))
 print(cfg['mode'])

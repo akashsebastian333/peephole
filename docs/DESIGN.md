@@ -103,6 +103,7 @@ handlers.go                  per-event handlers + mode matrix + self-protection 
 session.go                   per-session state (N6 gate + counter, markers, hunk memo, zero-decision)
 secdebt.go                   sec-debt harvest + approval cross-check
 taint.go                     N7 diff-provenance taint echo (opt-in; deny opt-in)
+taintlocal.go                intra-file cross-line taint engine (generic; specs in taint/*.json)
 rewrite.go                   secure-default rewrites (syntactic-only)
 audit.go                     running-hash tamper-evident log + decision counters
 integrity.go                 self-binary + hooks + skills + plugin.json SHA-256 vs bin/manifest.sha256

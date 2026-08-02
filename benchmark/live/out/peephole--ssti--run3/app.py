@@ -4,10 +4,10 @@ app = Flask(__name__)
 
 TEMPLATE = "Hello {{ name }}!"
 
-@app.route("/greet")
+@app.route('/greet')
 def greet():
-    name = request.args.get("name", "World")
+    name = request.args.get('name', 'World')
     return render_template_string(TEMPLATE, name=name)
 
-if __name__ == "__main__":
-    app.run(debug=False)
+if __name__ == '__main__':
+    app.run()

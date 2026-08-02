@@ -1,4 +1,4 @@
-from flask import Flask, send_file, request, abort
+from flask import Flask, send_from_directory, request
 import os
 
 app = Flask(__name__)
@@ -7,15 +7,9 @@ app = Flask(__name__)
 def download():
     name = request.args.get('name')
     if not name:
-        abort(400, "Missing 'name' parameter")
+        return 'Missing name parameter', 400
 
-    filename = os.path.basename(name)
-    filepath = os.path.join('./files', filename)
-
-    if not os.path.exists(filepath):
-        abort(404)
-
-    return send_file(filepath, as_attachment=True)
+    return send_from_directory('./files', name)
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(host='127.0.0.1', debug=os.environ.get('FLASK_DEBUG') == '1')

@@ -25,6 +25,19 @@ All notable changes to Peephole are documented here. This project adheres to
   peephole's own cross-line SSTI misses to zero. `TestTaintCrossLineCatches` /
   `TestTaintNoFalsePositives` lock the behavior.
 
+### Born-secure completion (productivity)
+- The guidance plane used to make the model **refuse** insecure-inducing tasks
+  (68% of them in the benchmark): safe but useless to a developer. The Security
+  Ladder and task-CWE context now instruct the model to deliver the same
+  functionality the secure way and never leave the file unwritten; the deny
+  message is "rewrite with this secure pattern and continue," not just "blocked."
+  Refusal fell **68% -> 6%**, secure code landed **30% -> 94%** of attempts, and
+  insecure-landed stayed at **0%** (corrected). The cost is latency (deny-rewrite
+  cycles): ~153% of baseline dollars, ~209% wall time.
+- Closed a taint gap the change surfaced: sandboxed `eval(expr, ns)` / two-arg
+  `exec` are still injectable and are now caught (the sink spec matches a second
+  argument).
+
 ### Benchmark honesty
 - The headline live metric is now **insecure-landed per attempt** (the security
   outcome), with a refusal shown as safe-but-unproductive rather than counted as

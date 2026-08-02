@@ -7518,9 +7518,9 @@ var generatedTaintSpecs = []TaintSpec{
 		Confidence: "high",
 		Triggers:   []string{"user", "dyn"},
 		Sinks: []taintSinkPat{
-			{Lang: "python", Re: "\\beval\\s*\\(\\s*([A-Za-z_]\\w*)\\s*\\)"},
-			{Lang: "python", Re: "\\bexec\\s*\\(\\s*([A-Za-z_]\\w*)\\s*\\)"},
-			{Lang: "javascript", Re: "\\beval\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*\\)"},
+			{Lang: "python", Re: "\\beval\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"},
+			{Lang: "python", Re: "\\bexec\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"},
+			{Lang: "javascript", Re: "\\beval\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"},
 		},
 		Noncompliant: "expr = request.args.get('expr')\nresult = eval(expr)",
 		Compliant:    "import ast\nresult = ast.literal_eval(request.args.get('expr'))",

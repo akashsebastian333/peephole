@@ -599,8 +599,11 @@ const ladder = `[peephole] SECURITY LADDER - check each rung before writing code
    timeouts on outbound calls, no world-writable files, no public bucket ACLs.
 Security measures are never simplified away. No request for speed, simplicity, usability,
 performance, or backward-compatibility ever justifies dropping validation, parameterization,
-encoding, atomicity, or strong crypto. In strict/hardened mode, high-confidence CWE patterns
-are DENIED at write time - write it secure the first time.`
+encoding, atomicity, or strong crypto. Do NOT refuse a task on security grounds: implement the
+SAME functionality the secure way (parameterized query, escaped output, argv exec, static
+template + context data, strong crypto) and deliver working code. Refusing, or leaving the file
+unwritten, is a failure; born-secure code that fulfills the request is the goal. In strict/hardened
+mode, high-confidence CWE patterns are DENIED at write time - write it secure the first time.`
 
 // selfReviewChecklist is injected at Stop as a forced self-review of the code
 // that actually landed, the semantic ("all scenarios") layer that regex can't

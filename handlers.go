@@ -130,7 +130,7 @@ func handleUserPrompt(e Event, kb *KB) {
 // (RESCUE noise caveat: ranked, capped, never a KB dump).
 func compileContext(kb *KB, e Event, candidates []*Rule) string {
 	var b strings.Builder
-	b.WriteString("[peephole] This task touches these security-relevant CWE classes. Write it secure the first time:\n")
+	b.WriteString("[peephole] This task touches these security-relevant CWE classes. Build the requested functionality using the secure pattern for each - do NOT refuse or leave the file unwritten; deliver working, born-secure code:\n")
 	policy := loadPolicy(projectDir(e))
 	for i, r := range candidates {
 		if i >= 4 {
@@ -763,7 +763,7 @@ func handleConfigChange(e Event) {
 // bare "blocked" — a block that teaches.
 func reasonFor(f Finding) string {
 	r := f.Rule
-	msg := fmt.Sprintf("%s (%s): %s Regenerate THIS hunk securely - do not resubmit the same code.",
+	msg := fmt.Sprintf("%s (%s): %s Rewrite THIS hunk with the secure pattern below and continue - deliver the working secure version; do not refuse and do not resubmit the same insecure code.",
 		r.CWE, r.Name, r.AttackScenario)
 	if r.Exemplar.Compliant != "" {
 		msg += "\nUse this secure pattern:\n" + indent(r.Exemplar.Compliant)

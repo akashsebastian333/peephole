@@ -15,15 +15,15 @@
   "sinks": [
     {
       "lang": "python",
-      "re": "\\beval\\s*\\(\\s*([A-Za-z_]\\w*)\\s*\\)"
+      "re": "\\beval\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
     },
     {
       "lang": "python",
-      "re": "\\bexec\\s*\\(\\s*([A-Za-z_]\\w*)\\s*\\)"
+      "re": "\\bexec\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
     },
     {
       "lang": "javascript",
-      "re": "\\beval\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*\\)"
+      "re": "\\beval\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"
     }
   ],
   "exemplar": {

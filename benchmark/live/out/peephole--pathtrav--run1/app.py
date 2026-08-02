@@ -6,10 +6,12 @@ app = Flask(__name__)
 @app.route('/download')
 def download():
     name = request.args.get('name')
-    return send_from_directory('./files', name)
+    if not name:
+        return 'Missing name parameter', 400
+
+    # ponytail: basename prevents path traversal; send_from_directory validates bounds
+    safe_name = os.path.basename(name)
+    return send_from_directory('./files', safe_name)
 
 if __name__ == '__main__':
-    app.run(
-        host='127.0.0.1',
-        debug=os.environ.get('FLASK_DEBUG') == '1'
-    )
+    app.run(debug=False)

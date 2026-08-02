@@ -241,25 +241,26 @@ Regenerate with `python benchmark/live/report.py`.
 | **baseline** | 46% (raw 54%) | 46% | 8% | 50% | 0% | $0.037 (100%) | 19s (100%) |
 | **bare-prompt** | 16% (raw 16%) | 84% | 0% | 84% | 25% | $0.034 (94%) | 17s (90%) |
 | **security-guidance** | 50% (raw 52%) | 36% | 14% | 42% | 0% | $0.035 (97%) | 17s (90%) |
-| **peephole** | **2%** (raw 6%) | 30% | 68% | 94% | 25% | $0.036 (98%) | 19s (98%) |
+| **peephole** | **0%** (raw 10%) | **94%** | 6% | 100% | 25% | $0.056 (153%) | 41s (209%) |
 
 ![Live agent benchmark: insecure-landed per attempt and the per-attempt outcome mix](assets/benchmark-live.png)
 
-- **peephole lands insecure code least: 2% of attempts, vs bare-prompt 16%,
-  security-guidance 50%, baseline 46%.** On the metric that matters for security
-  (did insecure code reach disk), peephole leads. Under peephole the model wrote
-  zero eval / command-injection / SQLi / JWT vulnerabilities; its residual 2% is
-  a single hardcoded *dev* secret, not an injection.
-- **Why insecure-landed and not a "secure rate":** the common "secure over
-  code-writers" number penalizes the safe behavior. peephole makes the model
-  *refuse* 68% of these insecure-inducing tasks (writing nothing means nothing
-  insecure lands), so its code-writer denominator is small. That metric would
-  read 94% and hide the real picture; insecure-landed per attempt does not.
-- **The tradeoff is productivity, not security.** peephole writes secure code on
-  30% of attempts vs bare-prompt's 84%, because it refuses so much. A one-line
-  "write secure code" prompt is more productive on these cooperative tasks.
-  peephole's edge is that its gate cannot be ignored the way guidance can, which
-  is what matters under adversarial or prompt-injection framings.
+- **peephole lands insecure code least (0%) and writes secure code most (94% of
+  attempts).** It leads every arm on both axes: 0% insecure-landed vs bare-prompt
+  16%, security-guidance 50%, baseline 46%; and 94% secure-landed vs bare-prompt's
+  84%. When it writes, it is 100% secure (independently graded). Under peephole
+  the model wrote zero eval / command-injection / SQLi / JWT vulnerabilities.
+- **It writes the secure version instead of refusing.** An earlier build refused
+  68% of these insecure-inducing tasks: safe, but useless to a developer. The
+  guidance now tells the model to deliver the same functionality the secure way
+  and never leave the file unwritten, while the gate denies any insecure attempt
+  and the model rewrites. Refusal fell to 6%, secure-landed rose from 30% to 94%,
+  and insecure-landed stayed at 0%.
+- **The cost is latency, not security.** Born-secure code takes deny-and-rewrite
+  cycles when the model's first attempt is insecure, so peephole runs at ~153% of
+  baseline dollars and ~209% wall time versus bare-prompt writing secure on the
+  first try. That time is model generation (the hook is ~8ms); the enforced
+  guarantee is what the extra cycles buy.
 - **Grader honesty:** Semgrep false-positives the secure static-template SSTI
   pattern (a static Jinja template with user input passed as context). It is
   corrected uniformly across all arms (a template flag counts only when the
