@@ -82,9 +82,13 @@ func loadApprovals(sd string) []string {
 }
 
 func isApproved(m debtMarker, approvals []string) bool {
+	// Exact identity only: a whole-file grant ("app.py") or an exact line grant
+	// ("app.py:42"). A substring test wrongly approved unrelated markers - "app.py:4"
+	// is a substring of "app.py:42", and "app.py" of "myapp.python" - silently
+	// granting waivers the human never signed off on (N4: a marker is never a grant).
 	key := m.File + ":" + strconv.Itoa(m.Line)
 	for _, a := range approvals {
-		if strings.Contains(key, a) || strings.Contains(m.File, a) {
+		if a == m.File || a == key {
 			return true
 		}
 	}

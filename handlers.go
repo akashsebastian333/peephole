@@ -289,7 +289,7 @@ func handleWriteFamily(e Event, kb *KB, mode string, ti ToolInput, pol policy) {
 	// (allowed or ask-approved once) - the same finding never fires twice per
 	// hunk. A denied hunk never reaches PostToolUse, so it is never memoized.
 	digest := fileDigest(content)
-	if hunkSeen(stateDir(e), e.SessionID, digest) {
+	if hunkSeen(stateDir(e), e.SessionID, hunkKey(ti.targetPath(), content)) {
 		logDecision(e, "allow", "", "hunk-memo", e.ToolName, digest)
 		passthrough("")
 	}
@@ -537,6 +537,15 @@ func unreachableDecision(mode string) string {
 	}
 }
 
+// hunkKey scopes the §7.4 hunk memo to the file's language as well as its content.
+// kb.scan's verdict is language-dependent (it skips a rule when the file's language
+// differs), so identical bytes that scan clean as one language must not waive a
+// finding when the same bytes later land in a file of another language. Applied
+// symmetrically at record (PostToolUse) and check (PreToolUse).
+func hunkKey(path, content string) string {
+	return langOf(path) + ":" + fileDigest(content)
+}
+
 func handlePostToolUse(e Event, kb *KB) {
 	sd := stateDir(e)
 
@@ -576,7 +585,7 @@ func handlePostToolUse(e Event, kb *KB) {
 	markSessionWrite(sd, e.SessionID) // a write-family tool always writes
 	ti := e.toolInput()
 	content := ti.newContent()
-	recordHunk(sd, e.SessionID, fileDigest(content)) // landed: memo it (§7.4)
+	recordHunk(sd, e.SessionID, hunkKey(ti.targetPath(), content)) // landed: memo it (§7.4)
 	// Record which absence-of-guard classes the landed code touches, so the Stop
 	// self-review fires only for those (and skips when none) - the latency lever.
 	markSemReview(sd, e.SessionID, semReviewKeys(content))
@@ -679,11 +688,15 @@ func firstHint(r *Rule) string {
 }
 
 func handleStop(e Event, kb *KB) {
-	if getMode(e) == "off" {
+	// Resolve the effective mode the same way PreToolUse does, so an org min_mode
+	// floor keeps the Stop-time gates (N4 evasion check, N6 negative-test mandate,
+	// class-scoped self-review, zero-decision alarm) active even when a repo sets
+	// mode=off. Escalation-only: the floor never weakens a repo's own mode.
+	mode := loadPolicy(projectDir(e)).floor(getMode(e))
+	if mode == "off" {
 		passthrough("")
 	}
 	sd := stateDir(e)
-	mode := getMode(e)
 
 	// N4 evasion flag: sec-debt markers that downgraded a gate this session must
 	// carry a matching human approval; an unapproved marker is evasion.

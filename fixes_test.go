@@ -85,6 +85,40 @@ func TestSecDebtEvasionFlaggedAtStop(t *testing.T) {
 	}
 }
 
+func TestStopGatesRespectOrgFloor(t *testing.T) {
+	// A repo's mode=off must not silently disable the Stop-time gates when an org
+	// min_mode floor is committed: the sec-debt evasion check must still fire.
+	p := newProject(t, "off")
+	os.WriteFile(filepath.Join(p, ".peephole-policy.json"), []byte(`{"min_mode":"strict"}`), 0o644)
+	near := "x = 1\n# sec-debt: CWE-89 internal tool\ncur.execute(f\"SELECT * FROM t WHERE id={y}\")"
+	runHookJSON(t, map[string]any{
+		"hook_event_name": "PreToolUse", "tool_name": "Write", "cwd": p, "session_id": "s-floor",
+		"tool_input": map[string]any{"file_path": "app.py", "content": near},
+	})
+	ho, _, _ := runHookJSON(t, map[string]any{
+		"hook_event_name": "Stop", "cwd": p, "session_id": "s-floor", "last_assistant_message": "done"})
+	if !strings.Contains(ho.SystemMessage, "sec-debt") {
+		t.Fatalf("org floor must keep the Stop evasion check active under mode=off: %q", ho.SystemMessage)
+	}
+}
+
+func TestSecDebtApprovalExactMatch(t *testing.T) {
+	// A whole-file or exact file:line grant approves; a substring must NOT (a
+	// line-4 grant used to approve line-42, and "app.py" any *.python file).
+	if isApproved(debtMarker{File: "app.py", Line: 42}, []string{"app.py:4"}) {
+		t.Error("app.py:4 must not approve app.py:42")
+	}
+	if isApproved(debtMarker{File: "myapp.python", Line: 1}, []string{"app.py"}) {
+		t.Error("app.py must not approve myapp.python")
+	}
+	if !isApproved(debtMarker{File: "app.py", Line: 42}, []string{"app.py"}) {
+		t.Error("a whole-file grant must approve")
+	}
+	if !isApproved(debtMarker{File: "app.py", Line: 42}, []string{"app.py:42"}) {
+		t.Error("an exact file:line grant must approve")
+	}
+}
+
 func TestRuleIDLogged(t *testing.T) {
 	// The audit log's rule_id carries the rule identity, never the confidence tier.
 	p := newProject(t, "strict")
@@ -176,11 +210,21 @@ func TestHunkMemo(t *testing.T) {
 	}
 	// simulate the hunk having landed (e.g. written in audit earlier / approved)
 	raw := `cur.execute(f"SELECT * FROM t WHERE id={y}")`
-	ti := ToolInput{FilePath: "app.py", Content: raw}
-	recordHunk(stateDir(Event{Cwd: p}), "", fileDigest(ti.newContent()))
+	content := ToolInput{Content: raw}.newContent() // exactly what the hook memoizes
+	sd := stateDir(Event{Cwd: p})
+	recordHunk(sd, "", hunkKey("app.py", content))
 	ho2, _, _ := runHookJSON(t, ev)
 	if ho2.HookSpecificOutput.PermissionDecision == "deny" {
 		t.Fatal("a hunk that already landed this session must not be re-gated")
+	}
+	// The memo is language-scoped: the same bytes landing clean as another language
+	// (Go: the python-only SQLi rule is skipped) must NOT waive the .py finding.
+	p2 := newProject(t, "strict")
+	sd2 := stateDir(Event{Cwd: p2})
+	recordHunk(sd2, "", hunkKey("stage.go", content)) // same bytes, "landed" clean as Go
+	ho3, _, _ := runHookJSON(t, write(p2, "Write", "app.py", raw))
+	if ho3.HookSpecificOutput.PermissionDecision != "deny" {
+		t.Fatalf("a Go-scoped memo must not waive the same bytes in a .py file, got %q", ho3.HookSpecificOutput.PermissionDecision)
 	}
 }
 
