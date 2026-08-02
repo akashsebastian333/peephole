@@ -25,7 +25,7 @@ on the other side, and never ship code before checking what's in it.*
 > Gemini CLI, OpenAI Codex CLI, Qwen Code, Charm Crush, Block Goose, Cursor,
 > OpenCode, Amp, via `peephole hook --exit2` (exit code 2 is the universal block
 > signal), plus a universal `git pre-commit` backstop for everything else. See
-> [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) for drop-in configs and an honest
+> [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) for drop-in configs and a
 > coverage matrix (which agents block pre-write vs. only advise).
 
 ## The difference
@@ -40,7 +40,7 @@ insecure hunk never touches disk. That proves code was *born* secure, and it
 closes the Bash escape hatch (`cat > f <<EOF …`) that a plain Write-tool gate
 misses.
 
-## How it's built (and why you won't feel it)
+## How it's built
 
 A single **static Go binary**, cross-compiled for macOS/Linux/Windows and shipped
 in `bin/`. You install **no runtime**: not Node, not Python. The full hook path
@@ -69,7 +69,7 @@ The plugin auto-registers its hooks via `hooks/hooks.json`. Default mode is
 
 The engine is a single binary (stdin event → allow/ask/deny); only the
 integration point differs per host. Drop-in configs are in [`integrations/`](integrations/);
-full setup and the honest coverage rationale are in
+full setup and the coverage rationale are in
 [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
 
 | Integration | Blocks before write? | Agents / IDEs |
@@ -80,7 +80,7 @@ full setup and the honest coverage rationale are in
 | **MCP server**: `peephole mcp` | Advisory | Windsurf · Trae · Tongyi Lingma (通义灵码) · Comate (文心快码) · CodeGeeX · iFlyCode · Qoder · + the MCP mode of any CLI agent |
 | **LSP diagnostics**: `peephole lsp` | Warn only | Zed · JetBrains AI · VS Code / GitHub Copilot |
 
-Honest caveat: hooks and in-process plugins are the only surfaces that can *veto*
+Caveat: hooks and in-process plugins are the only surfaces that can *veto*
 a write pre-emptively. Most editors (VS Code/Copilot, Cursor file-edits,
 Windsurf, Zed, the Chinese IDE cohort) expose only post-hoc events or
 diagnostics, so there peephole *advises* (MCP/LSP) and the real block is the git
@@ -149,9 +149,9 @@ evidence for regulated teams. `/sec-audit` rolls decisions up to OWASP 2025.
 go test ./...   # end-to-end hook contract tests + KB self-consistency + tamper tests
 ```
 
-## Does it actually work?
+## Benchmarks
 
-Measured two ways, honestly (`docs/BENCHMARK.md`, harness in `benchmark/`,
+Measured two ways (`docs/BENCHMARK.md`, harness in `benchmark/`,
 re-runnable end to end).
 
 **Detection benchmark, three engines, identical inputs.** 151 labeled
@@ -168,7 +168,7 @@ turf:
 ![Detection recall and false-positive rate across engines](assets/benchmark-overall.png)
 ![Per-category recall across engines](assets/benchmark-categories.png)
 
-**Read it fairly, the caveats are the point:**
+**Caveats:**
 
 - **Semgrep's number is architecturally handicapped here, twice over.** Its
   taint engine is built for whole-repo context (source → sink across files);
@@ -184,7 +184,7 @@ turf:
   logic). It runs on your Claude Code sign-in (OAuth token passed automatically)
   or an Anthropic API key, and it's nondeterministic, so it's out of scope for
   this harness. 21% is its *regex layer*, not the product.
-- **Peephole's misses and weaknesses are disclosed, not hidden.** 1 ReDoS
+- **Known misses.** 1 ReDoS
   variant (the star-height class regexes can't prove) + 2 supply-chain cases
   the scan engine misses but the hook layer catches (verified: `ask` in strict
   for a requirements.txt typosquat and for `curl | python3`, the other two
@@ -193,7 +193,7 @@ turf:
   benchmark scored peephole **77%** and exposed 16 real rule gaps; they were
   fixed as generalized patterns, and the first-run number is preserved in
   `docs/BENCHMARK.md`.
-- The false positives are instructive: SG flags `defusedxml` (the recommended
+- False positives: SG flags `defusedxml` (the recommended
   fix for its own XXE warning), `DOMPurify.sanitize`, and `yaml.load(…,
   Loader=yaml.SafeLoader)`; Semgrep's one FP is `pickle.dumps` (not the RCE
   surface). Peephole's `reject_re`/`prev_not` refinements spared all seven.
@@ -223,12 +223,9 @@ Regenerate with `python benchmark/live/report.py`.
 
 ![Live agent benchmark, independent graders lead; own-scanner is circular](assets/benchmark-live.png)
 
-Read this one carefully, because it's the honest one:
-
-- **Peephole genuinely helps, at 90%, not 100%.** Independently graded, over
-  sessions that actually wrote code, peephole is 90% vs 57% baseline: a real
-  ~33-point gain from the guidance plane. The 100% "own-scanner" column is
-  peephole grading itself (circular) and is not the headline.
+- **Independently graded, peephole is 90% secure vs 57% baseline** over
+  sessions that wrote code: a ~33-point gain from the guidance plane. The 100%
+  own-scanner column is peephole grading itself and is not independent.
 - **The gate hard-denied 0 of 6 adversarial attacks.** The guidance plane, not
   the gate, does the work here, and Haiku refuses most blatant attacks on its
   own (baseline "safe" 83%). "Attacks stopped" ties across arms because it
@@ -241,7 +238,7 @@ Read this one carefully, because it's the honest one:
   CSRF, rate limits: no regex gate can prove these. Baseline and the advisory
   linter 0%, bare-prompt and peephole 25%. Peephole does not enforce these, its
   documented ceiling; an independent semantic review layer is still necessary.
-- **Cost realism:** peephole costs +1% money, +92% wall time vs baseline
+- **Cost:** peephole costs +1% money, +92% wall time vs baseline
   (hook events + gate retries + the N6 continuation) and 3 of its 5 harness
   timeouts were forced-continuation loops hitting the 10-minute cap. That is
   the real price of enforcement; tokens and dollars are flat. Two caveats on
@@ -252,12 +249,10 @@ Read this one carefully, because it's the honest one:
   same phenomenon, a security instruction makes the model generate longer,
   more careful responses, plus skew from a few slow sessions (medians: 81s
   baseline / 156s peephole / 233s bare-prompt, less dramatic than means).
-- Small-n honesty: n≈2 per cell, one model, one day, directional, not a
-  headline. The harness auto-approves hook `ask`s (the over-trusting user; only
-  hard `deny`s stand). The independent Semgrep / LLM-judge grader is the primary
-  scorer here; peephole's own scanner is shown only as a circular reference.
-  Timeouts are counted as a completion metric, not silently dropped. Raw session
-  data + judge verdicts: `benchmark/live/`.
+- Sample size: n≈2 per cell, one model, one day; directional, not a headline.
+  The harness auto-approves hook `ask`s (only hard `deny`s stand). The
+  independent Semgrep / LLM-judge grader is the primary scorer; timeouts count
+  as a completion metric. Raw session data + judge verdicts: `benchmark/live/`.
 
 ## How it compares
 
@@ -294,7 +289,7 @@ regexes can't prove; it composes rather than competes there.
   provenance escalation (code derived from fetched/README/MCP content reaching a sink → ask).
   It also requires wiring WebFetch/Read into PostToolUse; left off, it adds zero hot-path cost.
 
-## Honest boundaries
+## Limitations
 
 - **Same-user tamper is out of scope.** The binary runs with your privileges; a
   same-user process can disable it. Peephole provides tamper-*evidence* (self-
