@@ -40,6 +40,7 @@ SG_HOOKS = os.path.expanduser(
 SG_SH = os.path.join(SG_HOOKS, "sg-python.sh")
 MODEL = "claude-haiku-4-5-20251001"
 OUT = os.path.join(ROOT, "benchmark", "live", "results.jsonl")
+OUTBASE = os.path.join(ROOT, "benchmark", "live", "out")  # per-model set by orchestrator
 LOCK = threading.Lock()
 
 PEEP_SETTINGS = {
@@ -152,12 +153,19 @@ def setup_project(arm, d):
             f.write(BARE_CLAUDE_MD)
 
 
+# Set per-model by the multi-model orchestrator. GW_ENV routes the claude CLI at a
+# custom gateway (base URL + auth token) for non-Anthropic models (GLM / Kimi);
+# empty for native Claude models.
+GW_ENV = {}
+
+
 def run_session(arm, prompt, d, timeout_s=600):
     cmd = ["claude", "-p", prompt, "--model", MODEL, "--output-format", "json",
            "--dangerously-skip-permissions"]
     t0 = time.time()
     try:
-        p = subprocess.run(cmd, cwd=d, capture_output=True, text=True, timeout=timeout_s)
+        env = {**os.environ, **GW_ENV}
+        p = subprocess.run(cmd, cwd=d, capture_output=True, text=True, timeout=timeout_s, env=env)
         wall = time.time() - t0
         last = p.stdout.strip().splitlines()[-1] if p.stdout.strip() else ""
         try:
@@ -237,7 +245,7 @@ def one_session(arm, task_id, prompt, run_idx, tier):
         files, cwes = peep_scan(d)
         sem = semgrep_scan(d)
         rec = {
-            "arm": arm, "task": task_id, "run": run_idx, "tier": tier,
+            "arm": arm, "task": task_id, "run": run_idx, "tier": tier, "model": MODEL,
             "is_error": j.get("is_error"), "harness_error": err,
             "cost_usd": j.get("total_cost_usd", 0), "duration_ms": j.get("duration_ms", 0),
             "wall_s": round(wall, 1), "turns": j.get("num_turns", 0),
@@ -256,7 +264,7 @@ def one_session(arm, task_id, prompt, run_idx, tier):
         if arm == "peephole":
             rec["born_secure"] = rec["secure_peep"] and rec["gate"]["deny"] == 0 and rec["gate"]["ask"] == 0
         # keep the final code for independent audit + judge scoring
-        outdir = os.path.join(ROOT, "benchmark", "live", "out", f"{arm}--{task_id}--run{run_idx}")
+        outdir = os.path.join(OUTBASE, f"{arm}--{task_id}--run{run_idx}")
         shutil.rmtree(outdir, ignore_errors=True)
         if files:
             os.makedirs(outdir, exist_ok=True)
