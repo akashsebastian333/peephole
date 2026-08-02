@@ -362,7 +362,7 @@ func TestStopSemanticSelfReview(t *testing.T) {
 	p := newProject(t, "strict")
 	runHookJSON(t, map[string]any{
 		"hook_event_name": "PostToolUse", "tool_name": "Write", "cwd": p,
-		"tool_input": map[string]any{"file_path": "app.py", "content": `cur.execute(f"SELECT * FROM t WHERE x={y}")`},
+		"tool_input": map[string]any{"file_path": "app.py", "content": "bal = get_balance(uid)\nif bal >= amt:\n    set_balance(uid, bal - amt)  # withdraw"},
 	})
 	ho, exit, _ := runHookJSON(t, map[string]any{"hook_event_name": "Stop", "cwd": p, "last_assistant_message": "done"})
 	assertNotExit1(t, exit)

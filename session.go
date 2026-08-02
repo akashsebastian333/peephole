@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -60,6 +61,37 @@ func sessionN3Sec(sd, sid string) (string, bool) {
 		return "", false
 	}
 	return strings.TrimSpace(string(b)), true
+}
+
+// semreview: the union of absence-of-guard classes (idor/race/csrf/bizlogic/
+// ratelimit) the LANDED code touched this session, accumulated at PostToolUse.
+// The Stop self-review fires only when this is non-empty, scoped to these classes
+// - so pattern-tier code that touches none skips the review continuation entirely.
+func markSemReview(sd, sid string, keys []string) {
+	if len(keys) == 0 {
+		return
+	}
+	m := map[string]bool{}
+	for _, k := range sessionSemReview(sd, sid) {
+		m[k] = true
+	}
+	for _, k := range keys {
+		m[k] = true
+	}
+	all := make([]string, 0, len(m))
+	for k := range m {
+		all = append(all, k)
+	}
+	sort.Strings(all)
+	_ = os.WriteFile(sidFile(sd, sid, "semreview"), []byte(strings.Join(all, ",")), 0o600)
+}
+
+func sessionSemReview(sd, sid string) []string {
+	b, err := os.ReadFile(sidFile(sd, sid, "semreview"))
+	if err != nil || len(strings.TrimSpace(string(b))) == 0 {
+		return nil
+	}
+	return strings.Split(strings.TrimSpace(string(b)), ",")
 }
 
 // reviewed: the Stop-time semantic self-review already fired (one-shot).

@@ -604,36 +604,3 @@ SAME functionality the secure way (parameterized query, escaped output, argv exe
 template + context data, strong crypto) and deliver working code. Refusing, or leaving the file
 unwritten, is a failure; born-secure code that fulfills the request is the goal. In strict/hardened
 mode, high-confidence CWE patterns are DENIED at write time - write it secure the first time.`
-
-// selfReviewChecklist is injected at Stop as a forced adversarial self-review of
-// the code that landed - the semantic ("all scenarios") layer no regex can
-// provide. It is deliberately a red-team, cite-or-exploit review, not a passive
-// checklist: a small model rubber-stamps "looks fine", so each applicable class
-// demands the exact guarding LINE be quoted, or marked ABSENT and fixed before
-// stopping. Grounded in RCI self-critique (Tony et al. 2024, the most effective
-// secure-generation prompt technique), adversarial critique (INDICT, NeurIPS
-// 2024), and the horizontal-privilege replay test (越权检测) as the review artifact.
-const selfReviewChecklist = `Before you finish, RED-TEAM the code you wrote THIS session. You hold a VALID but
-LOW-PRIVILEGE account. For each class that applies to what you wrote, you must either QUOTE
-the exact line(s) that enforce the guard, or write "ABSENT" and FIX it now before stopping.
-"Looks fine" is not allowed - quote the line or mark it ABSENT.
-
-- IDOR / object authorization: every fetch or mutation of a record by a client-supplied id
-  MUST filter by the authenticated owner in the SAME query (WHERE id=? AND owner_id=?), not
-  fetch-then-maybe-check; return 404 on mismatch. Quote the ownership check or add it.
-  (Exploit to defeat: replay the request with account B's session and read account A's object.)
-- Race / atomicity (TOCTOU): any read-check-write on shared state (balance, stock, counter,
-  quota) MUST be ONE atomic operation - UPDATE ... SET x=x-? WHERE x>=? (check rows-affected),
-  SELECT ... FOR UPDATE in a transaction, or compare-and-set - never compute the new value in
-  app code from a separately-read value. Quote the atomic op or add it. (Exploit: two
-  concurrent requests drive the balance below zero.)
-- CSRF: every state-changing, cookie-authenticated endpoint MUST enforce an anti-CSRF token
-  and SameSite cookies (a token-in-Authorization-header API is exempt - say which applies).
-  Quote it or add it.
-- Business logic / trust: never trust a client-supplied price, total, quantity, role, or
-  status. Re-derive prices/totals from server data at request time, validate quantity ranges
-  (reject negative/zero), authorize role/status changes. Quote the server-side derivation or add it.
-- Rate limiting: auth / login / OTP / password-reset / token endpoints MUST have per-account
-  AND per-IP rate limiting or lockout/backoff. Quote it or add it.
-
-For each applicable class, output: class, guard_line (quoted) or ABSENT, and the fix you made.`
