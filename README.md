@@ -65,6 +65,27 @@ I/O to load rules on the hot path.
 The plugin auto-registers its hooks via `hooks/hooks.json`. Default mode is
 **strict**.
 
+## Supported agents & IDEs
+
+The engine is a single binary (stdin event → allow/ask/deny); only the
+integration point differs per host. Drop-in configs are in [`integrations/`](integrations/);
+full setup and the honest coverage rationale are in
+[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
+
+| Integration | Blocks before write? | Agents / IDEs |
+|---|---|---|
+| **Native pre-tool hook** — `peephole hook --exit2` | **Yes, hard** | Claude Code · Gemini CLI · OpenAI Codex CLI · Qwen Code · Charm Crush · Block Goose · Cursor *(shell + MCP paths)* |
+| **In-process plugin** — shells to the hook | **Yes, hard** | OpenCode · Sourcegraph Amp · OpenHands · Cline (SDK) |
+| **git pre-commit** — `peephole scan --gate --staged` | **Yes, at commit** | Universal — any git repo (Aider auto-commits, so effectively per edit) |
+| **MCP server** — `peephole mcp` | Advisory | Windsurf · Trae · Tongyi Lingma (通义灵码) · Comate (文心快码) · CodeGeeX · iFlyCode · Qoder · + the MCP mode of any CLI agent |
+| **LSP diagnostics** — `peephole lsp` | Warn only | Zed · JetBrains AI · VS Code / GitHub Copilot |
+
+Honest caveat: hooks and in-process plugins are the only surfaces that can *veto*
+a write pre-emptively. Most editors (VS Code/Copilot, Cursor file-edits,
+Windsurf, Zed, the Chinese IDE cohort) expose only post-hoc events or
+diagnostics, so there peephole *advises* (MCP/LSP) and the real block is the git
+pre-commit hook.
+
 ## Modes
 
 | Mode | Behavior |
