@@ -261,7 +261,7 @@ Regenerate with `python benchmark/live/report.py`.
   and ~134% wall time. It used to be 153%/209% until the Stop self-review was made
   **conditional and class-scoped** (it fires only when the landed code actually
   touches an absence-of-guard class, skipping the continuation for the ~80% of
-  pattern-tier code that touches none) — cutting turns from 3.9 to 2.7, near
+  pattern-tier code that touches none), cutting turns from 3.9 to 2.7, near
   baseline's 2.2. That remaining time is model generation (the hook is ~8ms).
 - **Grader honesty:** Semgrep false-positives the secure static-template SSTI
   pattern (a static Jinja template with user input passed as context). It is
