@@ -1,0 +1,25 @@
+{
+  "cwe_id": "CWE-22",
+  "name": "Path Traversal (user-controlled path into a file op)",
+  "severity": "high",
+  "owasp": [
+    "A01"
+  ],
+  "kev": false,
+  "mode": "arg",
+  "triggers": [
+    "user"
+  ],
+  "confidence": "medium",
+  "sinks": [
+    {
+      "lang": "python",
+      "re": "(?:open|send_file|send_from_directory)\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
+    }
+  ],
+  "exemplar": {
+    "noncompliant": "fn = request.args.get('file')\ndata = open(fn).read()",
+    "compliant": "fn = secure_filename(request.args.get('file'))\ndata = open(fn).read()",
+    "explanation": "constrain user paths (secure_filename / basename + allowlisted root), never open a raw user path"
+  }
+}

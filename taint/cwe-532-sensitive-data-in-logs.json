@@ -1,0 +1,25 @@
+{
+  "cwe_id": "CWE-532",
+  "name": "Sensitive Data in Logs (secret/PII into a log sink)",
+  "severity": "medium",
+  "owasp": [
+    "A09"
+  ],
+  "kev": false,
+  "mode": "call",
+  "triggers": [
+    "sens"
+  ],
+  "confidence": "high",
+  "sinks": [
+    {
+      "lang": "",
+      "re": "(?i)(?:log(?:ger|ging)?)\\.(?:info|debug|warning|warn|error|critical|exception|log)\\s*\\(([^\\n]*)|(?:^|[^.\\w])print\\s*\\(([^\\n]*)|console\\.(?:log|debug|info|warn|error|trace)\\s*\\(([^\\n]*)"
+    }
+  ],
+  "exemplar": {
+    "noncompliant": "pw = request.form['password']\nlogger.debug(pw)",
+    "compliant": "logger.info(\"login for user %s\", username)",
+    "explanation": "never log secrets/PII; log a non-sensitive identifier and redact the rest"
+  }
+}

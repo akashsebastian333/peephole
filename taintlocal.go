@@ -57,11 +57,6 @@ var (
 	tlSensSource = regexp.MustCompile(`(?i)getpass|\.headers\.get\(\s*["']authorization|request\.headers\[["']authorization|\.form\[["'](?:password|token|secret)|os\.environ(?:\.get\()?\[?["'][A-Z_]*(?:SECRET|TOKEN|PASSWORD|API_?KEY|PRIVATE_?KEY|CRED)|dict\(\s*os\.environ|\{\s*\*\*\s*os\.environ`)
 	// Redaction clears sensitivity (masked / hashed before logging).
 	tlRedact = regexp.MustCompile(`(?i)redact|mask|\bsha\d|hashlib|\*{3,}|\[:\d\]|truncate|last4`)
-	// Log sinks: the whole argument text is captured for reference scanning.
-	tlLogSink = regexp.MustCompile(`(?i)(?:log(?:ger|ging)?)\.(?:info|debug|warning|warn|error|critical|exception|log)\s*\(([^\n]*)|(?:^|[^.\w])print\s*\(([^\n]*)|console\.(?:log|debug|info|warn|error|trace)\s*\(([^\n]*)`)
-	// Network sinks (whole arg text captured): a sensitive value in the body is
-	// exfiltration (CWE-200).
-	tlNetSink = regexp.MustCompile(`(?i)requests\.(?:post|put|patch|get)\s*\(([^\n]*)|httpx\.(?:post|put|patch|get)\s*\(([^\n]*)|urllib\.request\.urlopen\s*\(([^\n]*)|\.post\s*\(([^\n]*)|fetch\s*\(([^\n]*)`)
 )
 
 // tlRefs returns the RHS with plain string-literal bodies removed but the
@@ -83,58 +78,82 @@ func tlRefs(rhs string) string {
 	})
 }
 
-// tlSink is a dangerous call/assignment whose argument variable, when tainted,
-// is a vulnerability. re captures the argument identifier in group 1.
-type tlSink struct {
-	cwe  string
-	lang string // "python" | "javascript" | "" (any)
-	dyn  bool   // also fire when the arg is a dynamically-built string
-	user bool   // fire when the arg is user-derived
+// TaintSpec is one declarative taint rule: which sink patterns, which taint
+// kinds trigger them, and how to report. Specs live as data in taint/*.json and
+// are compiled into generatedTaintSpecs by cmd/kbgen — adding a class is a JSON
+// file plus exemplars, never new engine code.
+//
+//	mode "arg":  each sink regex captures the argument identifier in group 1;
+//	             the finding fires when that variable carries a triggering taint.
+//	mode "call": the sink regex captures the whole argument text; the finding
+//	             fires when any sensitive reference appears in it (log / exfil).
+type taintSinkPat struct {
+	Lang string // "python" | "javascript" | "" (any)
+	Re   string
 	re   *regexp.Regexp
 }
 
-var tlSinks = []tlSink{
-	{"CWE-1336", "python", true, true, regexp.MustCompile(`render_template_string\s*\(\s*([A-Za-z_]\w*)\s*[,)]`)},
-	{"CWE-1336", "python", true, true, regexp.MustCompile(`(?:Template|from_string)\s*\(\s*([A-Za-z_]\w*)\s*[,)]`)},
-	{"CWE-94", "python", true, true, regexp.MustCompile(`\beval\s*\(\s*([A-Za-z_]\w*)\s*\)`)},
-	{"CWE-94", "python", true, true, regexp.MustCompile(`\bexec\s*\(\s*([A-Za-z_]\w*)\s*\)`)},
-	{"CWE-78", "python", true, true, regexp.MustCompile(`os\.system\s*\(\s*([A-Za-z_]\w*)\s*\)`)},
-	{"CWE-78", "python", true, true, regexp.MustCompile(`os\.popen\s*\(\s*([A-Za-z_]\w*)\s*[,)]`)},
-	// SQLi: bound params / int-cast are safe, so require user taint, not dyn.
-	{"CWE-89", "python", false, true, regexp.MustCompile(`\.execute(?:many|script)?\s*\(\s*([A-Za-z_]\w*)\s*[,)]`)},
-	// Deserialization: the risk is untrusted bytes, not a dynamic string.
-	{"CWE-502", "python", false, true, regexp.MustCompile(`yaml\.load\s*\(\s*([A-Za-z_]\w*)\s*[,)]`)},
-	{"CWE-502", "python", false, true, regexp.MustCompile(`(?:pickle|cPickle|_pickle)\.loads?\s*\(\s*([A-Za-z_]\w*)\s*[,)]`)},
-	{"CWE-502", "python", false, true, regexp.MustCompile(`marshal\.loads?\s*\(\s*([A-Za-z_]\w*)\s*[,)]`)},
+type TaintSpec struct {
+	CWE, Name, Severity string
+	OWASP               []string
+	KEV                 bool
+	Mode                string   // "arg" | "call"
+	Triggers            []string // subset of "user","dyn","sens"
+	Confidence          string   // "high" (deny) | "medium" (ask)
+	Sinks               []taintSinkPat
+	Noncompliant        string
+	Compliant           string
 
-	// SSRF: the whole request URL is a user-controlled variable.
-	{"CWE-918", "python", false, true, regexp.MustCompile(`(?:requests\.(?:get|post|put|patch|delete|head|request)|httpx\.(?:get|post|stream|request)|urllib\.request\.urlopen|urlopen)\s*\(\s*([A-Za-z_]\w*)\s*[,)]`)},
-	// Path traversal: a user-controlled path into a file op.
-	{"CWE-22", "python", false, true, regexp.MustCompile(`(?:open|send_file|send_from_directory)\s*\(\s*([A-Za-z_]\w*)\s*[,)]`)},
-	// Open redirect: a user-controlled redirect target.
-	{"CWE-601", "python", false, true, regexp.MustCompile(`\bredirect\s*\(\s*([A-Za-z_]\w*)\s*\)`)},
-
-	{"CWE-94", "javascript", true, true, regexp.MustCompile(`\beval\s*\(\s*([A-Za-z_$][\w$]*)\s*\)`)},
-	{"CWE-79", "javascript", true, true, regexp.MustCompile(`\.(?:innerHTML|outerHTML)\s*=\s*([A-Za-z_$][\w$]*)\b`)},
-	{"CWE-79", "javascript", true, true, regexp.MustCompile(`document\.write\s*\(\s*([A-Za-z_$][\w$]*)\s*[,)]`)},
-	{"CWE-78", "javascript", true, true, regexp.MustCompile(`child_process\.exec\s*\(\s*([A-Za-z_$][\w$]*)\s*[,)]`)},
-	{"CWE-918", "javascript", false, true, regexp.MustCompile(`(?:fetch|axios(?:\.\w+)?)\s*\(\s*([A-Za-z_$][\w$]*)\s*[,)]`)},
-	{"CWE-601", "javascript", false, true, regexp.MustCompile(`\.redirect\s*\(\s*([A-Za-z_$][\w$]*)\s*\)`)},
+	rule                     *Rule
+	tUser, tDyn, tSens, done bool
 }
 
-// tlRules are synthetic Rule descriptors the taint findings attribute to.
-var tlRules = map[string]*Rule{
-	"CWE-1336": {CWE: "CWE-1336", Name: "Server-Side Template Injection (tainted template variable)", Severity: "critical", OWASP: []string{"A03"}, KEV: true},
-	"CWE-94":   {CWE: "CWE-94", Name: "Code Injection (tainted variable into eval/exec)", Severity: "critical", OWASP: []string{"A03"}},
-	"CWE-78":   {CWE: "CWE-78", Name: "OS Command Injection (tainted variable into shell sink)", Severity: "critical", OWASP: []string{"A03"}},
-	"CWE-89":   {CWE: "CWE-89", Name: "SQL Injection (user-derived query variable)", Severity: "critical", OWASP: []string{"A03"}},
-	"CWE-502":  {CWE: "CWE-502", Name: "Unsafe Deserialization (user-controlled input)", Severity: "critical", OWASP: []string{"A08"}},
-	"CWE-79":   {CWE: "CWE-79", Name: "Cross-Site Scripting (tainted variable into HTML sink)", Severity: "high", OWASP: []string{"A03"}},
-	"CWE-918":  {CWE: "CWE-918", Name: "SSRF (user-controlled URL into a network fetch)", Severity: "high", OWASP: []string{"A10"}},
-	"CWE-22":   {CWE: "CWE-22", Name: "Path Traversal (user-controlled path into a file op)", Severity: "high", OWASP: []string{"A01"}},
-	"CWE-601":  {CWE: "CWE-601", Name: "Open Redirect (user-controlled redirect target)", Severity: "medium", OWASP: []string{"A01"}},
-	"CWE-532":  {CWE: "CWE-532", Name: "Sensitive Data in Logs (secret/PII into a log sink)", Severity: "medium", OWASP: []string{"A09"}},
-	"CWE-200":  {CWE: "CWE-200", Name: "Sensitive/Environment Exfiltration (secret into a network sink)", Severity: "critical", OWASP: []string{"A01"}},
+// prep compiles the spec's sink patterns and derives its trigger flags and Rule
+// once, on first use.
+func (s *TaintSpec) prep() {
+	if s.done {
+		return
+	}
+	s.done = true
+	for _, t := range s.Triggers {
+		switch t {
+		case "user":
+			s.tUser = true
+		case "dyn":
+			s.tDyn = true
+		case "sens":
+			s.tSens = true
+		}
+	}
+	for i := range s.Sinks {
+		if re, err := regexp.Compile(s.Sinks[i].Re); err == nil {
+			s.Sinks[i].re = re
+		}
+	}
+	s.rule = &Rule{CWE: s.CWE, Name: s.Name, Severity: s.Severity, OWASP: s.OWASP, KEV: s.KEV}
+}
+
+// taintSpecHits reports whether the spec's sinks are fed a triggering taint.
+func taintSpecHits(s *TaintSpec, lang, content string, user, dyn, sens map[string]bool) bool {
+	for i := range s.Sinks {
+		sp := &s.Sinks[i]
+		if sp.re == nil || (sp.Lang != "" && lang != "" && sp.Lang != lang) {
+			continue
+		}
+		if s.Mode == "call" {
+			if tlArgScan(content, sp.re, sens) {
+				return true
+			}
+			continue
+		}
+		for _, m := range sp.re.FindAllStringSubmatch(content, -1) {
+			v := m[1]
+			if (s.tUser && user[v]) || (s.tDyn && dyn[v]) || (s.tSens && sens[v]) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // tlTaint computes the user/dyn/sens taint sets for a file. user = derived from
@@ -234,54 +253,19 @@ func (kb *KB) taintScan(lang, content string, have map[string]bool) []Finding {
 	user, dyn, sens := tlTaint(content)
 	var out []Finding
 	seen := map[string]bool{}
-	add := func(cwe string) {
-		if !have[cwe] && !seen[cwe] {
-			if r := tlRules[cwe]; r != nil {
-				// Provability calibration: a dynamically-built string reaching
-				// SSTI/SQLi/eval is unsafe regardless of any guard -> deny. A
-				// user value reaching SSRF / redirect / a file path is commonly
-				// validated by control flow a pattern engine cannot see, so it
-				// asks (defers to the human) rather than hard-denying.
-				conf := "high"
-				if tlAskSink[cwe] {
-					conf = "medium"
-				}
-				out = append(out, Finding{Rule: r, Confidence: conf})
-				seen[cwe] = true
-			}
-		}
-	}
-	for i := range tlSinks {
-		s := &tlSinks[i]
-		if s.lang != "" && lang != "" && s.lang != lang {
+	for i := range generatedTaintSpecs {
+		s := &generatedTaintSpecs[i]
+		s.prep()
+		if s.rule == nil || have[s.CWE] || seen[s.CWE] {
 			continue
 		}
-		if have[s.cwe] || seen[s.cwe] {
-			continue
+		if taintSpecHits(s, lang, content, user, dyn, sens) {
+			out = append(out, Finding{Rule: s.rule, Confidence: s.Confidence})
+			seen[s.CWE] = true
 		}
-		for _, m := range s.re.FindAllStringSubmatch(content, -1) {
-			v := m[1]
-			if (s.user && user[v]) || (s.dyn && dyn[v]) {
-				add(s.cwe)
-				break
-			}
-		}
-	}
-	// Whole-arglist sinks: a secret/PII into a log sink (CWE-532) or a network
-	// sink (CWE-200, exfiltration). tlArgScan also matches secrets by name, so
-	// these run even when no assignment produced a sens variable.
-	if tlArgScan(content, tlLogSink, sens) {
-		add("CWE-532")
-	}
-	if tlArgScan(content, tlNetSink, sens) {
-		add("CWE-200")
 	}
 	return out
 }
-
-// tlAskSink: taint findings whose exploitability depends on a validation guard a
-// pattern engine cannot see -> ask (defer to human), not deny.
-var tlAskSink = map[string]bool{"CWE-918": true, "CWE-22": true, "CWE-601": true}
 
 // tlHave collects the CWEs present in a finding slice (for dedup).
 func tlHave(fs []Finding) map[string]bool {

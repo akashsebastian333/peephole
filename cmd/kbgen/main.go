@@ -1,4 +1,5 @@
-// Command kbgen generates rules_gen.go from rules/*.json: every rule with its
+// Command kbgen generates rules_gen.go from rules/*.json (presence rules) and
+// taint/*.json (declarative cross-line taint sink specs): every rule with its
 // patterns AND the precomputed literal prefilter set, as Go literals. This
 // removes the per-invocation cost of reading 174 embedded JSON files,
 // unmarshaling them, and computing 528 prefilters (~2ms of every hook event).
@@ -44,6 +45,28 @@ type rule struct {
 	AttackScenario string    `json:"attack_scenario"`
 	NegativeHints  []string  `json:"negative_test_hint"`
 	Exemplar       struct {
+		Noncompliant string `json:"noncompliant"`
+		Compliant    string `json:"compliant"`
+		Explanation  string `json:"explanation"`
+	} `json:"exemplar"`
+}
+
+type taintSink struct {
+	Lang string `json:"lang"`
+	Re   string `json:"re"`
+}
+
+type taintSpec struct {
+	CWE        string      `json:"cwe_id"`
+	Name       string      `json:"name"`
+	Severity   string      `json:"severity"`
+	OWASP      []string    `json:"owasp"`
+	KEV        bool        `json:"kev"`
+	Mode       string      `json:"mode"`
+	Triggers   []string    `json:"triggers"`
+	Confidence string      `json:"confidence"`
+	Sinks      []taintSink `json:"sinks"`
+	Exemplar   struct {
 		Noncompliant string `json:"noncompliant"`
 		Compliant    string `json:"compliant"`
 		Explanation  string `json:"explanation"`
@@ -122,7 +145,56 @@ func emit() ([]byte, error) {
 		b.WriteString("},\n")
 	}
 	b.WriteString("}\n")
+
+	if err := emitTaint(&b); err != nil {
+		return nil, err
+	}
 	return format.Source([]byte(b.String()))
+}
+
+// emitTaint compiles taint/*.json (the declarative cross-line taint sink specs)
+// into generatedTaintSpecs. Adding a taint class is a JSON file here, not code.
+func emitTaint(b *strings.Builder) error {
+	entries, err := os.ReadDir("taint")
+	if os.IsNotExist(err) {
+		b.WriteString("\nvar generatedTaintSpecs []TaintSpec\n")
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	var names []string
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".json") {
+			names = append(names, e.Name())
+		}
+	}
+	sort.Strings(names)
+	b.WriteString("\nvar generatedTaintSpecs = []TaintSpec{\n")
+	for _, name := range names {
+		raw, err := os.ReadFile(filepath.Join("taint", name))
+		if err != nil {
+			return err
+		}
+		var s taintSpec
+		if err := json.Unmarshal(raw, &s); err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+		fmt.Fprintf(b, "{\nCWE: %s,\nName: %s,\nSeverity: %s,\n",
+			strconv.Quote(s.CWE), strconv.Quote(s.Name), strconv.Quote(s.Severity))
+		fmt.Fprintf(b, "OWASP: %s,\nKEV: %t,\nMode: %s,\nConfidence: %s,\n",
+			strs(s.OWASP), s.KEV, strconv.Quote(s.Mode), strconv.Quote(s.Confidence))
+		fmt.Fprintf(b, "Triggers: %s,\n", strs(s.Triggers))
+		b.WriteString("Sinks: []taintSinkPat{\n")
+		for _, sk := range s.Sinks {
+			fmt.Fprintf(b, "{Lang: %s, Re: %s},\n", strconv.Quote(sk.Lang), strconv.Quote(sk.Re))
+		}
+		b.WriteString("},\n")
+		fmt.Fprintf(b, "Noncompliant: %s,\nCompliant: %s,\n},\n",
+			strconv.Quote(s.Exemplar.Noncompliant), strconv.Quote(s.Exemplar.Compliant))
+	}
+	b.WriteString("}\n")
+	return nil
 }
 
 func main() {

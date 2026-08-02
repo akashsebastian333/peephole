@@ -1,0 +1,29 @@
+{
+  "cwe_id": "CWE-918",
+  "name": "SSRF (user-controlled URL into a network fetch)",
+  "severity": "high",
+  "owasp": [
+    "A10"
+  ],
+  "kev": false,
+  "mode": "arg",
+  "triggers": [
+    "user"
+  ],
+  "confidence": "medium",
+  "sinks": [
+    {
+      "lang": "python",
+      "re": "(?:requests\\.(?:get|post|put|patch|delete|head|request)|httpx\\.(?:get|post|stream|request)|urllib\\.request\\.urlopen|urlopen)\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
+    },
+    {
+      "lang": "javascript",
+      "re": "(?:fetch|axios(?:\\.\\w+)?)\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"
+    }
+  ],
+  "exemplar": {
+    "noncompliant": "u = request.args.get('url')\nr = requests.get(u)",
+    "compliant": "r = requests.get('https://api.internal.svc/status')",
+    "explanation": "fetch only fixed or allowlisted hosts; never a raw user-supplied URL"
+  }
+}

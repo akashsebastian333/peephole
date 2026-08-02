@@ -1,0 +1,29 @@
+{
+  "cwe_id": "CWE-601",
+  "name": "Open Redirect (user-controlled redirect target)",
+  "severity": "medium",
+  "owasp": [
+    "A01"
+  ],
+  "kev": false,
+  "mode": "arg",
+  "triggers": [
+    "user"
+  ],
+  "confidence": "medium",
+  "sinks": [
+    {
+      "lang": "python",
+      "re": "\\bredirect\\s*\\(\\s*([A-Za-z_]\\w*)\\s*\\)"
+    },
+    {
+      "lang": "javascript",
+      "re": "\\.redirect\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*\\)"
+    }
+  ],
+  "exemplar": {
+    "noncompliant": "dest = request.args.get('next')\nreturn redirect(dest)",
+    "compliant": "return redirect(url_for('home'))",
+    "explanation": "redirect only to internal endpoints (url_for) or an allowlist, never a raw user target"
+  }
+}

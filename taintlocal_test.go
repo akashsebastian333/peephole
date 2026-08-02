@@ -6,6 +6,29 @@ import "testing"
 // without misfiring on the safe forms (parameterized queries, static templates,
 // sanitized values, unrelated dynamic strings).
 
+// TestTaintSpecExemplars verifies every declarative taint spec (taint/*.json)
+// against its own shipped exemplars: the noncompliant one must be caught, the
+// compliant one must not. New coverage is a JSON file plus exemplars, checked
+// here — no new engine code or hand-written test case.
+func TestTaintSpecExemplars(t *testing.T) {
+	kb := loadKB()
+	if len(generatedTaintSpecs) == 0 {
+		t.Fatal("no taint specs generated")
+	}
+	for i := range generatedTaintSpecs {
+		s := &generatedTaintSpecs[i]
+		if s.Noncompliant == "" {
+			continue
+		}
+		if !scanHitsCWE(kb, s.CWE, s.Noncompliant) {
+			t.Errorf("%s taint spec: noncompliant exemplar not caught:\n%s", s.CWE, s.Noncompliant)
+		}
+		if s.Compliant != "" && scanHitsCWE(kb, s.CWE, s.Compliant) {
+			t.Errorf("%s taint spec: compliant exemplar FALSE-POSITIVES:\n%s", s.CWE, s.Compliant)
+		}
+	}
+}
+
 func taintCWEs(t *testing.T, path, code string) map[string]bool {
 	t.Helper()
 	kb := loadKB()
@@ -88,12 +111,6 @@ func TestTaintNoFalsePositives(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			m := taintCWEs(t, c.path, c.code)
-			for cwe := range m {
-				if tlRules[cwe] != nil {
-					// only fail if the finding came from the taint pass for a
-					// class this safe snippet should not trip
-				}
-			}
 			// The safe SQLi/SSTI/deser snippets must not raise their class.
 			bad := map[string]string{
 				"sqli-parameterized": "CWE-89", "ssti-static-template-context-var": "CWE-1336",

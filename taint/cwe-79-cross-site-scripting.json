@@ -1,0 +1,30 @@
+{
+  "cwe_id": "CWE-79",
+  "name": "Cross-Site Scripting (tainted variable into HTML sink)",
+  "severity": "high",
+  "owasp": [
+    "A03"
+  ],
+  "kev": false,
+  "mode": "arg",
+  "triggers": [
+    "user",
+    "dyn"
+  ],
+  "confidence": "high",
+  "sinks": [
+    {
+      "lang": "javascript",
+      "re": "\\.(?:innerHTML|outerHTML)\\s*=\\s*([A-Za-z_$][\\w$]*)\\b"
+    },
+    {
+      "lang": "javascript",
+      "re": "document\\.write\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"
+    }
+  ],
+  "exemplar": {
+    "noncompliant": "const msg = `<b>${userInput}</b>`;\nel.innerHTML = msg;",
+    "compliant": "el.textContent = userInput;",
+    "explanation": "assign untrusted content with textContent, or sanitize before innerHTML"
+  }
+}

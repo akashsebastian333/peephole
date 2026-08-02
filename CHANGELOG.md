@@ -15,6 +15,11 @@ All notable changes to Peephole are documented here. This project adheres to
   deserialization, and XSS. It checks the actual variable in the sink, not
   proximity, so an unrelated dynamic string near a static-const sink does not
   misfire. Strictly additive: it never changes existing rule behavior.
+- The sink catalog is **declarative data** (`taint/*.json`, compiled into Go
+  literals by `cmd/kbgen`) over one generic engine, so adding a class is a spec
+  file plus exemplars, verified by `TestTaintSpecExemplars`, not new engine code.
+  Findings whose exploitability depends on a validation guard a pattern engine
+  cannot see (SSRF, redirect, path) `ask` rather than hard-deny.
 - Measured on the live-benchmark corpus, this raises the gate's catch rate on
   insecure code that landed from 45/64 to **57/64** across all arms, and takes
   peephole's own cross-line SSTI misses to zero. `TestTaintCrossLineCatches` /
