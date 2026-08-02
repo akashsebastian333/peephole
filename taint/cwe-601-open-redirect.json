@@ -14,7 +14,7 @@
   "sinks": [
     {
       "lang": "python",
-      "re": "\\bredirect\\s*\\(\\s*([A-Za-z_]\\w*)\\s*\\)"
+      "re": "(?:\\bredirect|HttpResponseRedirect|HttpResponsePermanentRedirect)\\s*\\(\\s*([A-Za-z_]\\w*)\\s*\\)"
     },
     {
       "lang": "javascript",

@@ -24,6 +24,10 @@
     {
       "lang": "javascript",
       "re": "\\beval\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"
+    },
+    {
+      "lang": "python",
+      "re": "\\bcompile\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
     }
   ],
   "exemplar": {

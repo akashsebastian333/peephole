@@ -7438,7 +7438,7 @@ var generatedTaintSpecs = []TaintSpec{
 		Confidence: "medium",
 		Triggers:   []string{"user"},
 		Sinks: []taintSinkPat{
-			{Lang: "python", Re: "\\bredirect\\s*\\(\\s*([A-Za-z_]\\w*)\\s*\\)"},
+			{Lang: "python", Re: "(?:\\bredirect|HttpResponseRedirect|HttpResponsePermanentRedirect)\\s*\\(\\s*([A-Za-z_]\\w*)\\s*\\)"},
 			{Lang: "javascript", Re: "\\.redirect\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*\\)"},
 		},
 		Noncompliant: "dest = request.args.get('next')\nreturn redirect(dest)",
@@ -7473,6 +7473,7 @@ var generatedTaintSpecs = []TaintSpec{
 		Sinks: []taintSinkPat{
 			{Lang: "javascript", Re: "\\.(?:innerHTML|outerHTML)\\s*=\\s*([A-Za-z_$][\\w$]*)\\b"},
 			{Lang: "javascript", Re: "document\\.write\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"},
+			{Lang: "javascript", Re: "dangerouslySetInnerHTML\\s*=\\s*\\{\\{?\\s*__html\\s*:\\s*([A-Za-z_$][\\w$]*)"},
 		},
 		Noncompliant: "const msg = `<b>${userInput}</b>`;\nel.innerHTML = msg;",
 		Compliant:    "el.textContent = userInput;",
@@ -7521,6 +7522,7 @@ var generatedTaintSpecs = []TaintSpec{
 			{Lang: "python", Re: "\\beval\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"},
 			{Lang: "python", Re: "\\bexec\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"},
 			{Lang: "javascript", Re: "\\beval\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"},
+			{Lang: "python", Re: "\\bcompile\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"},
 		},
 		Noncompliant: "expr = request.args.get('expr')\nresult = eval(expr)",
 		Compliant:    "import ast\nresult = ast.literal_eval(request.args.get('expr'))",
