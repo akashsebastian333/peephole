@@ -274,6 +274,26 @@ func TestSemReviewTagsJSIdorCsrf(t *testing.T) {
 	}
 }
 
+func TestHeredocBombBounded(t *testing.T) {
+	// A `<<E\n<<E\n...` command (many openers that never close) used to make the
+	// per-opener body rescan go O(n^2) - a CPU-DoS and, on an audit-mode watchdog
+	// timeout, a fail-open inspection bypass. Capped opener count keeps it linear
+	// and marks it uninspectable (fail-safe).
+	cmd := strings.Repeat("<<E\n", 256*1024/4) // 256KB of openers
+	start := time.Now()
+	a := analyzeBash(cmd)
+	if d := time.Since(start); d > 500*time.Millisecond {
+		t.Fatalf("heredoc-bomb took %v - still superlinear", d)
+	}
+	if !a.Uninspectable {
+		t.Error("a heredoc-bomb past the opener cap must be flagged uninspectable")
+	}
+	// A normal command with a couple of heredocs still yields its payloads.
+	if b := analyzeBash("cat > a.py <<EOF\nimport os\nEOF\ncat > b.py <<EOF\nx=1\nEOF"); len(b.Payloads) < 2 {
+		t.Errorf("normal 2-heredoc command lost payloads: %+v", b.Payloads)
+	}
+}
+
 func TestBashWritePrimitiveEvasions(t *testing.T) {
 	// Each of these writes runtime-determined or copied content and must be flagged
 	// uninspectable (a caught form has an uncaught sibling otherwise).

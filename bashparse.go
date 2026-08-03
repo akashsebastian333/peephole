@@ -92,8 +92,17 @@ var (
 func analyzeBash(cmd string) BashAnalysis {
 	var a BashAnalysis
 
-	// 1. Heredoc payloads.
-	for _, m := range reHeredoc.FindAllStringSubmatchIndex(cmd, -1) {
+	// 1. Heredoc payloads. Cap the opener count: heredocBody rescans the remaining
+	// command per opener, so a `<<E\n<<E\n...`-bomb (openers that never close) is
+	// O(n^2). Real commands have a handful; past the cap, mark uninspectable so it
+	// fails safe (ask/deny) instead of burning the whole watchdog budget - which in
+	// audit mode would time out to a fail-OPEN allow.
+	hd := reHeredoc.FindAllStringSubmatchIndex(cmd, -1)
+	if len(hd) > 16 {
+		a.Uninspectable, a.Reason = true, "too many heredocs to inspect statically"
+		hd = hd[:16]
+	}
+	for _, m := range hd {
 		delim := cmd[m[2]:m[3]]
 		if body := heredocBody(cmd, m[1], delim); body != "" {
 			a.Payloads = append(a.Payloads, WritePayload{Content: body})
