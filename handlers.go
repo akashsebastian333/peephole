@@ -253,7 +253,12 @@ func enforceMarked(e Event, mode string, c cand) {
 		}
 		passthrough("")
 	}
-	if c.decision == "deny" && e.HookEventName == "PreToolUse" {
+	// An org-mandated (`enforce`) CWE is unwaivable by design, so the
+	// terminating-guardrail budget must NOT downgrade it to ask - otherwise an
+	// agent could turn a hard org block into a human-clickable prompt by retrying.
+	// (Self-protection denies are already exempt; they bypass enforceMarked.)
+	orgMandated := c.decision == "deny" && loadPolicy(projectDir(e)).mustDeny(c.cwe)
+	if c.decision == "deny" && e.HookEventName == "PreToolUse" && !orgMandated {
 		key := c.cwe
 		if key == "" {
 			key = c.ruleID

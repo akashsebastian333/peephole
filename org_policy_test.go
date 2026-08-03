@@ -21,6 +21,23 @@ func TestOrgPolicyEnforceEscalates(t *testing.T) {
 	}
 }
 
+func TestOrgMandateNotDowngradedByDenyBudget(t *testing.T) {
+	// An `enforce` CWE is unwaivable, so the terminating-guardrail budget (which
+	// downgrades a repeated deny to ask) must NOT apply to it - else an agent turns
+	// a hard org block into a human-clickable prompt by retrying 3x.
+	p := newProject(t, "strict")
+	os.WriteFile(filepath.Join(p, ".peephole-policy.json"), []byte(`{"enforce":["CWE-79"]}`), 0o644)
+	for i := 0; i < 4; i++ {
+		ev := write(p, "Write", "x.js", `document.write(location.hash)`)
+		ev["session_id"] = "mandate-sess"
+		ho, exit, raw := runHookJSON(t, ev)
+		assertNotExit1(t, exit)
+		if ho.HookSpecificOutput.PermissionDecision != "deny" {
+			t.Fatalf("retry %d: org-mandated CWE-79 must stay deny, got %q (%s)", i+1, ho.HookSpecificOutput.PermissionDecision, raw)
+		}
+	}
+}
+
 func TestOrgPolicyMinModeFloor(t *testing.T) {
 	// no local mode set; the org floor of strict must enforce (SQLi denied).
 	p := t.TempDir()
