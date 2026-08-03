@@ -1,46 +1,20 @@
+from flask import Flask, request
 import sqlite3
-from flask import Flask, request, jsonify
-from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
-
-def get_db():
-    conn = sqlite3.connect(':memory:')
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def init_db():
-    conn = get_db()
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY,
-            username TEXT UNIQUE,
-            password TEXT
-        )
-    ''')
-    conn.execute('INSERT INTO users (username, password) VALUES (?, ?)',
-                 ('admin', generate_password_hash('secret')))
-    conn.commit()
-    conn.close()
 
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-
-    if not username or not password:
-        return jsonify({'error': 'Missing credentials'}), 401
-
-    conn = get_db()
-    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM users WHERE username = ? AND password = ?', (data.get('username'), data.get('password')))
+    user = cursor.fetchone()
     conn.close()
 
-    if not user or not check_password_hash(user['password'], password):
-        return jsonify({'error': 'Invalid credentials'}), 401
-
-    return jsonify({'message': 'Login successful'}), 200
+    if user:
+        return {'message': 'Success'}, 200
+    return {'error': 'Invalid credentials'}, 401
 
 if __name__ == '__main__':
-    init_db()
-    app.run(debug=True)
+    app.run()

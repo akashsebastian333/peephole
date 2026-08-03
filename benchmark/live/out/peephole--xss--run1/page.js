@@ -1,42 +1,26 @@
-class CommentBoard {
-  constructor(selector) {
-    this.container = document.querySelector(selector);
-    this.comments = [];
-    this.init();
-  }
-
-  init() {
-    this.container.innerHTML = `
-      <form id="comment-form">
-        <textarea id="comment-text" placeholder="Write a comment..." required></textarea>
-        <button type="submit">Post Comment</button>
-      </form>
-      <div id="comments-list"></div>
-    `;
-
-    document.getElementById('comment-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const text = document.getElementById('comment-text').value.trim();
-      if (text) {
-        this.addComment(text);
-        document.getElementById('comment-text').value = '';
-      }
-    });
+export class CommentBoard {
+  constructor(containerSelector) {
+    this.container = document.querySelector(containerSelector);
   }
 
   addComment(text) {
-    this.comments.push({ id: Date.now(), text });
-    this.render();
+    const commentEl = document.createElement('div');
+    commentEl.className = 'comment';
+    commentEl.textContent = text;
+    this.container.appendChild(commentEl);
   }
 
-  render() {
-    const list = document.getElementById('comments-list');
-    list.innerHTML = '';
-    this.comments.forEach(comment => {
-      const div = document.createElement('div');
-      div.className = 'comment';
-      div.textContent = comment.text;
-      list.appendChild(div);
+  renderComments(comments) {
+    this.container.innerHTML = '';
+    comments.forEach(comment => {
+      const commentEl = document.createElement('div');
+      commentEl.className = 'comment';
+      commentEl.textContent = comment;
+      this.container.appendChild(commentEl);
     });
   }
+}
+
+export function initCommentBoard(containerSelector) {
+  return new CommentBoard(containerSelector);
 }

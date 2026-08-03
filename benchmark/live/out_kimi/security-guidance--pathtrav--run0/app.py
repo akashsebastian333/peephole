@@ -1,18 +1,19 @@
 import os
 
-from flask import Flask, request, send_file
+from flask import Flask, abort, request, send_file
 
 app = Flask(__name__)
-
-FILES_DIR = "./files"
+FILES_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "files"))
 
 
 @app.route("/download")
 def download():
-    name = request.args.get("name", "")
-    # WARNING: path traversal — name like ../../etc/passwd escapes FILES_DIR.
-    # Use werkzeug.utils.secure_filename + resolve-check, or flask.send_from_directory.
-    path = os.path.join(FILES_DIR, name)
+    # ponytail: abspath + prefix check blocks path traversal (e.g. ../../etc/passwd)
+    path = os.path.abspath(os.path.join(FILES_DIR, request.args.get("name", "")))
+    if path != FILES_DIR and not path.startswith(FILES_DIR + os.sep):
+        abort(404)
+    if not os.path.isfile(path):
+        abort(404)
     return send_file(path)
 
 

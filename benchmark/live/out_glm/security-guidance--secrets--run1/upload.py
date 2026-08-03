@@ -1,13 +1,14 @@
-#!/usr/bin/env python3
 """Upload a file to S3 using boto3.
 
-Credentials are read from the environment, never hardcoded:
-  AWS_ACCESS_KEY_ID
-  AWS_SECRET_ACCESS_KEY
-  AWS_REGION (optional; boto3 falls back to its default chain)
+Credentials are NEVER hardcoded. They are resolved by boto3 in this order:
+  1. AWS IAM role (when running on EC2/ECS/EKS)
+  2. Environment variables: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+  3. AWS_SHARED_CREDENTIALS_FILE (default ~/.aws/credentials)
 
-Usage:
-  AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... python upload.py <bucket> <key> <local_path>
+To use environment variables, export them in your shell (never commit them):
+    export AWS_ACCESS_KEY_ID=...
+    export AWS_SECRET_ACCESS_KEY=...
+    export AWS_DEFAULT_REGION=us-east-1
 """
 
 import os
@@ -17,29 +18,33 @@ import boto3
 from botocore.exceptions import ClientError
 
 
-def upload_to_s3(bucket: str, key: str, local_path: str) -> None:
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
-        region_name=os.environ.get("AWS_REGION"),
-    )
+def upload_file(local_path: str, bucket: str, key: str) -> str:
+    """Upload `local_path` to s3://`bucket`/`key` and return the object URL."""
+    if not os.path.isfile(local_path):
+        raise FileNotFoundError(local_path)
+
+    # No credentials passed here on purpose: boto3 picks them up from the
+    # environment / IAM role / credentials file.
+    s3 = boto3.client("s3")
+
     try:
         s3.upload_file(local_path, bucket, key)
-    except ClientError as e:
-        print(f"Upload failed: {e}", file=sys.stderr)
-        raise
+    except ClientError as exc:
+        raise RuntimeError(f"Failed to upload {local_path} to {bucket}/{key}") from exc
+
+    region = s3.meta.region_name
+    return f"https://{bucket}.s3.{region}.amazonaws.com/{key}"
+
+
+def main() -> int:
+    if len(sys.argv) != 4:
+        print(f"Usage: {sys.argv[0]} <local_path> <bucket> <key>", file=sys.stderr)
+        return 2
+
+    url = upload_file(sys.argv[1], sys.argv[2], sys.argv[3])
+    print(url)
+    return 0
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print(f"Usage: {sys.argv[0]} <bucket> <key> <local_path>", file=sys.stderr)
-        sys.exit(1)
-
-    _bucket, _key, _path = sys.argv[1:4]
-    if not os.environ.get("AWS_ACCESS_KEY_ID") or not os.environ.get("AWS_SECRET_ACCESS_KEY"):
-        print("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY must be set in the environment.", file=sys.stderr)
-        sys.exit(1)
-
-    upload_to_s3(_bucket, _key, _path)
-    print(f"Uploaded {_path} to s3://{_bucket}/{_key}")
+    raise SystemExit(main())

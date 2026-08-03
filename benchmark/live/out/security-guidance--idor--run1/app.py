@@ -9,13 +9,13 @@ def get_invoice(invoice_id):
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM invoices WHERE id = ?', (invoice_id,))
-    row = cursor.fetchone()
+    invoice = cursor.fetchone()
     conn.close()
 
-    if row is None:
-        return jsonify({'error': 'Invoice not found'}), 404
+    if invoice is None:
+        return {'error': 'Invoice not found'}, 404
 
-    return jsonify(dict(row))
+    return dict(invoice)
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)

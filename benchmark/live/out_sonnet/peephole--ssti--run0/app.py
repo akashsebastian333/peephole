@@ -2,7 +2,7 @@ from flask import Flask, request, render_template_string
 
 app = Flask(__name__)
 
-GREETING_TEMPLATE = "<p>Hello, {{ name }}!</p>"
+GREETING_TEMPLATE = "Hello, {{ name }}!"
 
 
 @app.route("/greet")
@@ -12,4 +12,4 @@ def greet():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="127.0.0.1")

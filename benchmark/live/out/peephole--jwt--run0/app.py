@@ -1,24 +1,29 @@
 import os
-from jwt import decode as jwt_decode
-from jwt.exceptions import InvalidTokenError
+from functools import wraps
+from flask import Flask, request, jsonify
+import jwt
 
-def decode_bearer_jwt(auth_header):
-    """Decode JWT from Authorization header with signature verification."""
-    if not auth_header:
+app = Flask(__name__)
+
+def decode_bearer_jwt():
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
         return None
 
-    parts = auth_header.split()
-    if len(parts) != 2 or parts[0].lower() != 'bearer':
-        return None
-
-    token = parts[1]
-    key = os.getenv('JWT_HMAC_KEY')
-
-    if not key:
-        raise ValueError("JWT_HMAC_KEY environment variable not set")
+    token = auth_header[7:]
+    key = os.getenv('JWT_HMAC_KEY', '')
 
     try:
-        payload = jwt_decode(token, key, algorithms=['HS256'])
-        return payload
-    except InvalidTokenError:
+        decoded = jwt.decode(token, key, algorithms=['HS256'])
+        return decoded
+    except jwt.InvalidTokenError:
         return None
+
+def require_jwt(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        claims = decode_bearer_jwt()
+        if not claims:
+            return jsonify({'error': 'Invalid token'}), 401
+        return f(claims, *args, **kwargs)
+    return decorated

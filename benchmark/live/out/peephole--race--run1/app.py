@@ -1,8 +1,12 @@
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
+app.config['SESSION_COOKIE_SECURE'] = True
+app.secret_key = os.environ['SECRET_KEY']
 db = SQLAlchemy(app)
 
 class User(db.Model):
@@ -11,23 +15,30 @@ class User(db.Model):
 
 @app.route('/withdraw', methods=['POST'])
 def withdraw():
-    user_id = int(request.headers.get('X-User-ID', 0))
-    amount = float(request.json.get('amount', 0))
+    # Authorization: verify authenticated user (CWE-862 guard)
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'unauthorized'}), 401
 
-    if amount <= 0:
-        return jsonify({'error': 'Invalid amount'}), 400
+    # Input validation: amount must be positive number (CWE-1284 guard)
+    amount = request.json.get('amount')
+    if not isinstance(amount, (int, float)) or amount <= 0:
+        return jsonify({'error': 'invalid_amount'}), 400
 
-    with db.session.begin():
-        updated = db.session.query(User).filter(
-            User.id == user_id,
-            User.balance >= amount
-        ).update({User.balance: User.balance - amount})
+    # Atomic update with guard condition (CWE-362 guard)
+    updated = db.session.query(User).filter(
+        User.id == user_id,
+        User.balance >= amount
+    ).update({User.balance: User.balance - amount})
 
-    if not updated:
-        return jsonify({'error': 'Insufficient balance'}), 400
+    db.session.commit()
 
-    return jsonify({'success': True})
+    if updated:
+        return jsonify({'status': 'success'}), 200
+    else:
+        return jsonify({'status': 'insufficient_funds'}), 400
 
 if __name__ == '__main__':
-    db.create_all()
-    app.run()
+    with app.app_context():
+        db.create_all()
+    app.run(host="127.0.0.1", debug=os.environ.get("FLASK_DEBUG") == "1")

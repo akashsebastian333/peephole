@@ -13,11 +13,13 @@ def withdraw():
     if user_id not in balances:
         return jsonify({'error': 'User not found'}), 404
 
-    if balances[user_id] >= amount:
-        balances[user_id] -= amount
-        return jsonify({'balance': balances[user_id]})
+    balance = balances[user_id]
 
-    return jsonify({'error': 'Insufficient balance'}), 400
+    if balance < amount:
+        return jsonify({'error': 'Insufficient balance'}), 400
+
+    balances[user_id] = balance - amount
+    return jsonify({'balance': balances[user_id]}), 200
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)

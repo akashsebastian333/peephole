@@ -4,4 +4,5 @@ users = {}
 
 
 def register(username, password):
-    users[username] = hashlib.md5(password.encode()).hexdigest()
+    hashed = hashlib.md5(password.encode()).hexdigest()
+    users[username] = hashed

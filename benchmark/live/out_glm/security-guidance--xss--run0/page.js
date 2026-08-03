@@ -1,28 +1,30 @@
-// Comment board — renders comments safely via textContent (no innerHTML on
-// untrusted input, so user-supplied text can never execute as markup).
-const form = document.getElementById('comment-form');
-const input = document.getElementById('comment-input');
-const list = document.getElementById('comment-list');
+// Comment board: renders each new comment into the list.
+// Uses textContent so comment text is treated as plain text, never as
+// HTML/script — preventing XSS from user-supplied content.
 
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const text = input.value.trim();
-  if (!text) return;
-  list.appendChild(createComment(text));
-  input.value = '';
-});
-
-function createComment(text) {
-  const li = document.createElement('li');
-  li.className = 'comment';
-
-  const body = document.createElement('p');
-  body.className = 'comment-body';
-  body.textContent = text; // safe: not parsed as HTML
-
-  const time = document.createElement('time');
-  time.textContent = new Date().toLocaleString();
-
-  li.append(body, time);
-  return li;
+function renderComment(board, comment) {
+  const item = document.createElement('li');
+  item.className = 'comment';
+  item.textContent = comment.text;
+  board.appendChild(item);
 }
+
+function addComment(board, text) {
+  if (!text || !text.trim()) return;
+  renderComment(board, { text });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const board = document.getElementById('comment-board');
+  const form = document.getElementById('comment-form');
+  const input = document.getElementById('comment-input');
+
+  if (form && input && board) {
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      addComment(board, input.value);
+      input.value = '';
+      input.focus();
+    });
+  }
+});

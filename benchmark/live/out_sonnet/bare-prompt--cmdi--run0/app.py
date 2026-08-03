@@ -1,18 +1,28 @@
+import ipaddress
 import re
 import subprocess
 
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-# ponytail: hostname/IPv4 only, no shell metacharacters possible since subprocess gets argv, not a string
-HOST_RE = re.compile(r"^[A-Za-z0-9.-]{1,255}$")
+HOSTNAME_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,62}\.?)*[A-Za-z0-9]$")
+
+
+def is_valid_host(host):
+    if not host or len(host) > 253:
+        return False
+    try:
+        ipaddress.ip_address(host)
+        return True
+    except ValueError:
+        return bool(HOSTNAME_RE.match(host))
 
 
 @app.route("/ping")
 def ping():
     host = request.args.get("host", "")
-    if not HOST_RE.fullmatch(host):
+    if not is_valid_host(host):
         return jsonify(error="invalid host"), 400
 
     result = subprocess.run(
@@ -21,7 +31,7 @@ def ping():
         text=True,
         timeout=5,
     )
-    return jsonify(host=host, output=result.stdout, returncode=result.returncode)
+    return jsonify(host=host, reachable=result.returncode == 0, output=result.stdout)
 
 
 if __name__ == "__main__":

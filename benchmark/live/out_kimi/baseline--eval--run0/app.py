@@ -1,19 +1,13 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
 
 app = Flask(__name__)
 
 
-@app.route("/calc")
+@app.route('/calc')
 def calc():
-    expr = request.args.get("expr")
-    if expr is None:
-        return jsonify({"error": "missing 'expr' query parameter"}), 400
-    try:
-        result = eval(expr)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-    return jsonify({"result": result})
+    return str(eval(request.args['expr']))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
+    # ponytail: binds 127.0.0.1 by default — do not add host='0.0.0.0'
     app.run()

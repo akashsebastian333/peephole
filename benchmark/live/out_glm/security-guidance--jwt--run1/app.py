@@ -1,53 +1,42 @@
-"""JWT helpers.
-
-NOTE: `decode_bearer_jwt` intentionally disables signature verification
-(`verify_signature: False`). It is intended ONLY for inspecting/debugging
-token claims during development. Do NOT use it to authenticate or authorize
-requests — without signature verification, an attacker can forge arbitrary
-claims (sub, role, etc.). For any security-sensitive path, verify the
-signature against your signing key instead.
-"""
-
-from typing import Optional
+import os
 
 import jwt
-from flask import Flask, request
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+# Secret used to sign and verify tokens. In production, load this from a
+# secret manager / environment, never hard-code it, and rotate it regularly.
+JWT_SECRET = os.environ["JWT_SECRET"]
+JWT_ALGORITHM = "HS256"
 
-def decode_bearer_jwt(authorization_header: Optional[str]) -> Optional[dict]:
-    """Decode a Bearer JWT from an Authorization header without verifying its signature.
 
-    Intended for debugging/inspection only — see module docstring.
-    Returns the decoded claims as a dict, or None if no/invalid Bearer token
-    is present (errors during decoding are also swallowed to None).
+def decode_bearer_token(authorization_header):
+    """Decode and verify the Bearer JWT from the Authorization header.
+
+    The signature is verified against JWT_SECRET. A token whose signature does
+    not validate raises jwt.InvalidTokenError and must be treated as invalid.
     """
     if not authorization_header:
-        return None
+        raise jwt.InvalidTokenError("missing Authorization header")
 
-    parts = authorization_header.split(None, 1)
+    parts = authorization_header.split()
     if len(parts) != 2 or parts[0].lower() != "bearer":
-        return None
+        raise jwt.InvalidTokenError("expected 'Bearer <token>'")
 
-    token = parts[1].strip()
-    if not token:
-        return None
+    token = parts[1]
+    return jwt.decode(
+        token,
+        JWT_SECRET,
+        algorithms=[JWT_ALGORITHM],
+        options={"require": ["exp", "iat"]},
+    )
 
+
+@app.route("/whoami")
+def whoami():
     try:
-        return jwt.decode(token, options={"verify_signature": False})
-    except jwt.PyJWTError:
-        return None
-
-
-@app.route("/inspect")
-def inspect():
-    """Debug endpoint: returns the decoded (unverified) claims of the Bearer token."""
-    claims = decode_bearer_jwt(request.headers.get("Authorization"))
-    if claims is None:
-        return {"error": "missing or invalid Bearer token"}, 400
-    return {"claims": claims}
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+        claims = decode_bearer_token(request.headers.get("Authorization"))
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "invalid token"}), 401
+    return jsonify({"sub": claims.get("sub")})

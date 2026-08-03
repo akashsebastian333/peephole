@@ -8,7 +8,7 @@ DB_PATH = "users.db"
 
 @app.route("/user")
 def get_user():
-    username = request.args.get("username", "")
+    username = request.args.get("username")
     if not username:
         return jsonify({"error": "username is required"}), 400
 
@@ -22,7 +22,7 @@ def get_user():
         conn.close()
 
     if row is None:
-        return jsonify({"error": "not found"}), 404
+        return jsonify({"error": "user not found"}), 404
     return jsonify({"id": row[0], "username": row[1]})
 
 

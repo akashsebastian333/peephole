@@ -1,70 +1,83 @@
-// Comment board module.
-//
-// SECURITY: Comment text is untrusted user input. Per OWASP A03 (Injection),
-// output is encoded for its sink before assignment. We use innerHTML to build
-// the comment element, but the comment text itself is HTML-escaped first so
-// that markup like <script> or <img onerror=...> renders as inert text rather
-// than executing. Never assign raw comment text to innerHTML.
+// Comment board — renders user-submitted comments safely.
+// Untrusted comment text is inserted via textContent (not innerHTML) so it is
+// treated as a literal string and cannot execute markup or script (XSS / OWASP A03).
 
 (function () {
   'use strict';
 
-  var comments = [];
-  var listEl = document.getElementById('comment-list');
-  var formEl = document.getElementById('comment-form');
-  var inputEl = document.getElementById('comment-input');
+  const form = document.getElementById('comment-form');
+  const input = document.getElementById('comment-input');
+  const list = document.getElementById('comment-list');
 
-  // Escape a string for safe interpolation into an HTML sink (innerHTML).
-  // Encodes the characters that would otherwise break out of the text context
-  // or introduce new tags/attributes.
-  function escapeHtml(value) {
-    if (value == null) {
-      return '';
+  if (!form || !input || !list) {
+    return;
+  }
+
+  // Sanitize at the boundary: a comment must be a non-empty string within a
+  // reasonable length. We store the raw text and encode at the sink instead.
+  function validateComment(raw) {
+    if (typeof raw !== 'string') {
+      return null;
     }
+    const text = raw.trim();
+    const MAX_LENGTH = 2000;
+    if (text.length === 0 || text.length > MAX_LENGTH) {
+      return null;
+    }
+    return text;
+  }
+
+  function escapeHtmlAttribute(value) {
     return String(value)
       .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 
-  function renderComment(comment) {
-    var item = document.createElement('li');
-    item.className = 'comment';
-
-    // Build the template with a placeholder, then assign escaped text.
-    // Only the escaped, attacker-controlled value touches the HTML sink.
-    item.innerHTML =
-      '<span class="comment-author">' + escapeHtml(comment.author) + '</span>' +
-      '<p class="comment-body">' + escapeHtml(comment.text) + '</p>';
-
-    listEl.appendChild(item);
+  function createTimestamp() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return (
+      d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+      ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes())
+    );
   }
 
-  function addComment(author, text) {
-    var comment = { author: author, text: text };
-    comments.push(comment);
-    renderComment(comment);
+  function renderComment(text) {
+    const article = document.createElement('article');
+    article.className = 'comment';
+
+    const header = document.createElement('header');
+    header.className = 'comment-meta';
+
+    const time = document.createElement('time');
+    time.textContent = createTimestamp(); // safe: textContent
+    header.appendChild(time);
+    article.appendChild(header);
+
+    const body = document.createElement('p');
+    body.className = 'comment-body';
+    // This is the sink: use textContent so the comment text is rendered as
+    // plain text, never parsed as HTML. (innerHTML would be an XSS vector.)
+    body.textContent = text;
+    article.appendChild(body);
+
+    list.appendChild(article);
   }
 
-  if (formEl) {
-    formEl.addEventListener('submit', function (event) {
-      event.preventDefault();
-      var text = inputEl ? inputEl.value : '';
-      // Boundary validation: reject empty comments.
-      if (!text || !text.trim()) {
-        return;
-      }
-      addComment('Anonymous', text.trim());
-      if (inputEl) {
-        inputEl.value = '';
-      }
-    });
-  }
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
 
-  // Expose a minimal API for programmatic use / seeding.
-  window.CommentBoard = {
-    add: addComment
-  };
+    const text = validateComment(input.value);
+    if (text === null) {
+      // Invalid input at the boundary — ignore silently.
+      return;
+    }
+
+    renderComment(text);
+    input.value = '';
+    input.focus();
+  });
 })();

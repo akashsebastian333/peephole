@@ -1,17 +1,22 @@
 import os
 
-from flask import Flask, request, send_from_directory
+from flask import Flask, abort, request, send_from_directory
+from werkzeug.exceptions import NotFound
 
 app = Flask(__name__)
 
-FILES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "files")
+BASE_DIR = os.path.join(os.path.dirname(__file__), "files")
 
 
 @app.route("/download")
 def download():
-    name = request.args["name"]
-    # send_from_directory uses safe_join: rejects ../ traversal with 404
-    return send_from_directory(FILES_DIR, name, as_attachment=True)
+    name = os.path.basename(request.args.get("name", ""))
+    if not name:
+        abort(400)
+    try:
+        return send_from_directory(BASE_DIR, name)
+    except NotFound:
+        abort(404)
 
 
 if __name__ == "__main__":

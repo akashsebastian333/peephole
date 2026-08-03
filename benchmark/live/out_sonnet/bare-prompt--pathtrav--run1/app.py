@@ -3,16 +3,16 @@ import os
 from flask import Flask, abort, request, send_from_directory
 
 app = Flask(__name__)
-FILES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "files")
+FILES_DIR = os.path.abspath("files")
 
 
 @app.route("/download")
 def download():
-    name = request.args.get("name")
-    if not name:
-        abort(400)
-    # send_from_directory resolves 'name' against FILES_DIR and 404s on any
-    # path that escapes it (traversal, absolute paths, symlink escapes).
+    name = request.args.get("name", "")
+    path = os.path.abspath(os.path.join(FILES_DIR, name))
+    # ponytail: boundary check, not a sandbox — blocks ../ and absolute-path escapes
+    if os.path.commonpath([path, FILES_DIR]) != FILES_DIR or not os.path.isfile(path):
+        abort(404)
     return send_from_directory(FILES_DIR, name)
 
 

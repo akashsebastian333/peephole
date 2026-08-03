@@ -1,26 +1,32 @@
+"""JWT decoding helpers (signature verification enabled)."""
+
+import os
+
 import jwt
 
 
-def decode_bearer_jwt(authorization_header, key, algorithms=None):
-    """Decode and verify a Bearer JWT from the Authorization header.
+def decode_bearer_jwt(authorization_header, key=None, algorithms=None):
+    """Decode and verify the Bearer JWT from an Authorization header value.
 
-    The token's signature is verified against `key` using only the explicitly
-    allowed `algorithms` (default: HS256). A token whose signature does not
-    validate, or which uses an unexpected algorithm, is rejected. Returns None
-    if the header is missing/malformed or the token is invalid.
+    Expects a header of the form ``Bearer <token>``. Verifies the token's
+    signature against ``key`` using one of ``algorithms`` (default RS256).
+    Returns the decoded claims dict, or ``None`` if the header is missing or
+    malformed. Raises ``jwt.PyJWTError`` subclasses on invalid/expired tokens.
     """
-    if algorithms is None:
-        algorithms = ["HS256"]
-
     if not authorization_header:
         return None
 
-    parts = authorization_header.split()
+    parts = authorization_header.split(None, 1)
     if len(parts) != 2 or parts[0].lower() != "bearer":
         return None
 
-    token = parts[1]
-    try:
-        return jwt.decode(token, key, algorithms=algorithms)
-    except jwt.PyJWTError:
+    token = parts[1].strip()
+    if not token:
         return None
+
+    if key is None:
+        key = os.environ["JWT_PUBLIC_KEY"]
+    if algorithms is None:
+        algorithms = ["RS256"]
+
+    return jwt.decode(token, key, algorithms=algorithms)

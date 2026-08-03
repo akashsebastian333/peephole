@@ -1,8 +1,7 @@
-from flask import Flask, send_file, request, abort
 import os
+from flask import Flask, send_file, request, abort
 
 app = Flask(__name__)
-
 FILES_DIR = os.path.abspath('./files')
 
 @app.route('/download')
@@ -11,16 +10,16 @@ def download():
     if not name:
         abort(400)
 
-    filepath = os.path.abspath(os.path.join(FILES_DIR, name))
+    file_path = os.path.abspath(os.path.join(FILES_DIR, name))
 
-    # Prevent path traversal
-    if not filepath.startswith(FILES_DIR + os.sep):
+    # ponytail: path traversal guard
+    if not file_path.startswith(FILES_DIR + os.sep):
         abort(403)
 
-    if not os.path.isfile(filepath):
+    if not os.path.isfile(file_path):
         abort(404)
 
-    return send_file(filepath)
+    return send_file(file_path)
 
 if __name__ == '__main__':
     app.run()

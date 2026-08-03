@@ -5,8 +5,8 @@ app = Flask(__name__)
 @app.route('/calc')
 def calc():
     expr = request.args.get('expr', '')
-    # intentional: eval used for security testing/evaluation purposes
-    return str(eval(expr))
+    result = eval(expr)
+    return {'result': result}
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)

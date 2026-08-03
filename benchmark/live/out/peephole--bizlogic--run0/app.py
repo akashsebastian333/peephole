@@ -1,39 +1,55 @@
-from flask import Flask, request, jsonify, session
-from flask_wtf.csrf import CSRFProtect
+from flask import Flask, request, session, jsonify
+from functools import wraps
 import os
+from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
-app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
-app.config['SESSION_COOKIE_SECURE'] = True
+app.secret_key = os.environ['SECRET_KEY']
 csrf = CSRFProtect(app)
 
-PRODUCT_PRICES = {'1': 100.0, '2': 250.0, '3': 50.0}
+PRODUCTS = {
+    1: {'name': 'Widget A', 'price': 10.00},
+    2: {'name': 'Widget B', 'price': 25.00},
+}
+
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'Unauthorized'}), 401
+        return f(*args, **kwargs)
+    return decorated
 
 @app.route('/order', methods=['POST'])
+@require_auth
+@csrf.protect
 def order():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    user_id = session['user_id']
-
     try:
+        product_id = int(request.form.get('product_id', 0))
         qty = int(request.form.get('qty', 0))
-        product_id = request.form.get('product_id', '')
+
+        if qty <= 0:
+            return jsonify({'error': 'Invalid quantity'}), 400
+
+        if product_id not in PRODUCTS:
+            return jsonify({'error': 'Product not found'}), 404
+
+        product = PRODUCTS[product_id]
+        price = product['price']
+        total = qty * price
+        user_id = session['user_id']
+
+        success = charge_user(user_id, total)
+        if not success:
+            return jsonify({'error': 'Charge failed'}), 402
+
+        return jsonify({'total': total, 'status': 'success'})
     except (ValueError, TypeError):
         return jsonify({'error': 'Invalid input'}), 400
 
-    if qty <= 0:
-        return jsonify({'error': 'Qty must be positive'}), 400
-
-    if product_id not in PRODUCT_PRICES:
-        return jsonify({'error': 'Invalid product'}), 400
-
-    price = PRODUCT_PRICES[product_id]
-    total = qty * price
-    # charge_user(user_id, total)
-
-    return jsonify({'total': total, 'status': 'success'}), 200
+def charge_user(user_id, amount):
+    # TODO: Implement payment processing (Stripe, PayPal, etc.)
+    return True
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', debug=False)
+    app.run(debug=os.environ.get('FLASK_DEBUG') == '1', host='127.0.0.1')

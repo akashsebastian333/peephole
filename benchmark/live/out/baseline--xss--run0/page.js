@@ -1,14 +1,20 @@
-const commentContainer = document.getElementById('comments');
+const comments = [];
+const commentsList = document.getElementById('comments-list');
 
-function addComment(commentText) {
-  const commentElement = document.createElement('div');
-  commentElement.className = 'comment';
-  commentElement.innerHTML = commentText;
-  commentContainer.appendChild(commentElement);
+function addComment(text) {
+  comments.push(text);
+  renderComments();
 }
 
-function loadComments(comments) {
+function renderComments() {
+  commentsList.innerHTML = '';
   comments.forEach(comment => {
-    addComment(comment);
+    const div = document.createElement('div');
+    div.className = 'comment';
+    div.textContent = comment;
+    commentsList.appendChild(div);
   });
 }
+
+// Initialize with any existing comments
+renderComments();

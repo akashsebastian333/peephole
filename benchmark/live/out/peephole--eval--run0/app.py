@@ -1,32 +1,42 @@
-from flask import Flask, request
 import ast
 import operator
+from flask import Flask, request
 
 app = Flask(__name__)
 
-def safe_eval(expr):
-    node = ast.parse(expr, mode='eval').body
-    return eval_node(node)
+class SafeEvaluator(ast.NodeVisitor):
+    OPERATORS = {
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: operator.truediv,
+        ast.FloorDiv: operator.floordiv,
+        ast.Mod: operator.mod,
+        ast.Pow: operator.pow,
+        ast.UAdd: operator.pos,
+        ast.USub: operator.neg,
+    }
 
-def eval_node(node):
-    if isinstance(node, ast.Constant):
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op = self.OPERATORS[type(node.op)]
+        return op(left, right)
+
+    def visit_UnaryOp(self, node):
+        op = self.OPERATORS[type(node.op)]
+        operand = self.visit(node.operand)
+        return op(operand)
+
+    def visit_Constant(self, node):
         return node.value
-    elif isinstance(node, ast.BinOp):
-        left = eval_node(node.left)
-        right = eval_node(node.right)
-        ops = {
-            ast.Add: operator.add,
-            ast.Sub: operator.sub,
-            ast.Mult: operator.mul,
-            ast.Div: operator.truediv,
-            ast.Pow: operator.pow,
-        }
-        return ops[type(node.op)](left, right)
-    elif isinstance(node, ast.UnaryOp):
-        operand = eval_node(node.operand)
-        ops = {ast.UAdd: operator.pos, ast.USub: operator.neg}
-        return ops[type(node.op)](operand)
-    raise ValueError(f"Unsupported operation: {type(node)}")
+
+    def visit_Num(self, node):
+        return node.n
+
+def safe_eval(expr):
+    tree = ast.parse(expr, mode='eval')
+    return SafeEvaluator().visit(tree.body)
 
 @app.route('/calc')
 def calc():

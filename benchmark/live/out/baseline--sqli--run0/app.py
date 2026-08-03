@@ -3,12 +3,10 @@ import sqlite3
 import os
 
 app = Flask(__name__)
-DB_PATH = 'users.db'
 
-def init_db():
-    if os.path.exists(DB_PATH):
-        os.remove(DB_PATH)
-    conn = sqlite3.connect(DB_PATH)
+db_path = 'test.db'
+if not os.path.exists(db_path):
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute('CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT, email TEXT)')
     cursor.execute("INSERT INTO users (username, email) VALUES ('alice', 'alice@example.com')")
@@ -18,15 +16,17 @@ def init_db():
 
 @app.route('/user')
 def get_user():
-    username = request.args.get('username')
-    conn = sqlite3.connect(DB_PATH)
+    username = request.args.get('username', '')
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+
     query = f"SELECT * FROM users WHERE username = '{username}'"
     cursor.execute(query)
+
     result = cursor.fetchone()
     conn.close()
-    return {"user": result}
+
+    return {'user': result}
 
 if __name__ == '__main__':
-    init_db()
-    app.run()
+    app.run(debug=True)

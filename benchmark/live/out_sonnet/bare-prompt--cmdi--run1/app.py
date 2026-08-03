@@ -1,17 +1,20 @@
 import re
 import subprocess
 
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-HOSTNAME_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9\-\.]{0,253}[A-Za-z0-9])?$")
+HOSTNAME_RE = re.compile(
+    r"^(?=.{1,253}$)(?!-)[A-Za-z0-9-]{1,63}(?<!-)"
+    r"(\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))*$"
+)
 
 
 @app.route("/ping")
 def ping():
     host = request.args.get("host", "")
-    if not host or not HOSTNAME_RE.match(host):
+    if not HOSTNAME_RE.match(host):
         return jsonify(error="invalid host"), 400
 
     result = subprocess.run(

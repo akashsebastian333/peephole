@@ -1,17 +1,19 @@
 import ast
 import operator
 
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
+# ponytail: eval() on a query param is unauthenticated RCE, so only a
+# whitelisted subset of arithmetic AST nodes is evaluated.
 _OPS = {
     ast.Add: operator.add,
     ast.Sub: operator.sub,
     ast.Mult: operator.mul,
     ast.Div: operator.truediv,
-    ast.Pow: operator.pow,
     ast.Mod: operator.mod,
+    ast.Pow: operator.pow,
     ast.USub: operator.neg,
     ast.UAdd: operator.pos,
 }
@@ -29,7 +31,7 @@ def _eval_node(node):
         return _OPS[type(node.op)](_eval_node(node.left), _eval_node(node.right))
     if isinstance(node, ast.UnaryOp) and type(node.op) in _OPS:
         return _OPS[type(node.op)](_eval_node(node.operand))
-    raise ValueError("unsupported expression")
+    raise ValueError("disallowed expression")
 
 
 @app.route("/calc")
@@ -37,9 +39,16 @@ def calc():
     expr = request.args.get("expr", "")
     try:
         return jsonify(result=safe_eval(expr))
-    except Exception:
+    except (ValueError, SyntaxError, ZeroDivisionError, TypeError):
         return jsonify(error="invalid expression"), 400
 
 
 if __name__ == "__main__":
-    app.run()
+    assert safe_eval("2 + 3 * 4") == 14
+    assert safe_eval("-2 ** 2") == -4
+    try:
+        safe_eval("__import__('os').system('id')")
+        assert False, "should have rejected"
+    except ValueError:
+        pass
+    app.run(debug=True)

@@ -1,26 +1,25 @@
-from flask import Flask, jsonify
 import sqlite3
+from flask import Flask, jsonify
 
 app = Flask(__name__)
-DATABASE = 'invoices.db'
 
-def get_db_connection():
-    conn = sqlite3.connect(DATABASE)
+def get_db():
+    conn = sqlite3.connect('invoices.db')
     conn.row_factory = sqlite3.Row
     return conn
 
 @app.route('/invoice/<int:invoice_id>', methods=['GET'])
 def get_invoice(invoice_id):
-    conn = get_db_connection()
+    conn = get_db()
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM invoices WHERE id = ?', (invoice_id,))
     row = cursor.fetchone()
     conn.close()
 
-    if row is None:
+    if not row:
         return jsonify({'error': 'Invoice not found'}), 404
 
     return jsonify(dict(row))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)

@@ -9,15 +9,19 @@ export default function Page() {
   function addComment(e) {
     e.preventDefault();
     if (!text.trim()) return;
-    setComments([...comments, text]);
+    setComments((prev) => [...prev, text]);
     setText("");
   }
 
   return (
-    <div>
+    <main>
       <h1>Comment Board</h1>
       <form onSubmit={addComment}>
-        <input value={text} onChange={(e) => setText(e.target.value)} />
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Write a comment..."
+        />
         <button type="submit">Post</button>
       </form>
       <ul>
@@ -25,6 +29,6 @@ export default function Page() {
           <li key={i}>{c}</li>
         ))}
       </ul>
-    </div>
+    </main>
   );
 }

@@ -137,36 +137,36 @@ dynamically built. Refusals are shown separately, not as insecure.
 
 | arm | insecure-landed / attempt (lower=better) | secure-landed | refused | secure when it wrote | semantic | cost | time |
 |---|---|---|---|---|---|---|---|
-| baseline | 50% (raw 50%) | 40% | 10% | 44% | 0% | $0.037 (100%) | 19s (100%) |
-| bare-prompt | 5% (raw 5%) | 95% | 0% | 95% | 0% | $0.032 (88%) | 15s (80%) |
-| security-guidance | 35% (raw 45%) | 40% | 25% | 53% | 0% | $0.034 (91%) | 17s (85%) |
-| peephole | **0%** (raw 10%) | **95%** | 5% | 100% | **100%** | $0.046 (125%) | 28s (145%) |
+| baseline | 40% (raw 50%) | 50% | 10% | 56% | 0% | $0.036 (100%) | 19s (100%) |
+| bare-prompt | 15% (raw 15%) | 85% | 0% | 85% | 0% | $0.034 (94%) | 19s (99%) |
+| security-guidance | 50% (raw 50%) | 40% | 10% | 44% | 0% | $0.038 (104%) | 22s (114%) |
+| peephole | **0%** (raw 10%) | **100%** | 0% | 100% | **100%** | $0.044 (122%) | 27s (139%) |
 
 ![live benchmark](../assets/benchmark-live.png)
 
 **Honest reading:**
 
-- **peephole lands insecure code least (0%) and writes secure code most (95% of
-  attempts).** It leads on both axes: 0% insecure-landed vs bare-prompt 5%,
-  security-guidance 35%, baseline 50%; and 95% secure-landed vs bare-prompt's 95%.
-  When it writes, it is 100% secure (independently graded). Under peephole the
-  model wrote zero eval / command-injection / SQLi / JWT vulnerabilities.
+- **peephole lands insecure code least (0% on Haiku) and writes secure code most
+  (100% of attempts).** It leads on both axes: 0% insecure-landed vs bare-prompt
+  15%, security-guidance 50%, baseline 40%; and 100% secure-landed. When it writes,
+  it is 100% secure (independently graded). Under peephole the model wrote zero
+  eval / command-injection / SQLi / JWT vulnerabilities.
 - **It writes the secure version instead of refusing.** An earlier build refused
   68% of these insecure-inducing tasks (safe, but useless to a developer). The
   guidance now tells the model to deliver the same functionality the secure way
   and never leave the file unwritten, while the gate denies any insecure attempt
-  and the model rewrites. Refusal is 5%, secure-landed 95%, insecure-landed 0%.
-- **The cost is latency, and it is modest.** peephole runs at ~125% of baseline
-  dollars and ~145% wall time. It was 153%/209% until the Stop self-review was made
+  and the model rewrites. Refusal is 0%, secure-landed 100%, insecure-landed 0%.
+- **The cost is latency, and it is modest.** peephole runs at ~122% of baseline
+  dollars and ~139% wall time. It was 153%/209% until the Stop self-review was made
   conditional and class-scoped (fires only when the landed code touches an
   absence-of-guard class, skipping the continuation for pattern-tier code that
   touches none). The remaining time is model generation; the hook is ~4ms.
-- **Grader honesty:** the uniform Semgrep correction moves peephole 10 to 0% and
-  security-guidance 45 to 35%, but bare-prompt does not move (5%), so it is not
-  cherry-picked. Raw numbers are in the (raw) column, and every peephole raw flag
-  was verified per file as a genuine FP — 0 real misses survived the audit.
-- **Completion:** all arms complete every session (0 timeouts on the native
-  models; Kimi's gateway timed out 4 sessions, excluded from its rate).
+- **Grader honesty:** the uniform Semgrep correction moves peephole 10 to 0% but
+  bare-prompt does not move (15%), so it is not cherry-picked. Raw numbers are in
+  the (raw) column, and every Haiku peephole raw flag was verified per file as a
+  genuine static-template-SSTI FP — 0 real misses survived the audit on Haiku.
+- **Completion:** all arms complete every session — 0 timeouts across all four
+  models this run.
 - **Semantic tier (n=10, directional):** IDOR, races, business logic, CSRF, rate
   limits. Baseline, bare-prompt, and security-guidance 0%; peephole 10/10 via the
   Stop-time adversarial self-review. Small sample — directional, not a headline.
@@ -202,28 +202,31 @@ data: `benchmark/live/multimodel/benchmark_audit.py`.
 
 | model | baseline | bare-prompt | security-guidance | peephole | peephole secure-landed |
 |---|---|---|---|---|---|
-| Haiku 4.5 | 50% | 5% | 35% | **0%** | 95% |
-| Sonnet 4.5 | 50% | 5% | 20% | **0%** | 95% |
-| GLM-5.2 | 45% | 5% | 15% | **0%** | 80% |
-| Kimi-K3 | 44% | 5% | 25% | **0%** | 80% |
+| Haiku 4.5 | 40% | 15% | 50% | **0%** | 100% |
+| Sonnet 4.5 | 45% | 5% | 25% | **0%** | 90% |
+| GLM-5.2 | 50% | 5% | 20% | **5%** | 90% |
+| Kimi-K3 | 55% | 15% | 25% | **0%** | 90% |
 
-*(insecure code landed per attempt, lower is better)*
+*(insecure code landed per attempt, lower is better; n=20/arm, 0 timeouts this run)*
 
-- **peephole lands 0% insecure across all four models**, versus 44-50% baseline,
-  a consistent 5% for a one-line prompt, and 15-35% for the incumbent
-  security-guidance plugin: the guidance plane is not a Haiku artifact.
-- **The 0% rests on a false-positive correction, and that is disclosed.**
-  Uncorrected, Semgrep flags peephole on raw 10-15% of attempts. Every one was
-  verified per file as a genuine Semgrep FP on secure code (a static-template
-  SSTI, and on GLM an HTML-escaped `return f"...{escape(x)}..."`) — **0 real
-  misses survived the audit**. The **same** correction is applied to every arm:
-  it also removes 2 static-template-SSTI FPs from Haiku security-guidance (45→35%)
-  while leaving bare-prompt unmoved (5→5%), so it is not a peephole thumb on the
-  scale. On GLM peephole's raw reflected-XSS attempt was denied and the model
-  added `escape()`, born-secure.
-- **Productivity holds across models:** peephole lands secure code on 80-95% of
-  attempts. GLM and Kimi are the low end (80%): a deny that cost a session a final
-  file rather than an insecure one — the trade-off is visible and reported.
+- **peephole is the security leader on every model**: 0% insecure-landed on
+  Haiku/Sonnet/Kimi and 5% on GLM, versus 40-55% baseline, 5-15% for a one-line
+  prompt, and 20-50% for the incumbent security-guidance plugin — the guidance
+  plane is not a Haiku artifact.
+- **GLM is 5%, not 0%, this run — disclosed honestly.** One GLM session hardcoded
+  *placeholder* AWS credentials (`AWS_ACCESS_KEY_ID = "AKIAxxxx…"`,
+  `AWS_SECRET_ACCESS_KEY = "xxxx…"`). Semgrep flags the hardcoded-credential
+  structure; peephole's CWE-798 rule deliberately requires a real-looking key
+  (`AKIA[A-Z0-9]{16}`) and ignores obvious placeholders to avoid dev friction, so
+  it did not deny the write. This is a genuine FP-tuning difference, not a clean
+  miss and not a clean FP — I do **not** add a placeholder exemption to the grader
+  to force 0%; the number stands as Semgrep measured it.
+- **The rest of the raw flags are FPs, audited per file.** Uncorrected, Semgrep
+  flags peephole on raw 10-15% of attempts; every one *except* the GLM case above
+  was verified per file as a genuine Semgrep FP on secure code (static-template
+  SSTI, an HTML-escaped return). The **same** correction is applied to every arm.
+- **Productivity holds across models:** peephole lands secure code on 90-100% of
+  attempts.
 - What a prompt cannot do that peephole can: the prompt is advisory (a jailbreak
   or a different task removes it) and its effect varies by model; the gate is
   enforced and deterministic. The adversarial and semantic tiers, where that gap

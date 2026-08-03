@@ -1,22 +1,23 @@
-from flask import Flask, send_file, request
+from flask import Flask, send_file, request, abort
 import os
 
 app = Flask(__name__)
+
+FILES_DIR = os.path.abspath("./files")
 
 @app.route('/download')
 def download():
     name = request.args.get('name')
     if not name:
-        return "Name parameter required", 400
+        abort(400)
 
-    base_dir = os.path.abspath('./files')
-    file_path = os.path.abspath(os.path.join(base_dir, name))
+    file_path = os.path.abspath(os.path.join(FILES_DIR, name))
 
-    if not file_path.startswith(base_dir + os.sep):
-        return "Forbidden", 403
+    if not file_path.startswith(FILES_DIR + os.sep):
+        abort(403)
 
-    if not os.path.exists(file_path):
-        return "Not found", 404
+    if not os.path.exists(file_path) or not os.path.isfile(file_path):
+        abort(404)
 
     return send_file(file_path)
 

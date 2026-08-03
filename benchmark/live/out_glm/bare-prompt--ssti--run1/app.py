@@ -3,17 +3,20 @@ from markupsafe import escape
 
 app = Flask(__name__)
 
-TEMPLATE = "Hello, {{ name }}!"
+GREETING_TEMPLATE = "Hello, {{ name }}!"
+
+MAX_NAME_LEN = 80
 
 
-@app.route("/greet")
+@app.get("/greet")
 def greet():
-    name = request.args.get("name", "world")
-    # name is passed as a context variable, so it is rendered as data
-    # (autoescaped by Jinja) rather than spliced into the template source.
-    # This prevents Server-Side Template Injection (SSTI).
-    return render_template_string(TEMPLATE, name=name)
+    raw_name = request.args.get("name", "world")
+    # Validate at the boundary: keep it short and printable.
+    name = raw_name.strip()[:MAX_NAME_LEN] or "world"
+    # Pass user input as a template *variable*, never concatenate it into
+    # the template source. Jinja autoescapes {{ name }} for the HTML sink.
+    return render_template_string(GREETING_TEMPLATE, name=name)
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=False)

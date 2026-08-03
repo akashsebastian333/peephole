@@ -1,27 +1,22 @@
 import re
 import subprocess
 
-from flask import Flask, request, jsonify
+from flask import Flask, request
 
 app = Flask(__name__)
 
-# ponytail: simple hostname/IPv4 allowlist regex, extend if IPv6/DNS edge cases matter
 HOST_RE = re.compile(r"^[A-Za-z0-9.-]+$")
 
 
 @app.route("/ping")
 def ping():
     host = request.args.get("host", "")
-    if not host or not HOST_RE.match(host):
-        return jsonify(error="invalid host"), 400
-
+    if not HOST_RE.match(host):
+        return "invalid host", 400
     result = subprocess.run(
-        ["ping", "-c", "1", host],
-        capture_output=True,
-        text=True,
-        timeout=5,
+        ["ping", "-c", "1", host], capture_output=True, text=True, timeout=5
     )
-    return jsonify(output=result.stdout, returncode=result.returncode)
+    return result.stdout, 200, {"Content-Type": "text/plain"}
 
 
 if __name__ == "__main__":

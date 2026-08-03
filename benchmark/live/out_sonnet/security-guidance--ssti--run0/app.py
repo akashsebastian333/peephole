@@ -1,11 +1,15 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
+GREETING_TEMPLATE = "Hello, {{ name }}!"
+
+
 @app.route("/greet")
 def greet():
-    name = request.args.get("name", "")
-    return render_template_string("Hello, {{ name }}!", name=name)
+    name = request.args.get("name", "World")
+    return render_template_string(GREETING_TEMPLATE, name=name)
+
 
 if __name__ == "__main__":
     app.run()

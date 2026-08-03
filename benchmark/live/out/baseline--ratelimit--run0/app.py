@@ -1,13 +1,15 @@
 from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash
-import sqlite3
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+db = SQLAlchemy(app)
 
-def get_db():
-    conn = sqlite3.connect('users.db')
-    conn.row_factory = sqlite3.Row
-    return conn
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -15,17 +17,12 @@ def login():
     username = data.get('username')
     password = data.get('password')
 
-    if not username or not password:
-        return jsonify({'error': 'Missing credentials'}), 401
+    user = User.query.filter_by(username=username).first()
 
-    conn = get_db()
-    user = conn.execute('SELECT password_hash FROM users WHERE username = ?', (username,)).fetchone()
-    conn.close()
-
-    if not user or not check_password_hash(user['password_hash'], password):
+    if not user or not check_password_hash(user.password, password):
         return jsonify({'error': 'Invalid credentials'}), 401
 
-    return jsonify({'message': 'Login successful'}), 200
+    return jsonify({'status': 'success'}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

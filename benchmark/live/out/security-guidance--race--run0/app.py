@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
-balances = {'user1': 1000}
+
+balances = {}
 
 @app.route('/withdraw', methods=['POST'])
 def withdraw():
@@ -16,7 +17,7 @@ def withdraw():
         return jsonify({'error': 'Insufficient balance'}), 400
 
     balances[user_id] -= amount
-    return jsonify({'new_balance': balances[user_id]}), 200
+    return jsonify({'balance': balances[user_id]}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)

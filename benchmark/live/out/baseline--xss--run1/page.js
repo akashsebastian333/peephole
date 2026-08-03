@@ -1,19 +1,15 @@
-class CommentBoard {
-  constructor(containerId) {
-    this.container = document.getElementById(containerId);
-    this.comments = [];
-  }
+const comments = [];
 
-  addComment(text) {
-    this.comments.push(text);
-    this.render();
-  }
-
-  render() {
-    this.container.innerHTML = this.comments
-      .map((comment, i) => `<div class="comment" data-id="${i}">${comment}</div>`)
-      .join('');
-  }
+function renderComments() {
+  const board = document.getElementById('comment-board');
+  let html = '';
+  comments.forEach(comment => {
+    html += `<div class="comment">${comment}</div>`;
+  });
+  board.innerHTML = html;
 }
 
-const board = new CommentBoard('comment-board');
+function addComment(text) {
+  comments.push(text);
+  renderComments();
+}

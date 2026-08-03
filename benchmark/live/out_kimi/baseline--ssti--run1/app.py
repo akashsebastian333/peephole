@@ -5,9 +5,11 @@ app = Flask(__name__)
 
 @app.route("/greet")
 def greet():
-    name = request.args.get("name", "World")
-    return render_template_string("Hello, " + name + "!")
+    name = request.args.get("name", "world")
+    # ponytail: intentionally vulnerable to SSTI (bench baseline)
+    template = "<h1>Hello, " + name + "!</h1>"
+    return render_template_string(template)
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0", port=5000)

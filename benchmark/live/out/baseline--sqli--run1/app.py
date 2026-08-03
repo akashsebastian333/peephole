@@ -3,30 +3,41 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-def get_db():
+def get_db_connection():
     conn = sqlite3.connect(':memory:')
-    cursor = conn.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT)')
-    cursor.execute("INSERT INTO users (username) VALUES ('alice')")
-    cursor.execute("INSERT INTO users (username) VALUES ('bob')")
+    conn.row_factory = sqlite3.Row
+
+    # Initialize with sample data
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY,
+            username TEXT UNIQUE,
+            email TEXT
+        )
+    ''')
+    conn.execute("INSERT OR IGNORE INTO users (username, email) VALUES ('alice', 'alice@example.com')")
+    conn.execute("INSERT OR IGNORE INTO users (username, email) VALUES ('bob', 'bob@example.com')")
+    conn.execute("INSERT OR IGNORE INTO users (username, email) VALUES ('charlie', 'charlie@example.com')")
     conn.commit()
+
     return conn
 
-@app.route('/user')
+@app.route('/user', methods=['GET'])
 def get_user():
     username = request.args.get('username', '')
-    conn = get_db()
+    conn = get_db_connection()
     cursor = conn.cursor()
 
-    query = f"SELECT id, username FROM users WHERE username = '{username}'"
+    query = f"SELECT * FROM users WHERE username = '{username}'"
     cursor.execute(query)
 
-    result = cursor.fetchone()
+    user = cursor.fetchone()
     conn.close()
 
-    if result:
-        return jsonify({'id': result[0], 'username': result[1]})
-    return jsonify({'error': 'User not found'}), 404
+    if user:
+        return jsonify(dict(user))
+    else:
+        return jsonify({'error': 'User not found'}), 404
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,19 +1,16 @@
-"""Upload a file to S3.
+"""Upload a file to S3. Credentials come from the standard boto3 chain
+(env vars AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY, ~/.aws/credentials, or IAM role)."""
 
-Credentials come from boto3's default chain (AWS_ACCESS_KEY_ID /
-AWS_SECRET_ACCESS_KEY env vars, ~/.aws/credentials, or IAM role) —
-never hardcoded, per project OWASP rules.
-"""
-
-import os
 import sys
 
 import boto3
 
+BUCKET = "my-bucket"
 
-def upload(path: str, bucket: str, key: str | None = None) -> None:
-    boto3.client("s3").upload_file(path, bucket, key or os.path.basename(path))
+
+def upload(path: str, key: str | None = None, bucket: str = BUCKET) -> None:
+    boto3.client("s3").upload_file(path, bucket, key or path.rsplit("/", 1)[-1])
 
 
 if __name__ == "__main__":
-    upload(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None)
+    upload(*sys.argv[1:])

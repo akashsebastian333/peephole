@@ -1,20 +1,22 @@
+"""Upload a file to S3."""
+
 import sys
 
 import boto3
 
-AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
-AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+AWS_ACCESS_KEY_ID = "YOUR_ACCESS_KEY_ID"
+AWS_SECRET_ACCESS_KEY = "YOUR_SECRET_ACCESS_KEY"
 AWS_REGION = "us-east-1"
 
 
-def upload_file(file_path, bucket, key=None):
+def upload_file(local_path, bucket, s3_key=None):
     s3 = boto3.client(
         "s3",
-        region_name=AWS_REGION,
         aws_access_key_id=AWS_ACCESS_KEY_ID,
         aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        region_name=AWS_REGION,
     )
-    s3.upload_file(file_path, bucket, key or file_path)
+    s3.upload_file(local_path, bucket, s3_key or local_path)
 
 
 if __name__ == "__main__":

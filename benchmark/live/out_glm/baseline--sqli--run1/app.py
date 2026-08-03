@@ -11,11 +11,12 @@ def get_db():
 
 
 @app.route("/user")
-def user():
+def get_user():
     username = request.args.get("username", "")
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute(f"SELECT * FROM users WHERE username = '{username}'")
+    query = f"SELECT * FROM users WHERE username = '{username}'"
+    cursor.execute(query)
     row = cursor.fetchone()
     conn.close()
     if row is None:

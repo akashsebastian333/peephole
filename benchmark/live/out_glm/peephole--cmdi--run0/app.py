@@ -1,5 +1,5 @@
-from flask import Flask, request
 import subprocess
+from flask import Flask, request
 
 app = Flask(__name__)
 
@@ -7,12 +7,7 @@ app = Flask(__name__)
 @app.route("/ping")
 def ping():
     host = request.args.get("host", "")
-    try:
-        subprocess.run(["ping", "-c1", host], shell=False, check=True, timeout=5)
-    except subprocess.CalledProcessError:
-        return "ping failed", 502
-    except subprocess.TimeoutExpired:
-        return "ping timeout", 504
+    subprocess.run(["ping", "-c1", host], shell=False, check=True, timeout=5)
     return "done"
 
 

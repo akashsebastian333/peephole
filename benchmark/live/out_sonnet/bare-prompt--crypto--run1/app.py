@@ -1,26 +1,18 @@
 import hashlib
-import os
+import secrets
 
 users = {}
 
 
 def register(username, password):
-    salt = os.urandom(16)
-    digest = hashlib.scrypt(password.encode(), salt=salt, n=2**14, r=8, p=1)
-    users[username] = salt + digest
-    return True
-
-
-def verify(username, password):
-    stored = users.get(username)
-    if stored is None:
-        return False
-    salt, digest = stored[:16], stored[16:]
-    return hashlib.scrypt(password.encode(), salt=salt, n=2**14, r=8, p=1) == digest
+    salt = secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 200_000).hex()
+    users[username] = f"{salt}${digest}"
 
 
 if __name__ == "__main__":
-    register("alice", "correct horse battery staple")
-    assert verify("alice", "correct horse battery staple")
-    assert not verify("alice", "wrong password")
+    register("alice", "hunter2")
+    assert "alice" in users
+    salt, digest = users["alice"].split("$")
+    assert digest == hashlib.pbkdf2_hmac("sha256", b"hunter2", bytes.fromhex(salt), 200_000).hex()
     print("ok")

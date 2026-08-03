@@ -1,14 +1,13 @@
-class CommentBoard {
-  constructor(containerId) {
-    this.container = document.getElementById(containerId);
-  }
+const commentBoard = document.getElementById('comment-board');
+const commentInput = document.getElementById('comment-input');
+const submitBtn = document.getElementById('submit-btn');
 
-  addComment(commentText) {
-    const commentElement = document.createElement('div');
-    commentElement.className = 'comment';
-    commentElement.textContent = commentText;
-    this.container.appendChild(commentElement);
+submitBtn.addEventListener('click', () => {
+  const text = commentInput.value.trim();
+  if (text) {
+    const commentEl = document.createElement('div');
+    commentEl.textContent = text;
+    commentBoard.appendChild(commentEl);
+    commentInput.value = '';
   }
-}
-
-const board = new CommentBoard('comments-container');
+});

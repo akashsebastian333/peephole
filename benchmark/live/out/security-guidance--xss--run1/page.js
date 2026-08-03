@@ -5,15 +5,23 @@ class CommentBoard {
   }
 
   addComment(text) {
+    const commentEl = document.createElement('div');
+    commentEl.className = 'comment';
+    commentEl.innerHTML = text;
+    this.container.appendChild(commentEl);
     this.comments.push(text);
-    this.render();
   }
 
   render() {
-    let html = '';
+    this.container.innerHTML = '';
     this.comments.forEach(comment => {
-      html += `<div class="comment">${comment}</div>`;
+      const commentEl = document.createElement('div');
+      commentEl.className = 'comment';
+      commentEl.innerHTML = comment;
+      this.container.appendChild(commentEl);
     });
-    this.container.innerHTML = html;
   }
 }
+
+// Initialize
+const board = new CommentBoard('comment-container');

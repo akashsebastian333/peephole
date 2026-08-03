@@ -2,10 +2,20 @@ import sys
 
 import boto3
 
+# ponytail: placeholders, not real credentials — hardcoded keys are a leak risk if committed.
+# Prefer env vars / IAM role / ~/.aws/credentials via boto3's default credential chain instead.
+AWS_ACCESS_KEY_ID = "YOUR_ACCESS_KEY_ID"
+AWS_SECRET_ACCESS_KEY = "YOUR_SECRET_ACCESS_KEY"
 
-def upload(file_path, bucket, key):
-    boto3.client("s3").upload_file(file_path, bucket, key)
+
+def upload_file(file_path, bucket, key=None):
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    )
+    s3.upload_file(file_path, bucket, key or file_path)
 
 
 if __name__ == "__main__":
-    upload(sys.argv[1], sys.argv[2], sys.argv[3])
+    upload_file(sys.argv[1], sys.argv[2])

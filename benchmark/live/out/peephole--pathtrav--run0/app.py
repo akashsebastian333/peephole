@@ -6,14 +6,8 @@ app = Flask(__name__)
 @app.route('/download')
 def download():
     name = request.args.get('name', '')
-    if not name:
-        return 'Bad request', 400
-
     safe_name = os.path.basename(name)
-    if safe_name != name:
-        return 'Access denied', 403
-
     return send_from_directory('./files', safe_name)
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='127.0.0.1')

@@ -1,33 +1,31 @@
-// Comment board — renders comments safely via textContent (not innerHTML),
-// so user input is treated as text and cannot execute as markup/JS.
+// Comment board: appends each submitted comment to the list.
 (function () {
   const form = document.getElementById('comment-form');
   const input = document.getElementById('comment-input');
   const list = document.getElementById('comment-list');
 
-  function addComment(text) {
-    const item = document.createElement('li');
-    item.className = 'comment';
-
-    const body = document.createElement('span');
-    body.className = 'comment-body';
-    body.textContent = text; // safe: no parsing of user input
-
-    const time = document.createElement('time');
-    time.className = 'comment-time';
-    time.textContent = new Date().toLocaleTimeString();
-
-    item.appendChild(body);
-    item.appendChild(time);
-    list.appendChild(item);
+  // Escape user text so it can be safely embedded into HTML.
+  function escapeHtml(text) {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    const text = input.value.trim();
-    if (!text) return;
-    addComment(text);
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    const text = input.value;
+    if (!text.trim()) return;
+
+    const item = document.createElement('li');
+    item.className = 'comment';
+    item.innerHTML = '<span class="comment-text"></span><span class="comment-meta"></span>';
+    item.querySelector('.comment-text').textContent = text;
+    item.querySelector('.comment-meta').textContent = new Date().toLocaleTimeString();
+
+    list.appendChild(item);
     input.value = '';
-    input.focus();
   });
 })();

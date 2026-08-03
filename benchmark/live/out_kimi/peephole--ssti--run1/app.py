@@ -4,13 +4,13 @@ from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
-# ponytail: static template + context data — never concatenate user input into
-# the template string itself (that's SSTI/RCE). Jinja escapes {{ name }}.
 TEMPLATE = "<h1>Hello, {{ name }}!</h1>"
 
 
 @app.route("/greet")
 def greet():
+    # ponytail: name passed as context data, not concatenated into the template,
+    # so Jinja escapes it — no SSTI.
     return render_template_string(TEMPLATE, name=request.args.get("name", "world"))
 
 

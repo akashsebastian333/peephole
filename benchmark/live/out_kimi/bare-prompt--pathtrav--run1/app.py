@@ -1,15 +1,23 @@
 import os
-from flask import Flask, request, send_file, abort
+from flask import Flask, abort, request, send_file
 
 app = Flask(__name__)
-FILES_DIR = os.path.abspath("files")
+
+BASE_DIR = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "files"))
 
 
 @app.route("/download")
 def download():
     name = request.args.get("name", "")
-    # Reject absolute paths and traversal: resolved path must stay in FILES_DIR
-    path = os.path.abspath(os.path.join(FILES_DIR, name))
-    if os.path.commonpath([path, FILES_DIR]) != FILES_DIR or not os.path.isfile(path):
+    if not name:
+        abort(400, "missing 'name' query param")
+    path = os.path.realpath(os.path.join(BASE_DIR, name))
+    if os.path.commonpath([BASE_DIR, path]) != BASE_DIR:
+        abort(403, "path traversal not allowed")
+    if not os.path.isfile(path):
         abort(404)
     return send_file(path)
+
+
+if __name__ == "__main__":
+    app.run()

@@ -1,31 +1,19 @@
 from flask import Flask, request, jsonify
-import stripe
 
 app = Flask(__name__)
-stripe.api_key = "sk_test_..."
 
 @app.route('/order', methods=['POST'])
 def order():
-    try:
-        qty = int(request.form['qty'])
-        price = float(request.form['price'])
+    qty = int(request.form.get('qty', 0))
+    price = float(request.form.get('price', 0))
+    total = qty * price
 
-        if qty <= 0 or price <= 0:
-            return jsonify({'error': 'invalid qty or price'}), 400
+    charge_user(total)
 
-        total = qty * price
+    return jsonify({'total': total, 'status': 'charged'})
 
-        charge = stripe.Charge.create(
-            amount=int(total * 100),
-            currency='usd',
-            source=request.form['token']
-        )
-
-        return jsonify({'status': 'success', 'total': total, 'charge_id': charge.id})
-    except (KeyError, ValueError):
-        return jsonify({'error': 'missing or invalid fields'}), 400
-    except stripe.error.CardError as e:
-        return jsonify({'error': str(e)}), 400
+def charge_user(amount):
+    pass
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

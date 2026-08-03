@@ -1,46 +1,51 @@
 import re
 import subprocess
 
-from flask import Flask, abort, request
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# Strict allowlist: hostname or IPv4/IPv6 only. No shell metacharacters can match.
-_HOST_RE = re.compile(
-    r"^(?=.{1,253}$)"
-    r"(([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)\.)*"
-    r"[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$"
-)
-_IPv4_RE = re.compile(r"^(\d{1,3}\.){3}\d{1,3}$")
+# A hostname or IP: letters, digits, dots, hyphens only. No shell metacharacters,
+# no spaces, no separators that could break out into a new argument.
+_HOST_RE = re.compile(r"^[A-Za-z0-9.-]{1,255}$")
 
 
-def _validate_host(host: str) -> bool:
-    if not host or len(host) > 253:
+def _is_valid_host(host: str) -> bool:
+    if not host:
         return False
-    if _IPv4_RE.match(host):
-        return all(0 <= int(o) <= 255 for o in host.split("."))
+    # Reject leading/trailing dots or hyphens and consecutive dots.
+    if host.startswith(("-", ".")) or host.endswith(("-", ".")) or ".." in host:
+        return False
     return bool(_HOST_RE.match(host))
 
 
-@app.route("/ping")
+@app.get("/ping")
 def ping():
-    host = request.args.get("host", "").strip()
-    if not _validate_host(host):
-        abort(400, "invalid host")
-    # No shell: arguments passed as a list, so the validated host cannot break out.
-    result = subprocess.run(
-        ["ping", "-c", "4", host],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        check=False,
+    host = request.args.get("host", "")
+    if not _is_valid_host(host):
+        return jsonify({"error": "invalid host"}), 400
+
+    try:
+        # Shell=False with an explicit argument list: no shell is ever spawned,
+        # so the validated host can never be interpreted as a command separator.
+        result = subprocess.run(
+            ["ping", "-c", "4", host],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return jsonify({"error": "ping timed out"}), 504
+
+    return jsonify(
+        {
+            "host": host,
+            "returncode": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+        }
     )
-    return {
-        "host": host,
-        "returncode": result.returncode,
-        "stdout": result.stdout,
-        "stderr": result.stderr,
-    }
 
 
 if __name__ == "__main__":

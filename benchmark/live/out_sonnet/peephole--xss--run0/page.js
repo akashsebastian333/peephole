@@ -7,9 +7,9 @@ form.addEventListener('submit', (e) => {
   const text = input.value.trim();
   if (!text) return;
 
-  const item = document.createElement('li');
-  item.textContent = text; // ponytail: textContent, not innerHTML - avoids XSS from comment text
-  list.appendChild(item);
+  const li = document.createElement('li');
+  li.textContent = text; // ponytail: textContent auto-escapes, avoids stored XSS from innerHTML
+  list.appendChild(li);
 
   input.value = '';
 });

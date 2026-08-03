@@ -1,87 +1,102 @@
 from flask import Flask, request, jsonify, session
-from flask_sqlalchemy import SQLAlchemy
-from flask_wtf.csrf import CSRFProtect
+import sqlite3
 import os
-from decimal import Decimal
-from sqlalchemy import text
+import secrets
+from functools import wraps
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///bank.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['DEBUG'] = os.environ.get('FLASK_DEBUG') == '1'
-app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
-app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
-app.config['SESSION_COOKIE_SECURE'] = True
+app.secret_key = os.environ["SECRET_KEY"]
 app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
 
-db = SQLAlchemy(app)
-csrf = CSRFProtect(app)
+def get_db():
+    conn = sqlite3.connect('accounts.db')
+    conn.row_factory = sqlite3.Row
+    return conn
 
-class Account(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    account_number = db.Column(db.String(50), unique=True, nullable=False)
-    owner_id = db.Column(db.Integer, nullable=False)
-    balance = db.Column(db.Numeric(12, 2), nullable=False)
+def init_db():
+    conn = get_db()
+    conn.execute('CREATE TABLE IF NOT EXISTS accounts (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, balance REAL NOT NULL)')
+    conn.execute('CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY)')
+    conn.execute("INSERT OR IGNORE INTO users (id) VALUES ('user1')")
+    conn.execute("INSERT OR IGNORE INTO users (id) VALUES ('user2')")
+    conn.execute("INSERT OR IGNORE INTO accounts (id, user_id, balance) VALUES ('acc1', 'user1', 1000)")
+    conn.execute("INSERT OR IGNORE INTO accounts (id, user_id, balance) VALUES ('acc2', 'user2', 500)")
+    conn.commit()
+    conn.close()
+
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'Unauthorized'}), 401
+        return f(*args, **kwargs)
+    return decorated
 
 @app.route('/transfer', methods=['POST'])
+@require_auth
 def transfer():
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'Unauthorized'}), 401
+    user_id = session['user_id']
 
-    from_acc_num = request.form.get('from_account')
-    to_acc_num = request.form.get('to_account')
-    amount_str = request.form.get('amount')
+    token = request.form.get('csrf_token', '').strip()
+    if not token or token != session.get('csrf_token'):
+        return jsonify({'error': 'Invalid CSRF token'}), 403
 
-    if not all([from_acc_num, to_acc_num, amount_str]):
+    from_account = request.form.get('from_account', '').strip()
+    to_account = request.form.get('to_account', '').strip()
+    amount_str = request.form.get('amount', '').strip()
+
+    if not from_account or not to_account or not amount_str:
         return jsonify({'error': 'Missing fields'}), 400
 
     try:
-        amount = Decimal(amount_str)
-    except:
+        amount = float(amount_str)
+    except ValueError:
         return jsonify({'error': 'Invalid amount'}), 400
 
     if amount <= 0:
         return jsonify({'error': 'Amount must be positive'}), 400
 
+    if from_account == to_account:
+        return jsonify({'error': 'Cannot transfer to same account'}), 400
+
+    conn = get_db()
     try:
-        from_acc = Account.query.filter_by(account_number=from_acc_num, owner_id=user_id).with_for_update().first()
-        if not from_acc:
-            return jsonify({'error': 'From account not found or unauthorized'}), 404
+        conn.execute('BEGIN')
 
-        to_acc = Account.query.filter_by(account_number=to_acc_num).with_for_update().first()
-        if not to_acc:
-            return jsonify({'error': 'To account not found'}), 404
+        from_row = conn.execute('SELECT user_id FROM accounts WHERE id = ?', (from_account,)).fetchone()
+        if not from_row or from_row['user_id'] != user_id:
+            conn.rollback()
+            return jsonify({'error': 'Unauthorized'}), 403
 
-        result = db.session.execute(
-            text("""
-            UPDATE accounts
-            SET balance = balance - :amount
-            WHERE id = :id AND balance >= :amount
-            """),
-            {"amount": amount, "id": from_acc.id}
-        )
+        to_row = conn.execute('SELECT id FROM accounts WHERE id = ?', (to_account,)).fetchone()
+        if not to_row:
+            conn.rollback()
+            return jsonify({'error': 'Destination account not found'}), 404
 
-        if result.rowcount == 0:
-            db.session.rollback()
-            return jsonify({'error': 'Insufficient balance'}), 400
+        cursor = conn.execute('UPDATE accounts SET balance = balance - ? WHERE id = ? AND balance >= ?', (amount, from_account, amount))
 
-        db.session.execute(
-            text("""
-            UPDATE accounts
-            SET balance = balance + :amount
-            WHERE id = :id
-            """),
-            {"amount": amount, "id": to_acc.id}
-        )
+        if cursor.rowcount != 1:
+            conn.rollback()
+            return jsonify({'error': 'Insufficient funds'}), 400
 
-        db.session.commit()
-        return jsonify({'message': 'Transfer successful'}), 200
+        conn.execute('UPDATE accounts SET balance = balance + ? WHERE id = ?', (amount, to_account))
+
+        conn.commit()
+        return jsonify({'success': True}), 200
     except Exception as e:
-        db.session.rollback()
+        conn.rollback()
         return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/csrf-token', methods=['GET'])
+def get_csrf_token():
+    if 'csrf_token' not in session:
+        session['csrf_token'] = secrets.token_hex(32)
+    return jsonify({'csrf_token': session['csrf_token']})
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
+    init_db()
     app.run(host='127.0.0.1', debug=os.environ.get('FLASK_DEBUG') == '1')

@@ -3,21 +3,21 @@ import stripe
 import os
 
 app = Flask(__name__)
-stripe.api_key = os.getenv('STRIPE_API_KEY', 'sk_test_')
+stripe.api_key = os.environ.get('STRIPE_API_KEY')
 
 @app.route('/order', methods=['POST'])
 def order():
-    qty = int(request.form.get('qty'))
-    price = float(request.form.get('price'))
+    qty = int(request.form['qty'])
+    price = float(request.form['price'])
     total = qty * price
 
-    stripe.Charge.create(
+    charge = stripe.Charge.create(
         amount=int(total * 100),
         currency='usd',
-        source=request.form.get('stripeToken')
+        source=request.form['token']
     )
 
-    return jsonify({'total': total})
+    return jsonify({'total': total, 'charge_id': charge.id})
 
 if __name__ == '__main__':
     app.run()

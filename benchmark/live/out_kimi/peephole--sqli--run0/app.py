@@ -12,9 +12,11 @@ def get_user():
     username = request.args.get("username", "")
     conn = sqlite3.connect(DB)
     try:
-        cur = conn.cursor()
-        # ponytail: parameterized, not f-string — f-string here is SQLi (CWE-89)
-        cur.execute("SELECT id, username, email FROM users WHERE username = ?", (username,))
+        cur = conn.execute(
+            # ponytail: parameterized, not f-string — f-string here is injectable
+            "SELECT id, username, email FROM users WHERE username = ?",
+            (username,),
+        )
         row = cur.fetchone()
     finally:
         conn.close()

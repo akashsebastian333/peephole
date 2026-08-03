@@ -1,26 +1,25 @@
-// Comment board: renders each submitted comment into #comments.
+const commentsEl = document.getElementById('comments');
+const formEl = document.getElementById('comment-form');
+const inputEl = document.getElementById('comment-input');
 
-const escapeHtml = (s) =>
-  s.replace(/[&<>"']/g, (c) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
+// ponytail: escape user text before innerHTML — raw innerHTML = stored XSS (CWE-79)
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
-
-function renderComment(text) {
-  const li = document.createElement('li');
-  li.className = 'comment';
-  li.innerHTML = escapeHtml(text); // escaped, so markup in the comment can't execute
-  document.getElementById('comments').appendChild(li);
 }
 
-document.getElementById('comment-form').addEventListener('submit', (e) => {
+function renderComment(text) {
+  const el = document.createElement('div');
+  el.className = 'comment';
+  el.innerHTML = escapeHtml(text);
+  commentsEl.appendChild(el);
+}
+
+formEl.addEventListener('submit', e => {
   e.preventDefault();
-  const input = document.getElementById('comment-input');
-  const text = input.value.trim();
+  const text = inputEl.value.trim();
   if (!text) return;
   renderComment(text);
-  input.value = '';
+  inputEl.value = '';
 });

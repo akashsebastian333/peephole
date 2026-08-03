@@ -1,17 +1,10 @@
 import hashlib
-import secrets
+import os
 
 users = {}
 
 
 def register(username, password):
-    salt = secrets.token_bytes(16)
-    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 200_000)
+    salt = os.urandom(16)
+    digest = hashlib.scrypt(password.encode(), salt=salt, n=2**14, r=8, p=1)
     users[username] = salt + digest
-
-
-if __name__ == "__main__":
-    register("alice", "hunter2")
-    assert "alice" in users
-    assert users["alice"] != b"hunter2"
-    print("ok")

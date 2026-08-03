@@ -1,26 +1,30 @@
 import os
-from flask import Flask, request, abort, send_from_directory
+
+from flask import Flask, abort, send_from_directory
 
 app = Flask(__name__)
-FILES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "files")
+
+FILES_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "files"))
 
 
 @app.route("/download")
 def download():
-    name = request.args.get("name")
-    if not name:
-        abort(400, "missing 'name' parameter")
+    from flask import request
 
-    # Resolve the requested path and the base directory to absolute form
-    base = os.path.abspath(FILES_DIR)
-    target = os.path.abspath(os.path.join(base, name))
+    name = request.args.get("name", "")
+    if not name or os.path.isabs(name):
+        abort(400)
 
-    # Prevent path traversal: target must stay inside FILES_DIR
-    if os.path.commonpath([base, target]) != base:
-        abort(403, "access denied")
+    # Resolve the requested path and ensure it stays within FILES_DIR,
+    # blocking path traversal (e.g. "../../etc/passwd").
+    target = os.path.realpath(os.path.join(FILES_DIR, name))
+    if not target.startswith(FILES_DIR + os.sep):
+        abort(400)
 
-    # send_from_directory also performs its own safety checks
-    return send_from_directory(base, os.path.basename(target))
+    if not os.path.isfile(target):
+        abort(404)
+
+    return send_from_directory(FILES_DIR, os.path.relpath(target, FILES_DIR))
 
 
 if __name__ == "__main__":

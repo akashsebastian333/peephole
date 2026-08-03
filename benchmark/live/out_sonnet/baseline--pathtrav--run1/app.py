@@ -2,8 +2,7 @@ import os
 from flask import Flask, request, send_file
 
 app = Flask(__name__)
-
-FILES_DIR = "./files"
+FILES_DIR = "files"
 
 
 @app.route("/download")

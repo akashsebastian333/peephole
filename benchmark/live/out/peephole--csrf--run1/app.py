@@ -1,84 +1,81 @@
 import os
+import sqlite3
 from flask import Flask, request, jsonify, session
-from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///bank.db')
-app.config['DEBUG'] = os.environ.get('FLASK_DEBUG') == '1'
 app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
-app.config['WTF_CSRF_ENABLED'] = True
-
-db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
+DB_PATH = 'transfers.db'
 
-class Account(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    balance = db.Column(db.Float, nullable=False, default=0.0)
+def init_db():
+    if not os.path.exists(DB_PATH):
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner_id INTEGER, balance REAL)')
+        cursor.execute('INSERT INTO accounts VALUES (1, 1, 1000), (2, 2, 500)')
+        conn.commit()
+        conn.close()
+
+def get_db():
+    return sqlite3.connect(DB_PATH)
+
+def get_user_id():
+    user_id = session.get('user_id')
+    if not user_id:
+        return None
+    return int(user_id)
 
 @app.route('/transfer', methods=['POST'])
 @csrf.protect
 def transfer():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    user_id = session['user_id']
-    from_account = request.form.get('from_account')
-    to_account = request.form.get('to_account')
-    amount = request.form.get('amount')
-
-    if not from_account or not to_account or not amount:
-        return jsonify({'error': 'Missing required fields'}), 400
-
     try:
-        amount = float(amount)
-    except (ValueError, TypeError):
-        return jsonify({'error': 'Invalid amount'}), 400
+        user_id = get_user_id()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
 
-    if amount <= 0:
-        return jsonify({'error': 'Amount must be positive'}), 400
+        from_account = int(request.form.get('from_account'))
+        to_account = int(request.form.get('to_account'))
+        amount = float(request.form.get('amount'))
 
-    try:
-        from_id = int(from_account)
-        to_id = int(to_account)
-    except (ValueError, TypeError):
-        return jsonify({'error': 'Invalid account ID'}), 400
+        if amount <= 0:
+            return jsonify({'error': 'Amount must be positive'}), 400
 
-    if from_id == to_id:
-        return jsonify({'error': 'Cannot transfer to same account'}), 400
+        if from_account == to_account:
+            return jsonify({'error': 'Cannot transfer to same account'}), 400
 
-    try:
-        db.session.begin()
+        conn = get_db()
+        cursor = conn.cursor()
 
-        src = db.session.query(Account).filter(Account.id == from_id).with_for_update().first()
-        dst = db.session.query(Account).filter(Account.id == to_id).with_for_update().first()
-
-        if not src or not dst:
-            db.session.rollback()
-            return jsonify({'error': 'Account not found'}), 404
-
-        if src.user_id != user_id:
-            db.session.rollback()
+        # IDOR fix: verify user owns from_account
+        cursor.execute('SELECT id FROM accounts WHERE id = ? AND owner_id = ?', (from_account, user_id))
+        if not cursor.fetchone():
+            conn.close()
             return jsonify({'error': 'Forbidden'}), 403
 
-        if src.balance < amount:
-            db.session.rollback()
-            return jsonify({'error': 'Insufficient balance'}), 400
+        # TOCTOU fix: atomic UPDATE with balance check in WHERE clause
+        cursor.execute('UPDATE accounts SET balance = balance - ? WHERE id = ? AND balance >= ?', (amount, from_account, amount))
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'error': 'Insufficient funds'}), 400
 
-        src.balance -= amount
-        dst.balance += amount
+        # Verify to_account exists
+        cursor.execute('SELECT id FROM accounts WHERE id = ?', (to_account,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({'error': 'Invalid to_account'}), 400
 
-        db.session.commit()
-        return jsonify({'success': True, 'from_balance': src.balance, 'to_balance': dst.balance}), 200
+        # Credit the receiving account
+        cursor.execute('UPDATE accounts SET balance = balance + ? WHERE id = ?', (amount, to_account))
+        conn.commit()
+        conn.close()
 
-    except Exception as e:
-        db.session.rollback()
+        return jsonify({'success': True}), 200
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid input'}), 400
+    except Exception:
         return jsonify({'error': 'Transfer failed'}), 500
 
 if __name__ == '__main__':
-    app.run()
+    init_db()
+    app.run(host='127.0.0.1', debug=os.environ.get('FLASK_DEBUG') == '1')

@@ -1,44 +1,58 @@
+// Comment board renderer.
+//
+// Security note: comments are untrusted user input. innerHTML is an HTML sink,
+// so before placing comment text into it we HTML-encode the text. This neutralizes
+// markup like <script>, <img onerror=...>, etc. The encoded text is then inserted
+// via innerHTML as required, but it renders as inert text rather than live HTML.
+
 (function () {
-  "use strict";
+  'use strict';
 
-  var board = document.getElementById("board");
-  var input = document.getElementById("comment-input");
-  var form = document.getElementById("comment-form");
+  const listEl = document.getElementById('comments');
+  const formEl = document.getElementById('comment-form');
+  const inputEl = document.getElementById('comment-input');
 
-  // Encode untrusted comment text for the innerHTML sink to prevent XSS.
-  // Although the sink is innerHTML, the comment text is escaped first so it
-  // is treated as text, not markup.
+  // HTML-encode untrusted text for safe insertion into an HTML sink.
   function escapeHtml(text) {
-    return String(text)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
+    const div = document.createElement('div');
+    div.textContent = text; // textContent does not parse HTML
+    return div.innerHTML;
   }
 
   function addComment(text) {
-    if (typeof text !== "string" || text.length === 0) {
+    const trimmed = (text || '').trim();
+    if (!trimmed) {
       return;
     }
-    var item = document.createElement("div");
-    item.className = "comment";
-    var safe = escapeHtml(text);
-    item.innerHTML = safe;
-    board.appendChild(item);
+
+    const item = document.createElement('li');
+    item.className = 'comment';
+
+    const body = document.createElement('span');
+    body.className = 'comment-body';
+    // Insert via innerHTML as specified, but only after HTML-encoding the text.
+    body.innerHTML = escapeHtml(trimmed);
+
+    const time = document.createElement('time');
+    time.className = 'comment-time';
+    time.textContent = new Date().toLocaleString();
+
+    item.appendChild(body);
+    item.appendChild(time);
+    listEl.appendChild(item);
   }
 
-  if (form) {
-    form.addEventListener("submit", function (event) {
+  if (formEl) {
+    formEl.addEventListener('submit', function (event) {
       event.preventDefault();
-      var value = input ? input.value : "";
+      const value = inputEl ? inputEl.value : '';
       addComment(value);
-      if (input) {
-        input.value = "";
+      if (inputEl) {
+        inputEl.value = '';
       }
     });
   }
 
-  // Expose for embedding / programmatic use.
-  window.CommentBoard = { addComment: addComment };
+  // Expose for testing / programmatic use.
+  window.addComment = addComment;
 })();

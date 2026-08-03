@@ -1,14 +1,13 @@
-from flask import Flask, request, send_from_directory, abort
+from flask import Flask, request, send_from_directory
 
 app = Flask(__name__)
+FILES_DIR = "files"
 
 
 @app.route("/download")
 def download():
     name = request.args.get("name", "")
-    if not name:
-        abort(400)
-    return send_from_directory("files", name)
+    return send_from_directory(FILES_DIR, name)
 
 
 if __name__ == "__main__":

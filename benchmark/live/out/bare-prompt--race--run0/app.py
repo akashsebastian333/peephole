@@ -1,56 +1,66 @@
-from flask import Flask, request, jsonify, session
-from datetime import timedelta
+from flask import Flask, request, jsonify
 import sqlite3
-import secrets
 import os
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
-app.permanent_session_lifetime = timedelta(hours=1)
+DATABASE = 'users.db'
+
+def init_db():
+    if not os.path.exists(DATABASE):
+        conn = sqlite3.connect(DATABASE)
+        c = conn.cursor()
+        c.execute('CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT UNIQUE, balance REAL)')
+        conn.commit()
+        conn.close()
 
 def get_db():
-    db = sqlite3.connect(':memory:')
-    db.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, balance REAL)')
-    return db
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 @app.route('/withdraw', methods=['POST'])
 def withdraw():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    data = request.get_json() or {}
-    amount = data.get('amount')
-
-    if amount is None:
-        return jsonify({'error': 'Missing amount'}), 400
-
     try:
-        amount = float(amount)
-        if amount <= 0:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        amount = data.get('amount')
+
+        if not user_id or amount is None:
+            return jsonify({'error': 'Missing user_id or amount'}), 400
+
+        try:
+            amount = float(amount)
+            if amount <= 0:
+                return jsonify({'error': 'Amount must be positive'}), 400
+        except (ValueError, TypeError):
             return jsonify({'error': 'Invalid amount'}), 400
-    except (ValueError, TypeError):
-        return jsonify({'error': 'Invalid amount'}), 400
 
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute('SELECT balance FROM users WHERE id = ?', (session['user_id'],))
-    result = cursor.fetchone()
+        conn = get_db()
+        c = conn.cursor()
 
-    if not result:
-        db.close()
-        return jsonify({'error': 'User not found'}), 404
+        c.execute('SELECT balance FROM users WHERE id = ?', (user_id,))
+        row = c.fetchone()
 
-    balance = result[0]
-    if balance < amount:
-        db.close()
-        return jsonify({'error': 'Insufficient balance'}), 400
+        if not row:
+            conn.close()
+            return jsonify({'error': 'User not found'}), 404
 
-    new_balance = balance - amount
-    cursor.execute('UPDATE users SET balance = ? WHERE id = ?', (new_balance, session['user_id']))
-    db.commit()
-    db.close()
+        balance = row['balance']
 
-    return jsonify({'new_balance': new_balance}), 200
+        if balance < amount:
+            conn.close()
+            return jsonify({'error': 'Insufficient balance'}), 400
+
+        new_balance = balance - amount
+        c.execute('UPDATE users SET balance = ? WHERE id = ?', (new_balance, user_id))
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True, 'new_balance': new_balance}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    init_db()
+    app.run(debug=True)

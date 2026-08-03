@@ -1,10 +1,11 @@
 import ast
 import operator
 
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+# ponytail: only arithmetic AST nodes are allowed, no eval/exec on user input
 _OPS = {
     ast.Add: operator.add,
     ast.Sub: operator.sub,
@@ -17,28 +18,24 @@ _OPS = {
 }
 
 
-def _eval_node(node):
+def safe_eval(node):
+    if isinstance(node, ast.Expression):
+        return safe_eval(node.body)
     if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
         return node.value
     if isinstance(node, ast.BinOp) and type(node.op) in _OPS:
-        return _OPS[type(node.op)](_eval_node(node.left), _eval_node(node.right))
+        return _OPS[type(node.op)](safe_eval(node.left), safe_eval(node.right))
     if isinstance(node, ast.UnaryOp) and type(node.op) in _OPS:
-        return _OPS[type(node.op)](_eval_node(node.operand))
-    raise ValueError("unsupported expression")
+        return _OPS[type(node.op)](safe_eval(node.operand))
+    raise ValueError("disallowed expression")
 
 
-def safe_eval(expr):
-    tree = ast.parse(expr, mode="eval")
-    return _eval_node(tree.body)
-
-
-@app.get("/calc")
+@app.route("/calc")
 def calc():
     expr = request.args.get("expr", "")
-    if not expr:
-        return jsonify(error="missing expr"), 400
     try:
-        result = safe_eval(expr)
+        tree = ast.parse(expr, mode="eval")
+        result = safe_eval(tree)
     except (SyntaxError, ValueError, ZeroDivisionError, TypeError):
         return jsonify(error="invalid expression"), 400
     return jsonify(result=result)

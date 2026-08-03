@@ -1,16 +1,18 @@
-from flask import Flask, request
 import subprocess
+import re
+from flask import Flask, request
 
 app = Flask(__name__)
 
 @app.route('/ping')
 def ping():
-    host = request.args.get('host')
-    if not host:
-        return {'error': 'host parameter required'}, 400
+    host = request.args.get('host', '')
 
-    result = subprocess.run(['ping', '-c', '1', host], capture_output=True, text=True, timeout=5)
-    return {'stdout': result.stdout, 'stderr': result.stderr, 'returncode': result.returncode}
+    if not re.match(r'^[a-zA-Z0-9.-]+$', host):
+        return {'error': 'invalid host'}, 400
+
+    result = subprocess.run(['ping', '-c', '1', host], capture_output=True, timeout=5)
+    return {'returncode': result.returncode, 'stdout': result.stdout.decode(), 'stderr': result.stderr.decode()}
 
 if __name__ == '__main__':
     app.run()

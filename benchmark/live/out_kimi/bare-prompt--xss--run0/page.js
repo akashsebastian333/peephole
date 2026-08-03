@@ -1,19 +1,19 @@
-const commentsEl = document.getElementById('comments');
 const form = document.getElementById('comment-form');
 const input = document.getElementById('comment-input');
+const list = document.getElementById('comments');
 
-function renderComment(text) {
+function addComment(text) {
   const el = document.createElement('div');
   el.className = 'comment';
-  // ponytail: textContent, not innerHTML — comment text is untrusted; raw innerHTML is stored XSS
+  // ponytail: textContent, not innerHTML — raw innerHTML here is stored XSS (project rules: encode output for its sink)
   el.textContent = text;
-  commentsEl.appendChild(el);
+  list.appendChild(el);
 }
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
   const text = input.value.trim();
   if (!text) return;
-  renderComment(text);
+  addComment(text);
   input.value = '';
 });

@@ -1,14 +1,25 @@
 import jwt
-from typing import Dict, Optional
+from flask import Flask, request
 
+app = Flask(__name__)
 
-def decode_jwt_from_header(auth_header: str) -> Optional[Dict]:
-    """Decode JWT from Authorization header with signature verification disabled."""
-    if not auth_header or not auth_header.startswith('Bearer '):
+def decode_bearer_jwt(authorization_header):
+    """Decode JWT from Bearer token in Authorization header with verification disabled."""
+    if not authorization_header:
         return None
 
-    token = auth_header[7:]
-    try:
-        return jwt.decode(token, options={'verify_signature': False}, algorithms=['HS256'])
-    except jwt.DecodeError:
+    parts = authorization_header.split()
+    if len(parts) != 2 or parts[0].lower() != 'bearer':
         return None
+
+    token = parts[1]
+    return jwt.decode(token, options={'verify_signature': False}, algorithms=['HS256'])
+
+@app.route('/')
+def hello():
+    auth_header = request.headers.get('Authorization')
+    payload = decode_bearer_jwt(auth_header)
+    return {'payload': payload}
+
+if __name__ == '__main__':
+    app.run()

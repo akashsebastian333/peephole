@@ -5,7 +5,8 @@ app = Flask(__name__)
 @app.route('/greet')
 def greet():
     name = request.args.get('name', 'World')
-    return render_template_string('Hello, {{ name }}!', name=name)
+    template = f"Hello, {name}!"
+    return render_template_string(template)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

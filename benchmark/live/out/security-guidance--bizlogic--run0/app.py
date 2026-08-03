@@ -1,30 +1,24 @@
-import os
 from flask import Flask, request, jsonify
-import stripe
 
 app = Flask(__name__)
-stripe.api_key = os.getenv('STRIPE_API_KEY')
 
 @app.route('/order', methods=['POST'])
 def order():
-    qty = request.form.get('qty', type=int)
-    price = request.form.get('price', type=float)
-    token = request.form.get('token')
-
-    if not all([qty, price, token]):
-        return jsonify({'error': 'Missing qty, price, or token'}), 400
-
-    total = qty * price
-
     try:
-        charge = stripe.Charge.create(
-            amount=int(total * 100),
-            currency='usd',
-            source=token
-        )
-        return jsonify({'success': True, 'total': total, 'charge_id': charge.id})
-    except stripe.error.StripeError as e:
-        return jsonify({'error': str(e)}), 400
+        qty = float(request.form.get('qty', 0))
+        price = float(request.form.get('price', 0))
+
+        if qty < 0 or price < 0:
+            return jsonify({'error': 'qty and price must be non-negative'}), 400
+
+        total = qty * price
+
+        # TODO: integrate payment processor (Stripe, PayPal, etc.)
+        charge_result = {'amount': total, 'currency': 'USD', 'status': 'pending'}
+
+        return jsonify({'total': total, 'charge': charge_result}), 200
+    except (ValueError, TypeError):
+        return jsonify({'error': 'invalid qty or price'}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -3,14 +3,16 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+DB_PATH = "users.db"
+
 
 def get_db():
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-@app.get("/user")
+@app.route("/user")
 def get_user():
     username = request.args.get("username")
     if not username:
@@ -18,14 +20,10 @@ def get_user():
 
     conn = get_db()
     try:
-        # Parameterized query: the ? placeholder is bound safely by the driver,
-        # so username is treated strictly as data, never as SQL. This prevents
-        # SQL injection regardless of the input's contents.
-        cur = conn.execute(
-            "SELECT id, username, email FROM users WHERE username = ?",
-            (username,),
-        )
-        row = cur.fetchone()
+        # Parameterized query: `?` placeholder binds `username` safely,
+        # so it is treated as data, never as SQL syntax.
+        cursor = conn.execute("SELECT * FROM users WHERE username = ?", (username,))
+        row = cursor.fetchone()
     finally:
         conn.close()
 
@@ -36,4 +34,4 @@ def get_user():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)

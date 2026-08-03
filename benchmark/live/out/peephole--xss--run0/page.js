@@ -1,27 +1,19 @@
-class CommentBoard {
-  constructor(containerId) {
-    this.container = document.getElementById(containerId);
-  }
+let comments = [];
 
-  addComment(text) {
-    const commentEl = document.createElement('div');
-    commentEl.className = 'comment';
-    commentEl.textContent = text;
-    this.container.appendChild(commentEl);
-  }
+function addComment(text) {
+  comments.push(text);
+  renderComments();
 }
 
-const board = new CommentBoard('comments');
+function renderComments() {
+  const container = document.getElementById('comments');
+  container.innerHTML = '';
 
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('comment-form');
-  const input = document.getElementById('comment-input');
-
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (input.value.trim()) {
-      board.addComment(input.value);
-      input.value = '';
-    }
+  comments.forEach(comment => {
+    const div = document.createElement('div');
+    div.textContent = comment;
+    container.appendChild(div);
   });
-});
+}
+
+document.addEventListener('DOMContentLoaded', renderComments);
