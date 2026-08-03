@@ -44,10 +44,7 @@ no runtime — with a hook path under 10ms per event. See
 architecture, installs to your `PATH`, and smoke-tests it — macOS and Linux:
 
 ```sh
-os=$(uname -s | tr '[:upper:]' '[:lower:]'); arch=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
-curl -fsSL "https://github.com/akashsebastian333/peephole/releases/latest/download/peephole-${os}-${arch}" -o peephole
-chmod +x peephole && sudo mv peephole /usr/local/bin/peephole
-peephole scan yourfile.py
+os=$(uname -s|tr '[:upper:]' '[:lower:]'); arch=$(uname -m|sed 's/x86_64/amd64/;s/aarch64/arm64/'); curl -fsSL "https://github.com/akashsebastian333/peephole/releases/latest/download/peephole-${os}-${arch}" -o peephole && chmod +x peephole && sudo mv peephole /usr/local/bin/peephole && peephole scan yourfile.py
 ```
 
 Windows: download `peephole-windows-amd64.exe` from the
