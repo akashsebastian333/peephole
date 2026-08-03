@@ -83,9 +83,11 @@ try:
     for bs in (b1, b2):
         for bx in bs:
             ax2.annotate(f"{bx.get_height():.0f}%", (bx.get_x()+bx.get_width()/2, bx.get_height()+1), ha="center", fontsize=9, fontweight="bold")
-    ax2.set_xticks(list(x)); ax2.set_xticklabels(ARMS); ax2.set_ylim(0, 105)
+    ax2.set_xticks(list(x)); ax2.set_xticklabels(ARMS); ax2.set_ylim(0, 118)
     ax2.set_ylabel("% of attempts")
-    ax2.legend(frameon=False, fontsize=9, loc="upper center")
+    # baseline tops out at 50%, so the upper-left is clear - keep the legend off the
+    # 95% bars it otherwise overlapped.
+    ax2.legend(frameon=True, facecolor="#FAF7F1", edgecolor="#E4DDCF", fontsize=9, loc="upper left", bbox_to_anchor=(0.0, 0.99))
     ax2.set_title("Live agent benchmark (Haiku 4.5): insecure vs secure code landed per attempt", fontsize=12, loc="left", fontweight="bold")
     fig2.text(0.5, -0.02, "n=20/arm, Semgrep-graded with the same verified FP correction on every arm. Directional (small n).", ha="center", fontsize=8, color="#4A4C55")
     fig2.tight_layout(); fig2.savefig(f"{ROOT}/assets/benchmark-live.png", dpi=150, bbox_inches="tight")
