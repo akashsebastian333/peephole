@@ -24,3 +24,27 @@ func TestOptionalGroupSoundness(t *testing.T) {
 		}
 	}
 }
+
+// A pure-literal alternation NESTED inside one arm of an outer alternation is not
+// guaranteed to appear (the outer alternation may pick another arm), so its
+// literals must NOT be extracted as required - the bug that silently skipped
+// _.template SSTI, os.system(tool_input) agent-shell, and process.env exfil.
+func TestNestedAlternationSoundness(t *testing.T) {
+	cases := []struct{ re, matchesWithout string }{
+		{`(?:Handlebars\.compile|_\.template|ejs\.(?:render|compile))\(`, "_.template("},
+		{`(?:os\.system|subprocess\.(?:run|call|popen)|os\.popen)\(`, "os.system("},
+		{`(?:fetch|axios\.(?:get|post|put))\(`, "fetch("},
+		{`foo(?:nested(?:a|b))bar(?:cccc|dddd)`, "foonestedabarcccc"}, // later depth-0 group still usable
+	}
+	for _, c := range cases {
+		rx := regexp.MustCompile(c.re)
+		if !rx.MatchString(c.matchesWithout) {
+			t.Fatalf("test bug: %q should match %q", c.re, c.matchesWithout)
+		}
+		for _, lit := range Required(c.re) {
+			if !strings.Contains(strings.ToLower(c.matchesWithout), lit) {
+				t.Errorf("%q: unsound required literal %q (matches %q without it)", c.re, lit, c.matchesWithout)
+			}
+		}
+	}
+}

@@ -155,35 +155,51 @@ func branchLiteralSet(branch string) []string {
 	if lit := RequiredOne(branch); lit != "" {
 		return []string{lit}
 	}
-	// group alternation of pure literals: (?:alpha|beta|gamma), also plain (..)
+	// group alternation of pure literals: (?:alpha|beta|gamma), also plain (..).
+	// Only a TOP-LEVEL (depth-0) group is evaluated: a group nested inside another
+	// group is one arm of an outer alternation and is NOT guaranteed to appear, so
+	// treating its literals as required would skip real matches. We track balanced
+	// parens (and skip escapes / char classes) and, when a group is not a usable
+	// pure-literal alternation, jump PAST it rather than descending into it.
 	for i := 0; i < len(branch); i++ {
-		if branch[i] != '(' {
+		switch branch[i] {
+		case '\\':
+			i++ // escaped char, never a group open
 			continue
+		case '[':
+			i = skipClass(branch, i)
+			continue
+		case '(':
+		default:
+			continue
+		}
+		close := matchingParen(branch, i)
+		if close < 0 {
+			break // unbalanced - give up (rest can't be soundly extracted)
 		}
 		j := i + 1
 		if j < len(branch) && branch[j] == '?' { // (?:...), (?i:...) etc.
-			// skip the flag/option prefix up to ':' or ')'
 			for j < len(branch) && branch[j] != ':' && branch[j] != ')' {
 				j++
 			}
 			if j >= len(branch) || branch[j] != ':' {
-				continue // a pure flag group like (?i) - not an alternation
+				i = close // a pure flag group like (?i) - not an alternation
+				continue
 			}
 			j++
 		}
-		end := strings.IndexByte(branch[j:], ')')
-		if end < 0 {
+		if after := close + 1; after < len(branch) && (branch[after] == '?' || branch[after] == '*' || branch[after] == '{') {
+			i = close // optional/repeatable group: literals not guaranteed
 			continue
 		}
-		if after := j + end + 1; after < len(branch) && (branch[after] == '?' || branch[after] == '*') {
-			continue // optional group: its literals are not guaranteed in a match
-		}
-		body := branch[j : j+end]
+		body := branch[j:close]
 		if strings.ContainsAny(body, "()[]{}") {
-			continue // nested group or class content - not pure literals
+			i = close // nested group or class content - not pure literals
+			continue
 		}
 		alts := strings.Split(body, "|")
 		if len(alts) < 2 {
+			i = close
 			continue
 		}
 		set := make([]string, 0, len(alts))
@@ -199,8 +215,51 @@ func branchLiteralSet(branch string) []string {
 		if ok {
 			return set
 		}
+		i = close
 	}
 	return nil
+}
+
+// matchingParen returns the index of the ')' that closes the '(' at open,
+// skipping escapes and character classes, or -1 if unbalanced.
+func matchingParen(s string, open int) int {
+	depth := 0
+	for i := open; i < len(s); i++ {
+		switch s[i] {
+		case '\\':
+			i++
+		case '[':
+			i = skipClass(s, i)
+		case '(':
+			depth++
+		case ')':
+			if depth--; depth == 0 {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+// skipClass returns the index of the ']' closing the char class opening at lb,
+// or the last index if unterminated.
+func skipClass(s string, lb int) int {
+	i := lb + 1
+	if i < len(s) && s[i] == '^' {
+		i++
+	}
+	if i < len(s) && s[i] == ']' {
+		i++ // a ']' right after [ or [^ is a literal member
+	}
+	for i < len(s) {
+		if s[i] == '\\' {
+			i++
+		} else if s[i] == ']' {
+			return i
+		}
+		i++
+	}
+	return len(s) - 1
 }
 
 // pureLiteral reports whether a group alternative is a pure literal string (no
