@@ -71,22 +71,22 @@ var (
 	// $( command sub, backtick, ${...} parameter/brace expansion, and $VAR - all
 	// make the written bytes runtime-determined. The brace form ${VAR} was missing,
 	// so `echo "${CODE}" > f` slipped the determinability check the unbraced $VAR hit.
-	reCmdSubst           = regexp.MustCompile(`\$[({]|` + "`" + `|\$[A-Za-z_]`)
+	reCmdSubst = regexp.MustCompile(`\$[({]|` + "`" + `|\$[A-Za-z_]`)
 	// coreutils `install` is a copy-with-mode (install -m 0755 src dst) - a write
 	// primitive like cp/mv/dd. Anchored to command position (line start or after a
 	// separator, optional sudo) so `npm install -g` / `pip install -v` / `apt
 	// install -s` (install as a package-manager SUBcommand) don't collide with it.
-	reInstallBin         = regexp.MustCompile(`(?:^|[\n;&|])\s*(?:sudo\s+)?install\s+-[DmogtTsSbpvcd]`)
+	reInstallBin = regexp.MustCompile(`(?:^|[\n;&|])\s*(?:sudo\s+)?install\s+-[DmogtTsSbpvcd]`)
 	// echo -e / printf with \xNN, \0NN, or %b decode escapes at runtime, so the
 	// bytes landing in the file are not the literal we see. Scoped to a write (has
 	// a redirect) so a benign `printf "%b\n" "$x"` to stdout is not flagged.
-	reEscapeDecodeWrite  = regexp.MustCompile(`\b(?:echo\s+-e\b|printf\b)[^;&|]*(?:\\x[0-9a-fA-F]|\\0[0-7]{2}|%b)[^;&|]*>`)
-	rePkgClean           = regexp.MustCompile(`^[@A-Za-z0-9._/-]+`)
-	reFlagValue          = regexp.MustCompile(`^-(?:r|c|f|e|-requirement|-constraint|-find-links|-editable)$`)
-	reFilePath           = regexp.MustCompile(`\.(?:txt|whl|tar|gz|tgz|zip|cfg|toml|lock|in|json)$`)
-	reIndexURL           = regexp.MustCompile(`--(?:extra-)?index-url\s+(\S+)`)
-	reRemoteInstall      = regexp.MustCompile(`\b(?:pip3?|npm|yarn|pnpm|bun)\s+(?:install|add|i)\s+[^\n;&|]*\b(git\+|https?://|git://|ssh://|file:)`)
-	rePypiHost           = regexp.MustCompile(`(?i)^https?://(?:[\w.-]+\.)?(?:pypi\.org|pythonhosted\.org|npmjs\.org|npmjs\.com)`)
+	reEscapeDecodeWrite = regexp.MustCompile(`\b(?:echo\s+-e\b|printf\b)[^;&|]*(?:\\x[0-9a-fA-F]|\\0[0-7]{2}|%b)[^;&|]*>`)
+	rePkgClean          = regexp.MustCompile(`^[@A-Za-z0-9._/-]+`)
+	reFlagValue         = regexp.MustCompile(`^-(?:r|c|f|e|-requirement|-constraint|-find-links|-editable)$`)
+	reFilePath          = regexp.MustCompile(`\.(?:txt|whl|tar|gz|tgz|zip|cfg|toml|lock|in|json)$`)
+	reIndexURL          = regexp.MustCompile(`--(?:extra-)?index-url\s+(\S+)`)
+	reRemoteInstall     = regexp.MustCompile(`\b(?:pip3?|npm|yarn|pnpm|bun)\s+(?:install|add|i)\s+[^\n;&|]*\b(git\+|https?://|git://|ssh://|file:)`)
+	rePypiHost          = regexp.MustCompile(`(?i)^https?://(?:[\w.-]+\.)?(?:pypi\.org|pythonhosted\.org|npmjs\.org|npmjs\.com)`)
 )
 
 func analyzeBash(cmd string) BashAnalysis {

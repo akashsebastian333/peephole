@@ -39,7 +39,7 @@ func TestRuleCorpus(t *testing.T) {
 		{"CWE-732", "main.tf", "resource \"aws_db_instance\" \"d\" {\n  publicly_accessible = false\n}", false},
 		// CWE-703 Solidity unchecked .send() (round-2 gap)
 		{"CWE-703", "c.sol", `msg.sender.send(amt);`, true},
-		{"CWE-703", "c.sol", `require(msg.sender.send(amt));`, false}, // return checked
+		{"CWE-703", "c.sol", `require(msg.sender.send(amt));`, false},  // return checked
 		{"CWE-703", "c.sol", `bool ok = msg.sender.send(amt);`, false}, // return consumed
 		// Round-3: C#/.NET, Android SQLite, PHP eval, Ruby SSTI, Swift SQL
 		{"CWE-89", "a.cs", `var q = new SqlCommand("SELECT * FROM Users WHERE Name = '" + name + "'", conn);`, true},
@@ -61,7 +61,7 @@ func TestRuleCorpus(t *testing.T) {
 		// Round-4: GHA pwn-request, C format-string, CloudFormation
 		{"CWE-829", "wf.yml", "on: pull_request_target\njobs:\n  b:\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.pull_request.head.sha }}", true},
 		{"CWE-829", "wf.yml", "on: pull_request\njobs:\n  b:\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.pull_request.head.sha }}", false}, // read-only trigger
-		{"CWE-829", "wf.yml", "on: pull_request_target\njobs:\n  b:\n    steps:\n      - uses: actions/checkout@v4", false}, // base checkout
+		{"CWE-829", "wf.yml", "on: pull_request_target\njobs:\n  b:\n    steps:\n      - uses: actions/checkout@v4", false},                                                                   // base checkout
 		{"CWE-134", "a.c", `fprintf(stderr, user_msg);`, true},
 		{"CWE-134", "a.c", `printf(buf);`, true},
 		{"CWE-134", "a.c", `fprintf(stderr, "%s", user_msg);`, false}, // fixed format

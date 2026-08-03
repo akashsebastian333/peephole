@@ -141,7 +141,7 @@ func TestTaintNoFalsePositives(t *testing.T) {
 				"ssrf-const-url": "CWE-918", "redirect-url-for": "CWE-601",
 				"log-nonsensitive": "CWE-532", "log-redacted": "CWE-532",
 				"log-secret-in-string-literal": "CWE-532",
-				"cmdi-subprocess-argv-safe": "CWE-78", "sqli-js-parameterized": "CWE-89",
+				"cmdi-subprocess-argv-safe":    "CWE-78", "sqli-js-parameterized": "CWE-89",
 				"path-js-const": "CWE-22", "cmdi-sanitized-in-concat": "CWE-78",
 				"cmdi-augmented-literal": "CWE-78",
 			}

@@ -35,7 +35,7 @@ import (
 // never receive a dynamically-built string.
 
 var (
-	tlWord   = regexp.MustCompile(`[A-Za-z_$][\w$]*`)
+	tlWord = regexp.MustCompile(`[A-Za-z_$][\w$]*`)
 	// group 1 = variable, group 2 = augmenting op (empty for plain = / :=), group 3
 	// = RHS. An optional const/let/var lets JS/TS declarations bind the real
 	// variable (const q = ...) instead of the keyword; \s+ after it means a name

@@ -72,7 +72,7 @@ func readEvent() Event {
 var canonicalEvents = map[string]string{
 	"pretooluse": "PreToolUse", "beforetool": "PreToolUse", "beforetooluse": "PreToolUse",
 	"beforetoolcall": "PreToolUse", "beforeshellexecution": "PreToolUse",
-	"posttooluse":    "PostToolUse", "aftertool": "PostToolUse", "aftertooluse": "PostToolUse",
+	"posttooluse": "PostToolUse", "aftertool": "PostToolUse", "aftertooluse": "PostToolUse",
 	"sessionstart": "SessionStart", "subagentstart": "SubagentStart",
 	"userpromptsubmit": "UserPromptSubmit", "stop": "Stop", "configchange": "ConfigChange",
 }
@@ -83,7 +83,7 @@ var canonicalEvents = map[string]string{
 var canonicalTools = map[string]string{
 	"write": "Write", "write_file": "Write", "writefile": "Write", "create_file": "Write", "createfile": "Write",
 	"write_to_file": "Write",
-	"edit": "Edit", "replace": "Edit", "str_replace": "Edit", "strreplace": "Edit", "str_replace_editor": "Edit",
+	"edit":          "Edit", "replace": "Edit", "str_replace": "Edit", "strreplace": "Edit", "str_replace_editor": "Edit",
 	"apply_patch": "Edit", "applypatch": "Edit", "multiedit": "MultiEdit", "notebookedit": "NotebookEdit",
 	"replace_in_file": "Edit", "editor": "Edit", "edit_file": "Edit",
 	"bash": "Bash", "shell": "Bash", "run_shell_command": "Bash", "runshellcommand": "Bash",

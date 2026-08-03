@@ -15,7 +15,7 @@ import (
 // live registry lookup stays on the narrow install-command path.
 
 var (
-	reReqLine   = regexp.MustCompile(`(?m)^\s*([A-Za-z0-9][A-Za-z0-9._-]+)`)
+	reReqLine = regexp.MustCompile(`(?m)^\s*([A-Za-z0-9][A-Za-z0-9._-]+)`)
 	// Fallback for a package.json Edit/MultiEdit: the new_string is a fragment, not
 	// valid JSON, so json.Unmarshal yields nothing and the dep slips the gate.
 	// Match "name": "version-spec" pairs; the version filter below keeps script /

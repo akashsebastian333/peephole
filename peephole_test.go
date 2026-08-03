@@ -116,7 +116,10 @@ func TestNonClaudeHostsGate(t *testing.T) {
 	// advertises hard pre-write blocking for Gemini/Codex/Cursor/OpenCode/etc.,
 	// which was a silent no-op because their names never matched Claude's.
 	sqli := `cur.execute(f"SELECT * FROM users WHERE id={uid}")`
-	cases := []struct{ name, event, tool string; ti map[string]any }{
+	cases := []struct {
+		name, event, tool string
+		ti                map[string]any
+	}{
 		{"gemini-write_file", "BeforeTool", "write_file", map[string]any{"file_path": "a.py", "content": sqli}},
 		{"gemini-replace", "BeforeTool", "replace", map[string]any{"file_path": "a.py", "new_string": sqli}},
 		{"cursor-casing", "preToolUse", "Write", map[string]any{"file_path": "a.py", "content": sqli}},

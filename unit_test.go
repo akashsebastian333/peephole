@@ -278,10 +278,10 @@ func TestBashWritePrimitiveEvasions(t *testing.T) {
 	// Each of these writes runtime-determined or copied content and must be flagged
 	// uninspectable (a caught form has an uncaught sibling otherwise).
 	for _, cmd := range []string{
-		`echo "${CODE}" > /app/x.py`,                         // brace param expansion (was unflagged)
-		`install -m 0755 /tmp/evil.py /app/routes.py`,        // coreutils install (cp sibling)
-		`echo -e "\x69\x6d\x70\x6f\x72\x74 os" > /app/x.py`,  // runtime hex-escape decode
-		`printf "%b" "\x69mport os" > /app/x.py`,             // printf %b decode
+		`echo "${CODE}" > /app/x.py`,                        // brace param expansion (was unflagged)
+		`install -m 0755 /tmp/evil.py /app/routes.py`,       // coreutils install (cp sibling)
+		`echo -e "\x69\x6d\x70\x6f\x72\x74 os" > /app/x.py`, // runtime hex-escape decode
+		`printf "%b" "\x69mport os" > /app/x.py`,            // printf %b decode
 	} {
 		if a := analyzeBash(cmd); !a.Uninspectable {
 			t.Errorf("write primitive not flagged uninspectable: %q", cmd)
