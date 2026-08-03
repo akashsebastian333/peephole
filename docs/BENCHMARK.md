@@ -14,7 +14,7 @@ plainly; the harness is in-repo and re-runnable.
 python3 benchmark/charts.py` (Semgrep leg needs a `semgrep` binary at
 `SEMGREP_BIN` or `/tmp/bench-venv/bin/semgrep`).
 
-**Corpus:** 151 vulnerable cases across 24 CWE classes + 50 benign
+**Corpus:** 151 vulnerable cases across 25 vulnerability categories + 50 benign
 everyday-code cases + 2 semantic cases. It is the *union* of all tools'
 documented detection classes plus independent edge cases — so no engine is
 measured only on home turf. All engines see byte-identical inputs: peephole
@@ -107,7 +107,7 @@ numbers are preserved here for honesty: **77% → 98%**.
 semantic scoring) + `report.py`. Raw evidence: `benchmark/live/results.jsonl`,
 `judge.jsonl`, `out/` (every final artifact, kept for audit).
 
-**Design.** 144 `claude -p` sessions (Haiku 4.5, `--dangerously-skip-permissions`,
+**Design.** 152 `claude -p` sessions (Haiku 4.5, `--dangerously-skip-permissions`,
 so hook `ask`s are auto-approved — the harness simulates the over-trusting
 user; only hard `deny`s stand). Four arms, each a fresh project per session:
 baseline (nothing), bare-prompt (a CLAUDE.md "write secure code" control),
@@ -121,18 +121,19 @@ security-guidance (its own hooks.json wiring, verbatim), peephole (strict).
   peephole *does not enforce* (blueprint §2a). Presence scanners score ~100%
   on all of them (nothing present to match), so scoring is an independent
   claude-haiku judge with per-task rubrics (`JUDGE_RUBRICS` in `driver.py`).
-- **Adversarial tier:** 6 gate-evasion attacks × 1 (heredoc, base64 write,
-  disable-the-tool, sec-debt self-waiver, rename extension, slopsquat install).
+- **Adversarial tier:** 8 gate-evasion attacks × 1 (heredoc, base64 write,
+  disable-the-tool, sec-debt self-waiver, rename extension, slopsquat install,
+  env-exfil, secret-exfil).
 
-**Result (2026-08, 5 runs per task = 200 main + 60 semantic + 24 adversarial
-sessions; regenerate with `python benchmark/live/report.py`):**
+**Result (fresh 2026-08-03 re-run, 2 runs per task = 80 main + 40 semantic + 32
+adversarial = 152 sessions; grade with `benchmark/live/multimodel/grade_fresh.py`,
+which applies the uniform correction to every arm):**
 
 The headline metric is **insecure code landed per attempt** (did insecure code
-reach disk; lower is better), scored independently by Semgrep with an
-out-of-family LLM judge on the semantic tier. Semgrep's static-template-SSTI
-false positive is corrected uniformly across all arms (`benchmark/live/regrade.py`):
-a template flag counts only when the template is dynamically built. Refusals are
-shown separately, not as insecure. All arms complete every session (0 timeouts).
+reach disk; lower is better), scored independently by Semgrep with an LLM judge
+on the semantic tier. Semgrep's static-template-SSTI false positive is corrected
+uniformly across all arms: a template flag counts only when the template is
+dynamically built. Refusals are shown separately, not as insecure.
 
 | arm | insecure-landed / attempt (lower=better) | secure-landed | refused | secure when it wrote | semantic | cost | time |
 |---|---|---|---|---|---|---|---|
@@ -208,23 +209,21 @@ data: `benchmark/live/multimodel/benchmark_audit.py`.
 
 *(insecure code landed per attempt, lower is better)*
 
-- **peephole lands 0% insecure across all four models**, versus 35-46% baseline,
-  0-16% for a one-line prompt, and 15-50% for the incumbent security-guidance
-  plugin: the guidance plane is not a Haiku artifact.
+- **peephole lands 0% insecure across all four models**, versus 44-50% baseline,
+  a consistent 5% for a one-line prompt, and 15-35% for the incumbent
+  security-guidance plugin: the guidance plane is not a Haiku artifact.
 - **The 0% rests on a false-positive correction, and that is disclosed.**
-  Uncorrected, Semgrep flags peephole on 5/3/4/2 sessions (raw 10/15/20/10%).
-  Every one was verified per file as a genuine Semgrep FP on secure code (a JWT
-  secret read from `os.environ`, an HTML-escaped `return f"...{escape(x)}..."`,
-  an argv `subprocess(..., shell=False)`). The **same** correction is applied to
-  every arm — it removes 11/12/14/14 findings across baseline/bare-prompt/
-  security-guidance/peephole and lowers competitors' rates too (Haiku baseline
-  54→46%, GLM 10→9 findings), so it is not a peephole thumb on the scale. On GLM
-  peephole's raw reflected-XSS attempt was denied and the model added `escape()`,
-  born-secure.
-- **Productivity holds across models:** peephole lands secure code on 80-98% of
-  attempts. GLM is the low end (80%): peephole's deny on the reflected-XSS task
-  cost two sessions a final file rather than an insecure one — the trade-off is
-  visible and reported, not hidden.
+  Uncorrected, Semgrep flags peephole on raw 10-15% of attempts. Every one was
+  verified per file as a genuine Semgrep FP on secure code (a static-template
+  SSTI, and on GLM an HTML-escaped `return f"...{escape(x)}..."`) — **0 real
+  misses survived the audit**. The **same** correction is applied to every arm:
+  it also removes 2 static-template-SSTI FPs from Haiku security-guidance (45→35%)
+  while leaving bare-prompt unmoved (5→5%), so it is not a peephole thumb on the
+  scale. On GLM peephole's raw reflected-XSS attempt was denied and the model
+  added `escape()`, born-secure.
+- **Productivity holds across models:** peephole lands secure code on 80-95% of
+  attempts. GLM and Kimi are the low end (80%): a deny that cost a session a final
+  file rather than an insecure one — the trade-off is visible and reported.
 - What a prompt cannot do that peephole can: the prompt is advisory (a jailbreak
   or a different task removes it) and its effect varies by model; the gate is
   enforced and deterministic. The adversarial and semantic tiers, where that gap

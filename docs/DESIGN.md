@@ -42,8 +42,9 @@ Rationale over an interpreted hook:
   nor `python3` on PATH. A shipped static binary needs nothing.
 - **Fast:** native start ~1-5ms vs ~40-80ms interpreter cold-start. PreToolUse
   fires on every Write/Edit/Bash — the dev must not feel it.
-- **Novel & hardened:** rules are `go:embed`-ed into the binary, so a local
-  attacker cannot edit loose JSON the binary ignores; poisoning requires
+- **Novel & hardened:** rules are compiled to Go literals baked into the binary
+  (`cmd/kbgen` → `rules_gen.go`), so a local attacker cannot edit loose JSON the
+  binary ignores; poisoning requires
   replacing the binary, which the self-integrity check detects.
 
 RE2 has no lookaround, so KB exclusions are declarative refinements
@@ -59,7 +60,7 @@ Write/Edit/Bash, so the whole path is tuned to stay under the threshold a dev
 would feel: the launcher execs the cached binary directly; the CWE knowledge
 base ships as build-time-generated Go literals with precomputed literal-set
 prefilters, so `loadKB` is ~7µs rather than ~2ms of JSON parsing, and there is
-no file I/O to load rules on the hot path (`go:embed` also means a local
+no file I/O to load rules on the hot path (compiled-in literals also mean a local
 attacker can't quietly edit rule files the binary would ignore); a detached
 SessionStart `warmcache` pre-warms the slopsquat cache so the first install
 verdict skips a cold ~500ms registry round-trip. Measured hook process ~8ms;
@@ -67,7 +68,7 @@ the rest of any latency is model generation.
 
 ## Scope (what this build includes vs defers)
 
-IN (v1 core, mechanisms N1–N6 + experimental N7, KB across ~28 language buckets):
+IN (v1 core, mechanisms N1–N6 + experimental N7, KB across ~31 language buckets):
 - Mode resolution audit/strict/hardened/off + persisted, signed state.
 - N1 Security Ladder injected at SessionStart/SubagentStart (task-classified for subagents).
 - Enforcement plane: PreToolUse gate on Write/Edit/MultiEdit/NotebookEdit;
@@ -124,7 +125,8 @@ audit.go                     running-hash tamper-evident log + decision counters
 integrity.go                 self-binary + hooks + skills + plugin.json SHA-256 vs bin/manifest.sha256
 unicode.go                   zero-width/bidi/homoglyph + injection-phrase scanner
 report.go                    OWASP 2025 rollup + SARIF 2.1.0 export
-embed.go                     go:embed rules/*.json
+rules_gen.go                 generated KB: rules + taint specs as Go literals (from cmd/kbgen)
+cmd/kbgen/main.go            code generator: rules/*.json + taint/*.json -> rules_gen.go
 rules/*.json                 CWE-keyed KB records (data, never code)
 skills/{peephole,sec-review,sec-debt,sec-audit}/SKILL.md
 peephole_test.go             end-to-end hook contract tests (exit codes + decisions)

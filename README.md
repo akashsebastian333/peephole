@@ -163,7 +163,7 @@ honesty caveats are in [docs/BENCHMARK.md](docs/BENCHMARK.md) (harness in
 `benchmark/`, re-runnable end to end).
 
 **Detection benchmark, three engines, identical inputs.** 151 labeled vulnerable
-cases across 24 CWE classes + 50 benign cases, the union of all tools' documented
+cases across 25 vulnerability categories + 50 benign cases, the union of all tools' documented
 classes so nobody is measured only on home turf:
 
 | engine | TP recall | FP rate | layer measured |
