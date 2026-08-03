@@ -26,3 +26,4 @@ bin/.peephole-exe
 # Python
 __pycache__/
 *.pyc
+/kbgen
