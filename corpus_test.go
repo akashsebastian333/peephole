@@ -25,6 +25,11 @@ func TestRuleCorpus(t *testing.T) {
 		{"CWE-89", "a.go", "query := \"SELECT * FROM users WHERE name = '\" + name + \"'\"\nrows, _ := db.Query(query)", true},
 		{"CWE-89", "a.go", "query := fmt.Sprintf(\"SELECT * FROM t WHERE id = %d\", id)\nrows, _ := db.Query(query)", true},
 		{"CWE-89", "a.go", "query := \"SELECT * FROM t WHERE id = $1\"\nrows, _ := db.Query(query, id)", false}, // parameterized
+		// Go log/status strings that merely START with a SQL verb (no from/where/set
+		// second keyword) must NOT be flagged - regression guard for the FP fix.
+		{"CWE-89", "a.go", `msg := fmt.Sprintf("UPDATE complete: %d rows affected", n)`, false},
+		{"CWE-89", "a.go", `status := "DELETE failed for key " + key`, false},
+		{"CWE-89", "a.go", `out := fmt.Sprintf("SELECT which option, got %v", choice)`, false},
 		// CWE-78 Java sh -c wrapper (round-2 gap)
 		{"CWE-78", "a.java", `new ProcessBuilder("bash", "-c", "ping " + host).start();`, true},
 		{"CWE-78", "a.java", "Runtime.getRuntime().exec(new String[]{\"sh\",\"-c\",\"ping \"+host});", true},

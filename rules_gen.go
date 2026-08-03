@@ -6249,13 +6249,13 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "go",
-				Re:         "(?::=|=)\\s*fmt\\.Sprintf\\(\\s*[\"'](?i:SELECT|INSERT|UPDATE|DELETE)",
+				Re:         "(?::=|=)\\s*fmt\\.Sprintf\\(\\s*[\"'](?i:SELECT|INSERT|UPDATE|DELETE)\\b[^\"']*\\b(?i:FROM|INTO|WHERE|SET|VALUES)\\b",
 				Confidence: "high",
 				prefilter:  []string{"sprintf"},
 			},
 			{
 				Lang:       "go",
-				Re:         "(?::=|=)\\s*\"(?i:SELECT|INSERT|UPDATE|DELETE)[^\"]*\"\\s*\\+",
+				Re:         "(?::=|=)\\s*\"(?i:SELECT|INSERT|UPDATE|DELETE)\\b[^\"]*\\b(?i:FROM|INTO|WHERE|SET|VALUES)\\b[^\"]*\"\\s*\\+",
 				Confidence: "high",
 				prefilter:  []string{"select", "insert", "update", "delete"},
 			},

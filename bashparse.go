@@ -73,9 +73,10 @@ var (
 	// so `echo "${CODE}" > f` slipped the determinability check the unbraced $VAR hit.
 	reCmdSubst           = regexp.MustCompile(`\$[({]|` + "`" + `|\$[A-Za-z_]`)
 	// coreutils `install` is a copy-with-mode (install -m 0755 src dst) - a write
-	// primitive like cp/mv/dd, kept out of reCopyMove so it can't collide with
-	// `pip/npm install pkg` (which has no dash-flag before the package name).
-	reInstallBin         = regexp.MustCompile(`\binstall\s+-[DmogtTsSbpvcd]`)
+	// primitive like cp/mv/dd. Anchored to command position (line start or after a
+	// separator, optional sudo) so `npm install -g` / `pip install -v` / `apt
+	// install -s` (install as a package-manager SUBcommand) don't collide with it.
+	reInstallBin         = regexp.MustCompile(`(?:^|[\n;&|])\s*(?:sudo\s+)?install\s+-[DmogtTsSbpvcd]`)
 	// echo -e / printf with \xNN, \0NN, or %b decode escapes at runtime, so the
 	// bytes landing in the file are not the literal we see. Scoped to a write (has
 	// a redirect) so a benign `printf "%b\n" "$x"` to stdout is not flagged.

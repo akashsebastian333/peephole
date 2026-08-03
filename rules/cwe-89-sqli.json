@@ -66,12 +66,12 @@
     {
       "lang": "go",
       "confidence": "high",
-      "re": "(?::=|=)\\s*fmt\\.Sprintf\\(\\s*[\"'](?i:SELECT|INSERT|UPDATE|DELETE)"
+      "re": "(?::=|=)\\s*fmt\\.Sprintf\\(\\s*[\"'](?i:SELECT|INSERT|UPDATE|DELETE)\\b[^\"']*\\b(?i:FROM|INTO|WHERE|SET|VALUES)\\b"
     },
     {
       "lang": "go",
       "confidence": "high",
-      "re": "(?::=|=)\\s*\"(?i:SELECT|INSERT|UPDATE|DELETE)[^\"]*\"\\s*\\+"
+      "re": "(?::=|=)\\s*\"(?i:SELECT|INSERT|UPDATE|DELETE)\\b[^\"]*\\b(?i:FROM|INTO|WHERE|SET|VALUES)\\b[^\"]*\"\\s*\\+"
     },
     {
       "lang": "rust",

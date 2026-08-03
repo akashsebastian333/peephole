@@ -291,6 +291,19 @@ func TestBashWritePrimitiveEvasions(t *testing.T) {
 	if a := analyzeBash(`printf "%b\n" "$x"`); a.Uninspectable {
 		t.Errorf("benign printf to stdout wrongly flagged uninspectable")
 	}
+	// A package-manager `install` subcommand must NOT be mistaken for coreutils
+	// install (the flag classes collide; install is anchored to command position).
+	for _, cmd := range []string{"npm install -g typescript", "pip install -v flask", "apt install -s nginx", "apt-get install -d curl"} {
+		if a := analyzeBash(cmd); a.Uninspectable {
+			t.Errorf("package-manager install wrongly flagged as coreutils install: %q", cmd)
+		}
+	}
+	// but real coreutils install (leading, or after sudo) stays flagged.
+	for _, cmd := range []string{"install -m 0755 /tmp/x /app/y", "sudo install -m 0755 x y"} {
+		if a := analyzeBash(cmd); !a.Uninspectable {
+			t.Errorf("coreutils install not flagged uninspectable: %q", cmd)
+		}
+	}
 }
 
 func TestAddSessionSetConcurrent(t *testing.T) {
