@@ -28,6 +28,9 @@ type Event struct {
 	Cwd           string          `json:"cwd"`
 	SessionID     string          `json:"session_id"`
 	LastMessage   string          `json:"last_assistant_message"`
+	// Some hosts (Cursor beforeShellExecution) put the command at the TOP level of
+	// the payload with no tool_name/tool_input; captured here to synthesize a Bash tool.
+	TopCommand string `json:"command"`
 }
 
 // ToolInput unions the fields across Write/Edit/MultiEdit/NotebookEdit/Bash.
@@ -54,6 +57,13 @@ func readEvent() Event {
 	// events, never fewer.
 	e.HookEventName = normalizeEvent(e.HookEventName)
 	e.ToolName = normalizeTool(e.ToolName)
+	// Cursor's beforeShellExecution (and similar) carry the command at the top
+	// level with no tool_name/tool_input; synthesize a Bash tool so the write-path
+	// gate still inspects it.
+	if e.ToolName == "" && e.HookEventName == "PreToolUse" && e.TopCommand != "" && len(e.ToolInput) == 0 {
+		e.ToolName = "Bash"
+		e.ToolInput, _ = json.Marshal(map[string]string{"command": e.TopCommand})
+	}
 	return e
 }
 
@@ -61,7 +71,7 @@ func readEvent() Event {
 // Keyed lowercase so casing variants (Cursor's preToolUse) also fold.
 var canonicalEvents = map[string]string{
 	"pretooluse": "PreToolUse", "beforetool": "PreToolUse", "beforetooluse": "PreToolUse",
-	"beforetoolcall": "PreToolUse",
+	"beforetoolcall": "PreToolUse", "beforeshellexecution": "PreToolUse",
 	"posttooluse":    "PostToolUse", "aftertool": "PostToolUse", "aftertooluse": "PostToolUse",
 	"sessionstart": "SessionStart", "subagentstart": "SubagentStart",
 	"userpromptsubmit": "UserPromptSubmit", "stop": "Stop", "configchange": "ConfigChange",
@@ -72,10 +82,12 @@ var canonicalEvents = map[string]string{
 // untouched for the dedicated MCP path.
 var canonicalTools = map[string]string{
 	"write": "Write", "write_file": "Write", "writefile": "Write", "create_file": "Write", "createfile": "Write",
+	"write_to_file": "Write",
 	"edit": "Edit", "replace": "Edit", "str_replace": "Edit", "strreplace": "Edit", "str_replace_editor": "Edit",
 	"apply_patch": "Edit", "applypatch": "Edit", "multiedit": "MultiEdit", "notebookedit": "NotebookEdit",
+	"replace_in_file": "Edit", "editor": "Edit", "edit_file": "Edit",
 	"bash": "Bash", "shell": "Bash", "run_shell_command": "Bash", "runshellcommand": "Bash",
-	"execute_command": "Bash", "executecommand": "Bash", "run_command": "Bash",
+	"execute_command": "Bash", "executecommand": "Bash", "run_command": "Bash", "exec_command": "Bash",
 }
 
 func normalizeEvent(name string) string {
@@ -120,13 +132,22 @@ func (e Event) toolInput() ToolInput {
 			return ""
 		}
 		if t.FilePath == "" {
-			t.FilePath = pick("filePath", "path", "absolute_path")
+			t.FilePath = pick("filePath", "path", "absolute_path", "file")
 		}
-		if t.NewString == "" {
-			t.NewString = pick("newString")
+		if t.NewString == "" { // edit / patch / diff replacement text across hosts
+			t.NewString = pick("newString", "new_str", "after", "file_text", "diff", "patch", "input")
 		}
 		if t.Content == "" {
-			t.Content = pick("contents")
+			t.Content = pick("contents", "text")
+		}
+		if t.Command == "" {
+			t.Command = pick("cmd")
+		}
+		// Belt-and-suspenders: if a write-family tool still yielded no scannable
+		// content (an unmapped field name), scan every string value in the payload
+		// rather than let the write pass uninspected.
+		if t.Content == "" && t.NewString == "" && t.NewSource == "" && t.Command == "" && len(t.Edits) == 0 {
+			t.Content = stringValues(e.ToolInput)
 		}
 	}
 	return t

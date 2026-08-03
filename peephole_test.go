@@ -123,6 +123,14 @@ func TestNonClaudeHostsGate(t *testing.T) {
 		{"opencode-write-camel", "PreToolUse", "write", map[string]any{"filePath": "a.py", "content": sqli}},
 		{"opencode-edit-newString", "PreToolUse", "edit", map[string]any{"filePath": "a.py", "newString": sqli}},
 		{"gemini-shell", "BeforeTool", "run_shell_command", map[string]any{"command": "cat > a.py <<EOF\n" + sqli + "\nEOF"}},
+		{"codex-apply_patch-input", "PreToolUse", "apply_patch", map[string]any{"input": "*** Begin Patch\n+" + sqli + "\n*** End Patch"}},
+		{"codex-exec_command-cmd", "PreToolUse", "exec_command", map[string]any{"cmd": "cat > a.py <<EOF\n" + sqli + "\nEOF"}},
+		{"cline-write_to_file", "PreToolUse", "write_to_file", map[string]any{"path": "a.py", "content": sqli}},
+		{"cline-replace_in_file-diff", "PreToolUse", "replace_in_file", map[string]any{"path": "a.py", "diff": sqli}},
+		{"cline-editor", "PreToolUse", "editor", map[string]any{"path": "a.py", "content": sqli}},
+		{"goose-edit-after", "PreToolUse", "edit", map[string]any{"path": "a.py", "after": sqli}},
+		{"str_replace_editor-new_str", "PreToolUse", "str_replace_editor", map[string]any{"path": "a.py", "new_str": sqli}},
+		{"amp-edit_file-new_str", "PreToolUse", "edit_file", map[string]any{"path": "a.py", "new_str": sqli}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -135,6 +143,16 @@ func TestNonClaudeHostsGate(t *testing.T) {
 				t.Fatalf("%s must deny SQLi, got %q (%s)", c.name, ho.HookSpecificOutput.PermissionDecision, raw)
 			}
 		})
+	}
+	// Cursor's beforeShellExecution puts the command at the TOP level with no
+	// tool_name/tool_input; the gate must still inspect the synthesized Bash write.
+	pc := newProject(t, "strict")
+	hoc, _, rawc := runHookJSON(t, map[string]any{
+		"hook_event_name": "beforeShellExecution", "cwd": pc,
+		"command": "cat > a.py <<EOF\n" + sqli + "\nEOF",
+	})
+	if hoc.HookSpecificOutput.PermissionDecision != "deny" {
+		t.Fatalf("Cursor beforeShellExecution must gate the top-level command, got %q (%s)", hoc.HookSpecificOutput.PermissionDecision, rawc)
 	}
 	// A read-only tool from a non-Claude host must still pass through (no over-block).
 	p := newProject(t, "strict")
