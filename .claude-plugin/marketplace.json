@@ -1,0 +1,19 @@
+{
+  "name": "peephole",
+  "owner": {
+    "name": "Akash"
+  },
+  "metadata": {
+    "description": "Born-secure enforcement for AI coding assistants."
+  },
+  "plugins": [
+    {
+      "name": "peephole",
+      "source": "./",
+      "description": "Gates insecure code at PreToolUse before it lands on disk, with a CWE-mapped, tamper-evident audit log. Single static Go binary, no runtime.",
+      "version": "0.4.0",
+      "license": "MIT",
+      "keywords": ["security", "cwe", "sast", "enforcement", "secure-coding"]
+    }
+  ]
+}

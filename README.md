@@ -40,25 +40,37 @@ no runtime — with a hook path under 10ms per event. See
 
 ## Install
 
-**As a binary** (any agent, git hook, or CI). Grab the build for your platform
-from the [latest release](https://github.com/akashsebastian333/peephole/releases/latest)
-and put it on your `PATH`:
+**As a binary** (any agent, git hook, or CI). This detects your OS and
+architecture, installs to your `PATH`, and smoke-tests it — macOS and Linux:
 
 ```sh
-# swap the suffix for your platform: peephole-darwin-arm64 · peephole-darwin-amd64
-#   peephole-linux-amd64 · peephole-linux-arm64 · peephole-windows-amd64.exe
-curl -fsSL https://github.com/akashsebastian333/peephole/releases/latest/download/peephole-darwin-arm64 -o peephole
+os=$(uname -s | tr '[:upper:]' '[:lower:]'); arch=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+curl -fsSL "https://github.com/akashsebastian333/peephole/releases/latest/download/peephole-${os}-${arch}" -o peephole
 chmod +x peephole && sudo mv peephole /usr/local/bin/peephole
-peephole scan yourfile.py          # smoke test
+peephole scan yourfile.py
 ```
 
-Checksums for every asset are in `SHA256SUMS` on the release. Wiring for Gemini
-CLI, Codex, Cursor, MCP/LSP editors, and a universal `git pre-commit` hook is in
-[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
+Windows: download `peephole-windows-amd64.exe` from the
+[latest release](https://github.com/akashsebastian333/peephole/releases/latest)
+and add it to your `PATH`.
 
-**As a Claude Code plugin.** Point Claude Code at this directory as a plugin (or
-install from the marketplace). The plugin auto-registers its hooks via
-`hooks/hooks.json`; default mode is **strict**.
+To verify the download against the release checksums before installing:
+
+```sh
+curl -fsSLO "https://github.com/akashsebastian333/peephole/releases/latest/download/SHA256SUMS"
+shasum -a 256 -c SHA256SUMS --ignore-missing   # 'sha256sum -c' on Linux
+```
+
+Wiring for Gemini CLI, Codex, Cursor, MCP/LSP editors, and a universal
+`git pre-commit` hook is in [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
+
+**As a Claude Code plugin** (local CLI, desktop, or the web/cloud IDE). Add the
+marketplace and install — hooks auto-register, default mode is **strict**:
+
+```
+/plugin marketplace add akashsebastian333/peephole
+/plugin install peephole@peephole
+```
 
 ## Supported agents & IDEs
 
