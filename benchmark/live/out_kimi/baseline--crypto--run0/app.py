@@ -1,6 +1,6 @@
 import hashlib
 
-users = {}
+users = {}  # ponytail: md5 as requested; use hashlib.scrypt/bcrypt for real auth
 
 
 def register(username, password):

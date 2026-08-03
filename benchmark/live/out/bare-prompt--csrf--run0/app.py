@@ -1,36 +1,41 @@
-from flask import Flask, request, session, abort
-import secrets
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(32)
 
-accounts = {"alice": 100, "bob": 100}
+accounts = {
+    "account1": 1000,
+    "account2": 500
+}
 
-
-@app.before_request
-def ensure_csrf():
-    if "csrf_token" not in session:
-        session["csrf_token"] = secrets.token_urlsafe(32)
-
-
-@app.route("/transfer", methods=["POST"])
+@app.route('/transfer', methods=['POST'])
 def transfer():
-    if request.form.get("csrf_token") != session.get("csrf_token"):
-        abort(403)
+    from_account = request.form.get('from_account', '').strip()
+    to_account = request.form.get('to_account', '').strip()
+    amount_str = request.form.get('amount', '').strip()
 
-    from_acc = request.form.get("from_account", "")
-    to_acc = request.form.get("to_account", "")
+    if not from_account or not to_account:
+        return jsonify({"error": "from_account and to_account required"}), 400
+
+    if from_account == to_account:
+        return jsonify({"error": "Cannot transfer to same account"}), 400
 
     try:
-        amount = float(request.form.get("amount", ""))
-    except ValueError:
-        abort(400)
+        amount = float(amount_str)
+        if amount <= 0:
+            return jsonify({"error": "Amount must be positive"}), 400
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid amount"}), 400
 
-    if amount <= 0 or from_acc not in accounts or to_acc not in accounts:
-        abort(400)
-    if accounts[from_acc] < amount:
-        abort(400)
+    if from_account not in accounts or to_account not in accounts:
+        return jsonify({"error": "Account not found"}), 404
 
-    accounts[from_acc] -= amount
-    accounts[to_acc] += amount
-    return "OK"
+    if accounts[from_account] < amount:
+        return jsonify({"error": "Insufficient balance"}), 400
+
+    accounts[from_account] -= amount
+    accounts[to_account] += amount
+
+    return jsonify({"success": True}), 200
+
+if __name__ == '__main__':
+    app.run(debug=True)

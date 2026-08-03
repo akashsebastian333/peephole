@@ -18,10 +18,8 @@ def user():
     cursor.execute(f"SELECT * FROM users WHERE username = '{username}'")
     row = cursor.fetchone()
     conn.close()
-
     if row is None:
         return jsonify({"error": "user not found"}), 404
-
     return jsonify(dict(row))
 
 

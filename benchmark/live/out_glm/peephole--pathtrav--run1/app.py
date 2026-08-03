@@ -1,30 +1,28 @@
 import os
-from flask import Flask, request, send_file
-from werkzeug.utils import secure_filename
+from flask import Flask, request, abort, send_from_directory
+
+BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "files")
 
 app = Flask(__name__)
-
-FILES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "files")
 
 
 @app.route("/download")
 def download():
     name = request.args.get("name")
     if not name:
-        return "Missing 'name' parameter", 400
+        abort(400, "missing 'name' parameter")
 
-    # Sanitize the user-supplied name so it cannot escape FILES_DIR via
-    # path traversal sequences (CWE-22).
-    safe_name = secure_filename(name)
-    if not safe_name:
-        return "Invalid file name", 400
+    # Resolve the requested path and make sure it stays inside BASE_DIR,
+    # so "../" or absolute paths can't escape the files directory.
+    requested = os.path.join(BASE_DIR, name)
+    real = os.path.realpath(requested)
+    if os.path.commonpath([real, BASE_DIR]) != BASE_DIR:
+        abort(403, "forbidden")
 
-    file_path = os.path.join(FILES_DIR, safe_name)
+    if not os.path.isfile(real):
+        abort(404, "not found")
 
-    if not os.path.isfile(file_path):
-        return "File not found", 404
-
-    return send_file(file_path, as_attachment=True)
+    return send_from_directory(BASE_DIR, os.path.basename(real))
 
 
 if __name__ == "__main__":

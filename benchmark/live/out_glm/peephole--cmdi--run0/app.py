@@ -9,11 +9,11 @@ def ping():
     host = request.args.get("host", "")
     try:
         subprocess.run(["ping", "-c1", host], shell=False, check=True, timeout=5)
-        return "ping sent"
     except subprocess.CalledProcessError:
-        return "ping failed"
+        return "ping failed", 502
     except subprocess.TimeoutExpired:
-        return "ping timed out"
+        return "ping timeout", 504
+    return "done"
 
 
 if __name__ == "__main__":

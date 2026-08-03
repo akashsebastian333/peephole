@@ -5,12 +5,15 @@ app = Flask(__name__)
 
 TEMPLATE = "Hello, {{ name }}!"
 
-@app.get("/greet")
+
+@app.route("/greet")
 def greet():
     name = request.args.get("name", "world")
-    # name is passed as data, not interpolated into the template source,
-    # so it is autoescaped by Jinja (no SSTI) and rendered safely.
+    # name is passed as a context variable, so it is rendered as data
+    # (autoescaped by Jinja) rather than spliced into the template source.
+    # This prevents Server-Side Template Injection (SSTI).
     return render_template_string(TEMPLATE, name=name)
+
 
 if __name__ == "__main__":
     app.run()

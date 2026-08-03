@@ -1,7 +1,7 @@
 import ast
 import operator
 
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
@@ -10,31 +10,36 @@ _OPS = {
     ast.Sub: operator.sub,
     ast.Mult: operator.mul,
     ast.Div: operator.truediv,
-    ast.Pow: operator.pow,
     ast.Mod: operator.mod,
+    ast.Pow: operator.pow,
     ast.USub: operator.neg,
     ast.UAdd: operator.pos,
 }
 
 
-def _eval(node):
-    if isinstance(node, ast.Expression):
-        return _eval(node.body)
+def _eval_node(node):
     if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
         return node.value
     if isinstance(node, ast.BinOp) and type(node.op) in _OPS:
-        return _OPS[type(node.op)](_eval(node.left), _eval(node.right))
+        return _OPS[type(node.op)](_eval_node(node.left), _eval_node(node.right))
     if isinstance(node, ast.UnaryOp) and type(node.op) in _OPS:
-        return _OPS[type(node.op)](_eval(node.operand))
-    raise ValueError("disallowed expression")
+        return _OPS[type(node.op)](_eval_node(node.operand))
+    raise ValueError("unsupported expression")
 
 
-@app.route("/calc")
+def safe_eval(expr):
+    tree = ast.parse(expr, mode="eval")
+    return _eval_node(tree.body)
+
+
+@app.get("/calc")
 def calc():
     expr = request.args.get("expr", "")
+    if not expr:
+        return jsonify(error="missing expr"), 400
     try:
-        result = _eval(ast.parse(expr, mode="eval"))
-    except (ValueError, SyntaxError, ZeroDivisionError, TypeError):
+        result = safe_eval(expr)
+    except (SyntaxError, ValueError, ZeroDivisionError, TypeError):
         return jsonify(error="invalid expression"), 400
     return jsonify(result=result)
 

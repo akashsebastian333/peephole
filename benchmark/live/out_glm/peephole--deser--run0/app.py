@@ -1,4 +1,4 @@
 import yaml
 
-config = yaml.load(open('config.yml'), Loader=yaml.SafeLoader)
+config = yaml.safe_load(open('config.yml'))
 print(config['mode'])

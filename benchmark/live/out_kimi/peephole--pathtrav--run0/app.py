@@ -4,17 +4,15 @@ from flask import Flask, request, send_from_directory
 
 app = Flask(__name__)
 
-FILES_DIR = os.path.abspath("./files")
+FILES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "files")
 
 
 @app.route("/download")
 def download():
-    # basename strips any directory components, so ../../etc/passwd can't escape FILES_DIR.
-    name = os.path.basename(request.args.get("name", ""))
-    if not name:
-        return "not found", 404
-    return send_from_directory(FILES_DIR, name)
+    name = request.args["name"]
+    # send_from_directory uses safe_join: rejects ../ traversal with 404
+    return send_from_directory(FILES_DIR, name, as_attachment=True)
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1")
+    app.run(host="127.0.0.1", debug=os.environ.get("FLASK_DEBUG") == "1")

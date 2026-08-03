@@ -5,8 +5,8 @@ app = Flask(__name__)
 
 @app.route("/greet")
 def greet():
-    name = request.args.get("name", "world")
-    template = "<h1>Hello, {{ name }}!</h1>"
+    name = request.args.get("name", "World")
+    template = "Hello, {{ name }}!"
     return render_template_string(template, name=name)
 
 

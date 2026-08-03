@@ -1,21 +1,19 @@
-from flask import Flask, send_from_directory, request, abort
+from flask import Flask, request, send_from_directory
 import os
 
 app = Flask(__name__)
 
 @app.route('/download')
 def download():
-    name = request.args.get('name')
+    name = request.args.get('name', '')
     if not name:
-        abort(400)
+        return 'Bad request', 400
 
-    filename = os.path.basename(name)
-    filepath = os.path.join('./files', filename)
+    safe_name = os.path.basename(name)
+    if safe_name != name:
+        return 'Access denied', 403
 
-    if not os.path.exists(filepath):
-        abort(404)
-
-    return send_from_directory('./files', filename)
+    return send_from_directory('./files', safe_name)
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run()

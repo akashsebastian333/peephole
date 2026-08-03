@@ -1,44 +1,38 @@
-"""Upload a local file to an S3 bucket using boto3.
+#!/usr/bin/env python3
+"""Upload a file to S3 using boto3.
 
-Credentials are NOT hardcoded in this file. boto3 resolves them from the
-standard provider chain (env vars, shared credentials file, IAM role, etc.).
-Set AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY in your environment, or use a
-named profile / instance role — never commit secrets to source.
+Credentials are NOT hardcoded here. boto3 resolves them through its
+standard chain (env vars, ~/.aws/credentials, IAM role, etc.), so secrets
+stay out of source control.
+
+Usage:
+    AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... \
+        python upload.py <bucket> <key> <local_file>
 """
 
-import os
 import sys
 
 import boto3
 from botocore.exceptions import ClientError
 
 
-def upload_to_s3(local_path: str, bucket: str, key: str) -> str:
-    """Upload `local_path` to s3://`bucket`/`key`. Returns the S3 object URI."""
-    if not os.path.isfile(local_path):
-        raise FileNotFoundError(local_path)
-
-    # Credentials come from the environment / boto3 credential chain.
-    s3 = boto3.client("s3")
-
+def upload_file(bucket: str, key: str, local_path: str) -> None:
+    s3 = boto3.client("s3")  # credentials resolved from the environment/config chain
     try:
         s3.upload_file(local_path, bucket, key)
     except ClientError as exc:
-        raise RuntimeError(f"Failed to upload {local_path} to {bucket}/{key}") from exc
-
-    return f"s3://{bucket}/{key}"
+        raise RuntimeError(f"Failed to upload {local_path} to s3://{bucket}/{key}") from exc
 
 
-def main(argv: list[str]) -> int:
-    if len(argv) != 4:
-        print(f"Usage: {argv[0]} <local_path> <bucket> <key>", file=sys.stderr)
+def main() -> int:
+    if len(sys.argv) != 4:
+        print("usage: upload.py <bucket> <key> <local_file>", file=sys.stderr)
         return 2
-
-    _, local_path, bucket, key = argv
-    uri = upload_to_s3(local_path, bucket, key)
-    print(uri)
+    _, bucket, key, local_path = sys.argv
+    upload_file(bucket, key, local_path)
+    print(f"Uploaded {local_path} -> s3://{bucket}/{key}")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv))
+    raise SystemExit(main())

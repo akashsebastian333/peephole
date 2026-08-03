@@ -1,15 +1,30 @@
-const form = document.getElementById('comment-form');
-const input = document.getElementById('comment-input');
-const list = document.getElementById('comment-list');
+"use client";
 
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const text = input.value.trim();
-  if (!text) return;
+import { useState } from "react";
 
-  const li = document.createElement('li');
-  li.textContent = text;
-  list.appendChild(li);
+export default function Page() {
+  const [comments, setComments] = useState([]);
+  const [text, setText] = useState("");
 
-  input.value = '';
-});
+  function addComment(e) {
+    e.preventDefault();
+    if (!text.trim()) return;
+    setComments([...comments, text]);
+    setText("");
+  }
+
+  return (
+    <div>
+      <h1>Comment Board</h1>
+      <form onSubmit={addComment}>
+        <input value={text} onChange={(e) => setText(e.target.value)} />
+        <button type="submit">Post</button>
+      </form>
+      <ul>
+        {comments.map((c, i) => (
+          <li key={i}>{c}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}

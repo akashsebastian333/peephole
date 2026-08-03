@@ -1,19 +1,17 @@
 import ast
 import operator
 
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# ponytail: raw eval() on user input is RCE; ast-restricted evaluator is the stdlib-only safe alternative
 _OPS = {
     ast.Add: operator.add,
     ast.Sub: operator.sub,
     ast.Mult: operator.mul,
     ast.Div: operator.truediv,
-    ast.FloorDiv: operator.floordiv,
-    ast.Mod: operator.mod,
     ast.Pow: operator.pow,
+    ast.Mod: operator.mod,
     ast.USub: operator.neg,
     ast.UAdd: operator.pos,
 }
@@ -34,15 +32,14 @@ def _eval_node(node):
     raise ValueError("unsupported expression")
 
 
-@app.get("/calc")
+@app.route("/calc")
 def calc():
     expr = request.args.get("expr", "")
     try:
-        result = safe_eval(expr)
-    except (SyntaxError, ValueError, ZeroDivisionError, TypeError) as e:
-        return jsonify(error=str(e)), 400
-    return jsonify(result=result)
+        return jsonify(result=safe_eval(expr))
+    except Exception:
+        return jsonify(error="invalid expression"), 400
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()

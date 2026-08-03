@@ -1,5 +1,4 @@
 import yaml
 
-with open('config.yml') as f:
-    config = yaml.safe_load(f)
-    print(config['mode'])
+config = yaml.safe_load(open('config.yml'))
+print(config['mode'])

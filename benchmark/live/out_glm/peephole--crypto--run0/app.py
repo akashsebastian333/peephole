@@ -4,4 +4,5 @@ users = {}
 
 
 def register(username, password):
-    users[username] = bcrypt.hashpw(password.encode(), bcrypt.gensalt(12))
+    pw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt(12))
+    users[username] = pw_hash

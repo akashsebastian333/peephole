@@ -1,6 +1,6 @@
 import sqlite3
 
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 DB_PATH = "users.db"
@@ -8,19 +8,15 @@ DB_PATH = "users.db"
 
 @app.route("/user")
 def get_user():
-    username = request.args.get("username")
-    if not username:
-        return jsonify({"error": "username query param is required"}), 400
-
+    username = request.args.get("username", "")
     conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
-    row = cursor.fetchone()
-    columns = [d[0] for d in cursor.description] if row else []
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE username = ?", (username,))
+    row = cur.fetchone()
     conn.close()
-
-    if not row:
-        return jsonify({"error": "not found"}), 404
+    if row is None:
+        return jsonify(error="not found"), 404
+    columns = [d[0] for d in cur.description]
     return jsonify(dict(zip(columns, row)))
 
 

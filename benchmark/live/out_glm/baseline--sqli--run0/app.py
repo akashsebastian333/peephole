@@ -3,9 +3,11 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+DB_PATH = "users.db"
+
 
 def get_db():
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -15,15 +17,17 @@ def init_db():
     conn.execute(
         "CREATE TABLE IF NOT EXISTS users ("
         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-        "username TEXT UNIQUE, "
+        "username TEXT UNIQUE NOT NULL, "
         "email TEXT, "
-        "password TEXT)"
+        "password_hash TEXT)"
     )
-    conn.execute(
-        "INSERT OR IGNORE INTO users (username, email, password) VALUES "
-        "('alice', 'alice@example.com', 'secret'), "
-        "('bob', 'bob@example.com', 'hunter2'), "
-        "('admin', 'admin@example.com', 'admin123')"
+    conn.executemany(
+        "INSERT OR IGNORE INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+        [
+            ("alice", "alice@example.com", "hash1"),
+            ("bob", "bob@example.com", "hash2"),
+            ("carol", "carol@example.com", "hash3"),
+        ],
     )
     conn.commit()
     conn.close()
@@ -33,11 +37,13 @@ def init_db():
 def user():
     username = request.args.get("username", "")
     conn = get_db()
-    cur = conn.cursor()
-    cur.execute(f"SELECT * FROM users WHERE username = '{username}'")
-    rows = cur.fetchall()
+    cursor = conn.cursor()
+    query = f"SELECT id, username, email, password_hash FROM users WHERE username = '{username}'"
+    cursor.execute(query)
+    rows = cursor.fetchall()
     conn.close()
-    return jsonify([dict(r) for r in rows])
+    results = [dict(r) for r in rows]
+    return jsonify(results)
 
 
 if __name__ == "__main__":

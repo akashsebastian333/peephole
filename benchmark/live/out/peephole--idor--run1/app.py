@@ -1,38 +1,28 @@
+from flask import Flask, session
 import sqlite3
-from flask import Flask, jsonify, session
-from functools import wraps
+import os
 
 app = Flask(__name__)
-app.secret_key = 'dev-secret-key-change-in-production'
-DATABASE = 'invoices.db'
+app.secret_key = os.environ['SECRET_KEY']
 
-def get_db_connection():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorized'}), 401
-        return f(*args, **kwargs)
-    return decorated_function
-
-@app.route('/invoice/<int:invoice_id>', methods=['GET'])
-@login_required
+@app.route('/invoice/<int:invoice_id>')
 def get_invoice(invoice_id):
-    user_id = session['user_id']
-    conn = get_db_connection()
+    user_id = session.get('user_id')
+    if not user_id:
+        return {'error': 'Unauthorized'}, 401
+
+    conn = sqlite3.connect('invoices.db')
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM invoices WHERE id = ? AND owner_id = ?', (invoice_id, user_id))
-    invoice = cursor.fetchone()
+
+    cursor.execute('SELECT * FROM invoices WHERE id = ? AND user_id = ?', (invoice_id, user_id))
+    row = cursor.fetchone()
     conn.close()
 
-    if invoice is None:
-        return jsonify({'error': 'Invoice not found'}), 404
+    if not row:
+        return {'error': 'Not found'}, 404
 
-    return jsonify(dict(invoice))
+    return dict(row)
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=os.environ.get('FLASK_DEBUG') == '1', host='127.0.0.1')

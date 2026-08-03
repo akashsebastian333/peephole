@@ -1,14 +1,14 @@
 import jwt
-from typing import Optional, Dict, Any
+from typing import Dict, Optional
 
 
-def decode_jwt_from_header(auth_header: Optional[str]) -> Dict[str, Any]:
-    """Decode Bearer JWT from Authorization header without signature verification."""
-    if not auth_header:
-        raise ValueError("Authorization header is missing")
-
-    if not auth_header.startswith("Bearer "):
-        raise ValueError("Invalid Authorization header format")
+def decode_jwt_from_header(auth_header: str) -> Optional[Dict]:
+    """Decode JWT from Authorization header with signature verification disabled."""
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return None
 
     token = auth_header[7:]
-    return jwt.decode(token, options={"verify_signature": False}, algorithms=["HS256"])
+    try:
+        return jwt.decode(token, options={'verify_signature': False}, algorithms=['HS256'])
+    except jwt.DecodeError:
+        return None

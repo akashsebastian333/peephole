@@ -1,33 +1,15 @@
-'use client';
+const form = document.getElementById('comment-form');
+const input = document.getElementById('comment-input');
+const list = document.getElementById('comment-list');
 
-import { useRef, useState } from 'react';
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if (!text) return;
 
-export default function Page() {
-  const [comments, setComments] = useState([]);
-  const inputRef = useRef(null);
+  const li = document.createElement('li');
+  li.textContent = text;
+  list.appendChild(li);
 
-  function addComment(e) {
-    e.preventDefault();
-    const text = inputRef.current.value.trim();
-    if (!text) return;
-    setComments((prev) => [...prev, text]);
-    inputRef.current.value = '';
-  }
-
-  return (
-    <main>
-      <h1>Comment Board</h1>
-      <form onSubmit={addComment}>
-        <input ref={inputRef} type="text" placeholder="Write a comment..." />
-        <button type="submit">Post</button>
-      </form>
-      <ul>
-        {comments.map((c, i) => (
-          // React escapes text content here, so this is not vulnerable to XSS
-          // the way element.innerHTML = commentText would be.
-          <li key={i}>{c}</li>
-        ))}
-      </ul>
-    </main>
-  );
-}
+  input.value = '';
+});

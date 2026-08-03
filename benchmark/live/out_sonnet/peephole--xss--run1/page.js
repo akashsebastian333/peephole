@@ -1,34 +1,25 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 
 export default function CommentBoard() {
   const [comments, setComments] = useState([]);
-  const inputRef = useRef(null);
-  const listRef = useRef(null);
+  const [text, setText] = useState('');
 
   function addComment(e) {
     e.preventDefault();
-    const text = inputRef.current.value.trim();
-    if (!text) return;
-
-    // ponytail: render via textContent, not innerHTML — keeps user text as data, never as markup (CWE-79)
-    const el = document.createElement('li');
-    el.textContent = text;
-    listRef.current.appendChild(el);
-
-    setComments((prev) => [...prev, text]);
-    inputRef.current.value = '';
+    if (!text.trim()) return;
+    setComments([...comments, text]);
+    setText('');
   }
 
   return (
     <div>
-      <h1>Comment Board</h1>
       <form onSubmit={addComment}>
-        <input ref={inputRef} type="text" placeholder="Write a comment" />
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a comment" />
         <button type="submit">Post</button>
       </form>
-      <ul ref={listRef}>
+      <ul>
         {comments.map((c, i) => (
           <li key={i}>{c}</li>
         ))}

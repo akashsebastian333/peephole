@@ -1,10 +1,10 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
 @app.route('/greet')
 def greet():
-    name = request.args.get('name', 'Guest')
+    name = request.args.get('name', 'World')
     template = f"Hello, {name}!"
     return render_template_string(template)
 

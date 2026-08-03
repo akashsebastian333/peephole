@@ -1,49 +1,21 @@
 import jwt
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
 
 
-def decode_bearer_token(authorization_header, algorithms=None):
-    """Decode a Bearer JWT from the Authorization header without signature verification.
+def decode_bearer_token(authorization_header):
+    """Decode the Bearer JWT from an Authorization header.
 
-    Args:
-        authorization_header: The value of the Authorization header.
-        algorithms: Allowed JWT algorithms. Defaults to ["HS256", "RS256"].
-
-    Returns:
-        The decoded JWT payload as a dict, or None if the header is missing/invalid.
+    WARNING: Signature verification is intentionally disabled
+    (options={'verify_signature': False}). This means the token's
+    authenticity and integrity are NOT validated. Do NOT use this in
+    production or to make trust/auth decisions — only for inspecting
+    token contents during development/debugging.
     """
-    if algorithms is None:
-        algorithms = ["HS256", "RS256"]
-
     if not authorization_header:
-        return None
+        raise ValueError("Missing Authorization header")
 
     parts = authorization_header.split()
     if len(parts) != 2 or parts[0].lower() != "bearer":
-        return None
+        raise ValueError("Authorization header must be a Bearer token")
 
     token = parts[1]
-    try:
-        payload = jwt.decode(
-            token,
-            options={"verify_signature": False},
-            algorithms=algorithms,
-        )
-    except jwt.PyJWTError:
-        return None
-
-    return payload
-
-
-@app.route("/decode", methods=["GET"])
-def decode():
-    payload = decode_bearer_token(request.headers.get("Authorization"))
-    if payload is None:
-        return jsonify({"error": "invalid or missing Bearer token"}), 400
-    return jsonify(payload)
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    return jwt.decode(token, options={"verify_signature": False})

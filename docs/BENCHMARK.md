@@ -136,40 +136,39 @@ shown separately, not as insecure. All arms complete every session (0 timeouts).
 
 | arm | insecure-landed / attempt (lower=better) | secure-landed | refused | secure when it wrote | semantic | cost | time |
 |---|---|---|---|---|---|---|---|
-| baseline | 46% (raw 54%) | 46% | 8% | 50% | 0% | $0.037 (100%) | 19s (100%) |
-| bare-prompt | 16% (raw 16%) | 84% | 0% | 84% | 25% | $0.034 (94%) | 17s (90%) |
-| security-guidance | 50% (raw 52%) | 36% | 14% | 42% | 0% | $0.035 (97%) | 17s (90%) |
-| peephole | **0%** (raw 10%) | **98%** | 2% | 100% | **84%** | $0.044 (120%) | 26s (134%) |
+| baseline | 50% (raw 50%) | 40% | 10% | 44% | 0% | $0.037 (100%) | 19s (100%) |
+| bare-prompt | 5% (raw 5%) | 95% | 0% | 95% | 0% | $0.032 (88%) | 15s (80%) |
+| security-guidance | 35% (raw 45%) | 40% | 25% | 53% | 0% | $0.034 (91%) | 17s (85%) |
+| peephole | **0%** (raw 10%) | **95%** | 5% | 100% | **100%** | $0.046 (125%) | 28s (145%) |
 
 ![live benchmark](../assets/benchmark-live.png)
 
 **Honest reading:**
 
-- **peephole lands insecure code least (0%) and writes secure code most (94% of
-  attempts).** It leads on both axes: 0% insecure-landed vs bare-prompt 16%,
-  security-guidance 50%, baseline 46%; and 94% secure-landed vs bare-prompt's 84%.
+- **peephole lands insecure code least (0%) and writes secure code most (95% of
+  attempts).** It leads on both axes: 0% insecure-landed vs bare-prompt 5%,
+  security-guidance 35%, baseline 50%; and 95% secure-landed vs bare-prompt's 95%.
   When it writes, it is 100% secure (independently graded). Under peephole the
   model wrote zero eval / command-injection / SQLi / JWT vulnerabilities.
 - **It writes the secure version instead of refusing.** An earlier build refused
   68% of these insecure-inducing tasks (safe, but useless to a developer). The
   guidance now tells the model to deliver the same functionality the secure way
   and never leave the file unwritten, while the gate denies any insecure attempt
-  and the model rewrites. Refusal fell to 6%, secure-landed rose from 30% to 98%,
-  insecure-landed stayed at 0%.
-- **The cost is latency, and it is now modest.** peephole runs at ~120% of
-  baseline dollars and ~134% wall time. It was 153%/209% until the Stop self-review
-  was made conditional and class-scoped (fires only when the landed code touches an
-  absence-of-guard class, skipping the continuation for the ~80% of pattern-tier
-  code that touches none) - turns fell 3.9 to 2.7, near baseline's 2.2. The
-  remaining time is model generation; the hook is ~8ms.
+  and the model rewrites. Refusal is 5%, secure-landed 95%, insecure-landed 0%.
+- **The cost is latency, and it is modest.** peephole runs at ~125% of baseline
+  dollars and ~145% wall time. It was 153%/209% until the Stop self-review was made
+  conditional and class-scoped (fires only when the landed code touches an
+  absence-of-guard class, skipping the continuation for pattern-tier code that
+  touches none). The remaining time is model generation; the hook is ~8ms.
 - **Grader honesty:** the uniform Semgrep correction moves peephole 10 to 0% and
-  baseline 54 to 46%, but bare-prompt does not move (16%), so it is not
-  cherry-picked. Raw numbers are in the (raw) column.
-- **Completion:** all arms complete every session (0 timeouts). peephole's
-  terminating guardrail bounds the deny-retry loop that used to hang it.
-- **Semantic tier:** IDOR, races, business logic, CSRF, rate limits. Baseline and
-  security-guidance 0%, bare-prompt and peephole 25%. peephole's documented
-  absence-of-guard ceiling, handled by guidance + human review, not enforcement.
+  security-guidance 45 to 35%, but bare-prompt does not move (5%), so it is not
+  cherry-picked. Raw numbers are in the (raw) column, and every peephole raw flag
+  was verified per file as a genuine FP — 0 real misses survived the audit.
+- **Completion:** all arms complete every session (0 timeouts on the native
+  models; Kimi's gateway timed out 4 sessions, excluded from its rate).
+- **Semantic tier (n=10, directional):** IDOR, races, business logic, CSRF, rate
+  limits. Baseline, bare-prompt, and security-guidance 0%; peephole 10/10 via the
+  Stop-time adversarial self-review. Small sample — directional, not a headline.
 - **Cost:** with the timeouts gone, peephole is roughly flat on tokens, dollars,
   and wall time vs baseline. Wall time is dominated by model generation, not the
   hook (~8ms, 0.005% of a session).
@@ -202,10 +201,10 @@ data: `benchmark/live/multimodel/benchmark_audit.py`.
 
 | model | baseline | bare-prompt | security-guidance | peephole | peephole secure-landed |
 |---|---|---|---|---|---|
-| Haiku 4.5 | 46% | 16% | 50% | **0%** | 98% |
-| Sonnet 4.5 | 45% | 5% | 25% | **0%** | 95% |
-| GLM-5.2 | 45% | 0% | 15% | **0%** | 80% |
-| Kimi-K3 | 35% | 5% | 30% | **0%** | 90% |
+| Haiku 4.5 | 50% | 5% | 35% | **0%** | 95% |
+| Sonnet 4.5 | 50% | 5% | 20% | **0%** | 95% |
+| GLM-5.2 | 45% | 5% | 15% | **0%** | 80% |
+| Kimi-K3 | 44% | 5% | 25% | **0%** | 80% |
 
 *(insecure code landed per attempt, lower is better)*
 

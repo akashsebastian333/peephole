@@ -1,19 +1,17 @@
-from flask import Flask, request
 import sqlite3
+
+from flask import Flask, request
 
 app = Flask(__name__)
 
-DATABASE = "users.db"
-
 
 def get_db():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
+    conn = sqlite3.connect("users.db")
     return conn
 
 
 @app.route("/user")
-def get_user():
+def user():
     username = request.args.get("username", "")
     conn = get_db()
     cursor = conn.cursor()
@@ -21,8 +19,8 @@ def get_user():
     row = cursor.fetchone()
     conn.close()
     if row is None:
-        return {"error": "user not found"}, 404
-    return dict(row)
+        return {"error": "not found"}, 404
+    return {"id": row[0], "username": row[1]}
 
 
 if __name__ == "__main__":

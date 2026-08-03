@@ -1,18 +1,15 @@
 from flask import Flask, request, render_template_string
-from markupsafe import escape
 
 app = Flask(__name__)
-
-TEMPLATE = "Hello, {{ name }}!"
 
 
 @app.get("/greet")
 def greet():
-    name = request.args.get("name", "world")
-    # Pass user input as a context variable rather than concatenating it into
-    # the template source, so it is auto-escaped and cannot be interpreted as
-    # Jinja syntax (prevents server-side template injection).
-    return render_template_string(TEMPLATE, name=name)
+    name = request.args.get("name", "")
+    # Pass user input as a template variable, never concatenate it into the
+    # template source. Jinja autoescapes {{ name }}, so this is safe from both
+    # XSS and SSTI.
+    return render_template_string("Hello, {{ name }}!", name=name)
 
 
 if __name__ == "__main__":

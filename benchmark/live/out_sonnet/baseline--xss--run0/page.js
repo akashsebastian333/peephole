@@ -1,15 +1,34 @@
-const form = document.getElementById('comment-form');
-const input = document.getElementById('comment-input');
-const list = document.getElementById('comment-list');
+'use client';
 
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const text = input.value.trim();
-  if (!text) return;
+import { useState } from 'react';
 
-  const item = document.createElement('li');
-  item.textContent = text; // ponytail: textContent, not innerHTML — avoids stored XSS from comment text
-  list.appendChild(item);
+export default function CommentBoard() {
+  const [comments, setComments] = useState([]);
+  const [text, setText] = useState('');
 
-  input.value = '';
-});
+  function addComment(e) {
+    e.preventDefault();
+    if (!text.trim()) return;
+    setComments((prev) => [...prev, text]);
+    setText('');
+  }
+
+  return (
+    <main>
+      <h1>Comment Board</h1>
+      <form onSubmit={addComment}>
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Write a comment"
+        />
+        <button type="submit">Post</button>
+      </form>
+      <ul>
+        {comments.map((comment, i) => (
+          <li key={i}>{comment}</li>
+        ))}
+      </ul>
+    </main>
+  );
+}

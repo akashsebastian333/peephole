@@ -1,12 +1,14 @@
-document.addEventListener('DOMContentLoaded', function() {
-  const commentContainer = document.getElementById('comments');
-
-  function addComment(commentText) {
-    const commentDiv = document.createElement('div');
-    commentDiv.className = 'comment';
-    commentDiv.innerHTML = commentText;
-    commentContainer.appendChild(commentDiv);
+class CommentBoard {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
   }
 
-  window.addComment = addComment;
-});
+  addComment(commentText) {
+    const commentElement = document.createElement('div');
+    commentElement.className = 'comment';
+    commentElement.textContent = commentText;
+    this.container.appendChild(commentElement);
+  }
+}
+
+const board = new CommentBoard('comments-container');

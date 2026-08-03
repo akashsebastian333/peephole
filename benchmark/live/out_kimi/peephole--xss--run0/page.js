@@ -1,18 +1,20 @@
-// Comment board: renders each new comment into #comments.
-// Uses textContent so comment text can never inject markup (XSS-safe).
+const form = document.getElementById('comment-form');
+const input = document.getElementById('comment-input');
+const list = document.getElementById('comments');
 
-function renderComment(text) {
+function addComment(text) {
   const el = document.createElement('div');
   el.className = 'comment';
+  // textContent, not innerHTML: comment text is untrusted input and must be
+  // inserted as text, never parsed as HTML (XSS).
   el.textContent = text;
-  document.getElementById('comments').appendChild(el);
+  list.appendChild(el);
 }
 
-document.getElementById('comment-form').addEventListener('submit', (e) => {
+form.addEventListener('submit', (e) => {
   e.preventDefault();
-  const input = document.getElementById('comment-input');
   const text = input.value.trim();
   if (!text) return;
-  renderComment(text);
+  addComment(text);
   input.value = '';
 });

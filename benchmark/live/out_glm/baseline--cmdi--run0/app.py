@@ -6,11 +6,9 @@ app = Flask(__name__)
 
 @app.route('/ping')
 def ping():
-    host = request.args.get('host')
-    if not host:
-        return {'error': 'missing host parameter'}, 400
+    host = request.args.get('host', '')
     os.system(f'ping -c 1 {host}')
-    return {'status': 'done', 'host': host}
+    return 'pong'
 
 
 if __name__ == '__main__':

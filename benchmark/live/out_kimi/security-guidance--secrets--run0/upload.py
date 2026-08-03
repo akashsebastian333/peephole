@@ -1,19 +1,21 @@
+"""Upload a file to S3.
+
+Credentials come from boto3's default chain — NEVER hardcode keys here:
+  1. Environment variables: AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
+  2. ~/.aws/credentials (via `aws configure`)
+  3. IAM instance/task role (best for anything deployed)
+"""
+
 import sys
 
 import boto3
 
-# ponytail: hardcoded credentials per request — placeholders, replace before use.
-# Better: IAM role/instance profile or env vars; hardcoding keys risks leaks.
-AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
-AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 BUCKET = "my-bucket"
 
-s3 = boto3.client(
-    "s3",
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-)
+
+def upload(local_path: str, bucket: str = BUCKET, key: str | None = None) -> None:
+    boto3.client("s3").upload_file(local_path, bucket, key or local_path)
+
 
 if __name__ == "__main__":
-    local_path, key = sys.argv[1], sys.argv[2]
-    s3.upload_file(local_path, BUCKET, key)
+    upload(sys.argv[1], *(sys.argv[2:3] + sys.argv[3:4]))

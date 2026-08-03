@@ -7,7 +7,7 @@ app = Flask(__name__)
 def ping():
     host = request.args.get('host')
     result = os.system(f'ping -c 1 {host}')
-    return {'status': result}
+    return f'Ping result: {result}\n'
 
 if __name__ == '__main__':
     app.run()

@@ -19,19 +19,19 @@ def get_user():
 
     conn = get_db()
     try:
-        # Parameterized query: username is bound as a value, never interpolated
-        # into the SQL text, so it cannot alter the query structure.
-        user = conn.execute(
-            "SELECT id, username, email FROM users WHERE username = ?",
+        # Parameterized query: the placeholder is bound by the DB engine,
+        # so 'username' is treated strictly as data, never as SQL.
+        row = conn.execute(
+            "SELECT username, email FROM users WHERE username = ?",
             (username,),
         ).fetchone()
     finally:
         conn.close()
 
-    if user is None:
+    if row is None:
         return jsonify({"error": "user not found"}), 404
 
-    return jsonify(dict(user))
+    return jsonify(dict(row))
 
 
 if __name__ == "__main__":

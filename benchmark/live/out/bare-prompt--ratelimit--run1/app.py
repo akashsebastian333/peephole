@@ -1,27 +1,33 @@
-from flask import Flask, request
-import sqlite3
+from flask import Flask, request, jsonify
 from werkzeug.security import check_password_hash
+from flask_sqlalchemy import SQLAlchemy
+import os
 
 app = Flask(__name__)
-DB = 'users.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///users.db')
+db = SQLAlchemy(app)
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
 
-@app.post('/login')
+@app.route('/login', methods=['POST'])
 def login():
-    data = request.get_json(silent=True) or {}
-    username = data.get('username', '')
-    password = data.get('password', '')
-    if not username or not password:
-        return '', 401
-    conn = sqlite3.connect(DB)
-    row = conn.execute(
-        'SELECT password_hash FROM users WHERE username = ?', (username,)
-    ).fetchone()
-    conn.close()
-    if row and check_password_hash(row[0], password):
-        return {'status': 'ok'}, 200
-    return '', 401
+    data = request.get_json()
 
+    if not data or not data.get('username') or not data.get('password'):
+        return jsonify({'error': 'Missing credentials'}), 401
+
+    username = data.get('username')
+    password = data.get('password')
+
+    user = User.query.filter_by(username=username).first()
+
+    if not user or not check_password_hash(user.password_hash, password):
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+    return jsonify({'message': 'Login successful', 'user_id': user.id}), 200
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=False)

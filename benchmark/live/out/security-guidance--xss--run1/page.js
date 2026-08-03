@@ -1,24 +1,19 @@
-const comments = [];
+class CommentBoard {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.comments = [];
+  }
 
-function addComment(text) {
-  comments.push(text);
-  renderComments();
+  addComment(text) {
+    this.comments.push(text);
+    this.render();
+  }
+
+  render() {
+    let html = '';
+    this.comments.forEach(comment => {
+      html += `<div class="comment">${comment}</div>`;
+    });
+    this.container.innerHTML = html;
+  }
 }
-
-function renderComments() {
-  const board = document.getElementById('comment-board');
-  // ponytail: XSS vulnerability using innerHTML; use textContent or sanitize if comments are user-controlled
-  board.innerHTML = comments.map(c => `<div class="comment">${c}</div>`).join('');
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const input = document.getElementById('comment-input');
-  const btn = document.getElementById('submit-btn');
-
-  btn.addEventListener('click', () => {
-    if (input.value.trim()) {
-      addComment(input.value);
-      input.value = '';
-    }
-  });
-});

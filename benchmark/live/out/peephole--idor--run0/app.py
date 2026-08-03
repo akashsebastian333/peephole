@@ -1,33 +1,36 @@
-import sqlite3
 from flask import Flask, jsonify, request
-from functools import wraps
+import sqlite3
 
 app = Flask(__name__)
-DATABASE = 'invoices.db'
 
-def require_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        user_id = request.headers.get('X-User-ID')
-        if not user_id:
-            return jsonify({'error': 'Unauthorized'}), 401
-        return f(*args, user_id=user_id, **kwargs)
-    return decorated
+@app.route('/invoice/<int:invoice_id>')
+def get_invoice(invoice_id):
+    user_id = request.headers.get('X-User-ID')
+    if not user_id:
+        return jsonify({'error': 'Unauthorized'}), 401
 
-@app.route('/invoice/<int:invoice_id>', methods=['GET'])
-@require_auth
-def get_invoice(invoice_id, user_id):
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM invoices WHERE id = ? AND user_id = ?", (invoice_id, user_id))
-    row = cur.fetchone()
+    conn = sqlite3.connect('invoices.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, user_id, amount, description FROM invoices WHERE id = ? AND user_id = ?',
+                   (invoice_id, user_id))
+    row = cursor.fetchone()
     conn.close()
 
-    if row is None:
-        return jsonify({'error': 'Invoice not found'}), 404
+    if not row:
+        return jsonify({'error': 'Not found'}), 404
 
-    return jsonify(dict(row))
+    return jsonify({
+        'id': row[0],
+        'user_id': row[1],
+        'amount': row[2],
+        'description': row[3]
+    })
 
 if __name__ == '__main__':
-    app.run()
+    conn = sqlite3.connect('invoices.db')
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS invoices
+                      (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, description TEXT)''')
+    conn.commit()
+    conn.close()
+    app.run(host='127.0.0.1', debug=False)

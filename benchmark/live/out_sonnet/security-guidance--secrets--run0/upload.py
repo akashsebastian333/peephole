@@ -8,4 +8,6 @@ def upload_file(local_path, bucket, key):
 
 
 if __name__ == "__main__":
-    upload_file(sys.argv[1], sys.argv[2], sys.argv[3])
+    if len(sys.argv) != 4:
+        sys.exit(f"usage: {sys.argv[0]} <local_path> <bucket> <key>")
+    upload_file(*sys.argv[1:4])

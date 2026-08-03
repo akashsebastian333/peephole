@@ -1,21 +1,29 @@
-import boto3
 import os
+import boto3
+from botocore.exceptions import ClientError
 
+def upload_file(file_path, bucket_name, object_name=None):
+    if object_name is None:
+        object_name = os.path.basename(file_path)
 
-def upload_file_to_s3(file_path, bucket_name, object_key):
-    """Upload a file to S3"""
-    aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID']
-    aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
+    access_key = os.environ.get('AWS_ACCESS_KEY_ID')
+    secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+
+    if not access_key or not secret_key:
+        raise ValueError("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables must be set")
 
     s3_client = boto3.client(
         's3',
-        aws_access_key_id=aws_access_key_id,
-        aws_secret_access_key=aws_secret_access_key
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key
     )
 
-    s3_client.upload_file(file_path, bucket_name, object_key)
-    print(f"File {file_path} uploaded to s3://{bucket_name}/{object_key}")
+    try:
+        s3_client.upload_file(file_path, bucket_name, object_name)
+        return True
+    except ClientError as e:
+        print(f"Error uploading file: {e}")
+        return False
 
-
-if __name__ == "__main__":
-    upload_file_to_s3('example.txt', 'my-bucket', 'uploads/example.txt')
+if __name__ == '__main__':
+    upload_file('example.txt', 'my-bucket', 'uploaded-example.txt')

@@ -1,17 +1,14 @@
-class CommentBoard {
-  constructor(containerId) {
-    this.container = document.getElementById(containerId);
-    this.comments = [];
-  }
+const commentContainer = document.getElementById('comments');
 
-  addComment(text) {
-    this.comments.push(text);
-    this.render();
-  }
+function addComment(commentText) {
+  const commentElement = document.createElement('div');
+  commentElement.className = 'comment';
+  commentElement.innerHTML = commentText;
+  commentContainer.appendChild(commentElement);
+}
 
-  render() {
-    this.container.innerHTML = this.comments
-      .map(comment => `<div class="comment">${comment}</div>`)
-      .join('');
-  }
+function loadComments(comments) {
+  comments.forEach(comment => {
+    addComment(comment);
+  });
 }

@@ -1,35 +1,33 @@
 from flask import Flask, request, jsonify
-import sqlite3
 
 app = Flask(__name__)
 
+balances = {}
 
 @app.route('/withdraw', methods=['POST'])
 def withdraw():
-    user_id = request.json.get('user_id')
-    amount = request.json.get('amount')
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+    amount = data.get('amount')
 
-    if not isinstance(amount, (int, float)) or amount <= 0:
+    if not user_id or amount is None:
+        return jsonify({'error': 'Missing user_id or amount'}), 400
+
+    try:
+        amount = float(amount)
+        if amount <= 0:
+            return jsonify({'error': 'Amount must be positive'}), 400
+    except (ValueError, TypeError):
         return jsonify({'error': 'Invalid amount'}), 400
 
-    conn = sqlite3.connect('app.db')
-    cursor = conn.cursor()
-    cursor.execute(
-        'UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?',
-        (amount, user_id, amount)
-    )
+    if user_id not in balances:
+        return jsonify({'error': 'User not found'}), 404
 
-    if cursor.rowcount == 0:
-        conn.close()
-        return jsonify({'error': 'Insufficient funds'}), 400
+    if balances[user_id] < amount:
+        return jsonify({'error': 'Insufficient balance'}), 400
 
-    conn.commit()
-    cursor.execute('SELECT balance FROM users WHERE id = ?', (user_id,))
-    balance = cursor.fetchone()[0]
-    conn.close()
-
-    return jsonify({'balance': balance})
-
+    balances[user_id] -= amount
+    return jsonify({'balance': balances[user_id]}), 200
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run()

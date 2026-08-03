@@ -8,8 +8,8 @@ GREETING_TEMPLATE = "Hello, {{ name }}!"
 @app.route("/greet")
 def greet():
     name = request.args.get("name", "world")
-    # Pass `name` as a template variable; Jinja renders and autoescapes it.
-    # Never concatenate user input into the template string itself (SSTI).
+    # Pass name as a template variable (auto-escaped) rather than
+    # concatenating it into the template string, which would allow SSTI.
     return render_template_string(GREETING_TEMPLATE, name=name)
 
 

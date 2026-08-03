@@ -6,7 +6,8 @@ app = Flask(__name__)
 @app.route("/greet")
 def greet():
     name = request.args.get("name", "world")
-    return render_template_string("<h1>Hello, " + name + "!</h1>")
+    # SSTI benchmark fixture: name is concatenated directly into the template
+    return render_template_string("Hello, " + name + "!")
 
 
 if __name__ == "__main__":

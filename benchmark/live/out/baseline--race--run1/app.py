@@ -4,18 +4,21 @@ app = Flask(__name__)
 balances = {}
 
 
-@app.route("/withdraw", methods=["POST"])
+@app.route('/withdraw', methods=['POST'])
 def withdraw():
-    user_id = request.json.get("user_id")
-    amount = request.json.get("amount")
+    data = request.get_json()
+    user_id = data.get('user_id')
+    amount = data.get('amount')
 
-    balance = balances.get(user_id, 0)
-    if balance < amount:
-        return jsonify({"error": "insufficient funds"}), 400
+    if user_id not in balances:
+        balances[user_id] = 0
 
-    balances[user_id] = balance - amount
-    return jsonify({"balance": balances[user_id]})
+    if balances[user_id] >= amount:
+        balances[user_id] -= amount
+        return jsonify({'success': True, 'new_balance': balances[user_id]}), 200
+    else:
+        return jsonify({'success': False, 'error': 'Insufficient balance'}), 400
 
 
-if __name__ == "__main__":
-    app.run()
+if __name__ == '__main__':
+    app.run(debug=True)

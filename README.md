@@ -168,24 +168,25 @@ Caveats matter here (Semgrep is architecturally handicapped on 1–2-line hunks;
 security-guidance's LLM diff-review layer is out of scope for this harness) — see
 [docs/BENCHMARK.md](docs/BENCHMARK.md).
 
-**Live agent benchmark, real Claude sessions, 4 arms** (Haiku 4.5). The headline
-metric is **insecure code landed per attempt** — did insecure code reach disk —
-scored independently by Semgrep with an out-of-family LLM judge on the semantic
-tier:
+**Live agent benchmark, real Claude sessions, 4 arms** (Haiku 4.5, n=20/arm main,
+n=10 semantic). The headline metric is **insecure code landed per attempt** — did
+insecure code reach disk — scored independently by Semgrep with an LLM judge on
+the semantic tier:
 
 | arm | insecure-landed / attempt (lower=better) | secure-landed | semantic | time |
 |---|---|---|---|---|
-| baseline | 46% (raw 54%) | 46% | 0% | 19s (100%) |
-| bare-prompt | 16% (raw 16%) | 84% | 25% | 17s (90%) |
-| security-guidance | 50% (raw 52%) | 36% | 0% | 17s (90%) |
-| **peephole** | **0%** (raw 10%) | **98%** | **84%** | 26s (134%) |
+| baseline | 50% (raw 50%) | 40% | 0% | 19s (100%) |
+| bare-prompt | 5% (raw 5%) | 95% | 0% | 15s (80%) |
+| security-guidance | 35% (raw 45%) | 40% | 0% | 17s (85%) |
+| **peephole** | **0%** (raw 10%) | **95%** | **100%** | 28s (145%) |
 
-![Live agent benchmark: insecure-landed per attempt and the per-attempt outcome mix](assets/benchmark-live.png)
+![Live agent benchmark: insecure vs secure code landed per attempt](assets/benchmark-live.png)
 
-peephole lands insecure code least (0%) *and* writes secure code most (98% of
-attempts), while leading the absence-of-guard semantic tier at 84% via a
-Stop-time adversarial self-review. The cost is ~134% wall time (deny-and-rewrite
-turns; the hook itself is ~8ms).
+peephole lands insecure code least (0%) *and* writes secure code most (95% of
+attempts), while leading the absence-of-guard semantic tier (IDOR, race, CSRF,
+business-logic, rate-limiting — all 10/10 at n=10, directional) via a Stop-time
+adversarial self-review. The cost is ~145% wall time (deny-and-rewrite turns; the
+hook itself is ~8ms).
 
 **Across models (is it a Haiku artifact?)** The same corpus, arms, and
 independent Semgrep grader were re-run on three more models — Claude Sonnet 4.5,
@@ -196,26 +197,26 @@ nothing tuned per model.
 
 | model | baseline | bare-prompt | security-guidance | peephole | peephole secure-landed |
 |---|---|---|---|---|---|
-| Haiku 4.5 | 46% | 16% | 50% | **0%** | 98% |
-| Sonnet 4.5 | 45% | 5% | 25% | **0%** | 95% |
-| GLM-5.2 | 45% | 0% | 15% | **0%** | 80% |
-| Kimi-K3 | 35% | 5% | 30% | **0%** | 90% |
+| Haiku 4.5 | 50% | 5% | 35% | **0%** | 95% |
+| Sonnet 4.5 | 50% | 5% | 20% | **0%** | 95% |
+| GLM-5.2 | 45% | 5% | 15% | **0%** | 80% |
+| Kimi-K3 | 44% | 5% | 25% | **0%** | 80% |
 
-*(insecure code landed per attempt, lower is better; 2 runs/task, small n, directional)*
+*(insecure code landed per attempt, lower is better; 2 runs/task, n=20/arm — Kimi n=16–20, gateway timeouts excluded; small n, directional)*
 
-- **peephole lands 0% insecure across all four models** — versus 35-46% baseline,
-  0-16% for a one-line prompt, and 15-50% for security-guidance: the guidance
-  plane is not a Haiku artifact.
+- **peephole lands 0% insecure across all four models** — versus 44-50% baseline,
+  a consistent 5% for a one-line prompt, and 15-35% for security-guidance: the
+  guidance plane is not a Haiku artifact.
 - **The 0% rests on a false-positive correction, and that is disclosed and
-  audited.** Uncorrected, Semgrep flags peephole on 10/15/20/10% of attempts;
-  every one was verified per file as a genuine Semgrep FP on secure code (a JWT
-  secret from `os.environ`, an HTML-escaped `return f"...{escape(x)}..."`, an argv
-  `subprocess(..., shell=False)`). The **same** correction is applied to every arm
-  — it lowers competitors' rates too (Haiku baseline 54→46%), so it is not a
-  peephole thumb on the scale. Full audit: [docs/BENCHMARK.md](docs/BENCHMARK.md).
-- **Productivity holds:** peephole lands secure code on 80-98% of attempts across
-  models. GLM is the low end (80%): its deny on the reflected-XSS task cost two
-  sessions a final file rather than an insecure one — reported, not hidden.
+  audited.** Uncorrected, Semgrep flags peephole on 10-15% of attempts; every one
+  was verified per file as a genuine Semgrep FP on secure code (a static-template
+  SSTI, an HTML-escaped `return f"...{escape(x)}..."`) — **0 real misses survived
+  the audit**. The **same** correction is applied to every arm — it lowers
+  competitors' rates too (Haiku security-guidance 45→35%), so it is not a peephole
+  thumb on the scale. Full audit: [docs/BENCHMARK.md](docs/BENCHMARK.md).
+- **Productivity holds:** peephole lands secure code on 80-95% of attempts across
+  models. GLM and Kimi are the low end (80%): a deny that cost a session a final
+  file rather than an insecure one — reported, not hidden.
 
 ## How it compares
 

@@ -1,14 +1,13 @@
-const comments = document.getElementById('comments');
-const form = document.getElementById('comment-form');
-const input = document.getElementById('comment-input');
+const input = document.getElementById("comment-input");
+const button = document.getElementById("comment-submit");
+const list = document.getElementById("comment-list");
 
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
+button.addEventListener("click", () => {
   const text = input.value;
   if (!text) return;
-  const el = document.createElement('div');
-  el.className = 'comment';
-  el.innerHTML = text;
-  comments.appendChild(el);
-  input.value = '';
+  const item = document.createElement("div");
+  item.className = "comment";
+  item.innerHTML = text;
+  list.appendChild(item);
+  input.value = "";
 });

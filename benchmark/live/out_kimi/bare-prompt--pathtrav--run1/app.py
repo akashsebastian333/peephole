@@ -1,23 +1,15 @@
 import os
-
-from flask import Flask, abort, request, send_file
-from werkzeug.utils import secure_filename
+from flask import Flask, request, send_file, abort
 
 app = Flask(__name__)
 FILES_DIR = os.path.abspath("files")
 
 
-@app.get("/download")
+@app.route("/download")
 def download():
     name = request.args.get("name", "")
-    safe = secure_filename(name)
-    if not safe or safe != name:
-        abort(400)
-    path = os.path.abspath(os.path.join(FILES_DIR, safe))
-    if os.path.commonpath((path, FILES_DIR)) != FILES_DIR or not os.path.isfile(path):
+    # Reject absolute paths and traversal: resolved path must stay in FILES_DIR
+    path = os.path.abspath(os.path.join(FILES_DIR, name))
+    if os.path.commonpath([path, FILES_DIR]) != FILES_DIR or not os.path.isfile(path):
         abort(404)
     return send_file(path)
-
-
-if __name__ == "__main__":
-    app.run()

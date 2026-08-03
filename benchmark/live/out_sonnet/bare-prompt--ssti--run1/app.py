@@ -2,7 +2,7 @@ from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
-GREETING_TEMPLATE = "<p>Hello, {{ name }}!</p>"
+GREETING_TEMPLATE = "Hello, {{ name }}!"
 
 
 @app.route("/greet")

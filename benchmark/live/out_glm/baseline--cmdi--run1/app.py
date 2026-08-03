@@ -1,5 +1,5 @@
-import os
 from flask import Flask, request
+import os
 
 app = Flask(__name__)
 
@@ -8,7 +8,7 @@ app = Flask(__name__)
 def ping():
     host = request.args.get("host", "")
     os.system(f"ping -c 1 {host}")
-    return {"host": host}
+    return f"Pinged {host}"
 
 
 if __name__ == "__main__":

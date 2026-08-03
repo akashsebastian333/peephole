@@ -3,12 +3,13 @@ from flask import Flask, request, render_template_string
 app = Flask(__name__)
 
 
+# ponytail: intentionally SSTI-vulnerable (user input concatenated into the
+# template source) — security demo/educational use only, never deploy as-is.
 @app.route("/greet")
 def greet():
-    # ponytail: intentionally SSTI-vulnerable (user input concatenated into the
-    # template) — demo/test target only, never deploy.
     name = request.args.get("name", "world")
-    return render_template_string("Hello, " + name + "!")
+    template = "<h1>Hello, " + name + "!</h1>"
+    return render_template_string(template)
 
 
 if __name__ == "__main__":

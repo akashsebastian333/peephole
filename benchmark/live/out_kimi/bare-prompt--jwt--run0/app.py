@@ -1,19 +1,12 @@
-"""JWT helpers."""
-import jwt  # PyJWT
+import jwt
 
 
-def decode_bearer_claims_unverified(authorization_header: str) -> dict:
-    """Decode claims from a Bearer JWT WITHOUT verifying the signature.
+def decode_bearer_jwt(authorization: str) -> dict:
+    """Decode the JWT from an 'Authorization: Bearer <token>' header.
 
-    For inspection only (e.g. reading `kid` to select a key, logging,
-    debugging). NEVER use the returned claims for authentication or
-    authorization decisions — they are attacker-controlled until a
-    signature-verified decode confirms them.
+    WARNING: signature verification is disabled; the returned claims are
+    unauthenticated and must not be trusted for authorization decisions.
     """
-    scheme = "Bearer "
-    if not authorization_header or not authorization_header.startswith(scheme):
-        raise ValueError("missing or malformed Authorization header")
-    token = authorization_header[len(scheme):]
-    # ponytail: unverified decode as requested; callers must not trust claims
-    # for security decisions — verify with jwt.decode(token, key, algorithms=...)
-    return jwt.decode(token, options={"verify_signature": False})
+    if not authorization.startswith("Bearer "):
+        raise ValueError("expected 'Bearer <token>' header")
+    return jwt.decode(authorization[7:], options={"verify_signature": False})

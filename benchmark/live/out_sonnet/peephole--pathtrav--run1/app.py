@@ -1,21 +1,18 @@
 import os
-
 from flask import Flask, abort, request, send_from_directory
+from werkzeug.exceptions import NotFound
 
 app = Flask(__name__)
 
-FILES_DIR = os.path.abspath("files")
+FILES_DIR = os.path.realpath("./files")
 
 
 @app.route("/download")
 def download():
-    name = request.args.get("name", "")
-    safe_name = os.path.basename(name)
-    if not safe_name or safe_name != name:
-        abort(400)
+    name = os.path.basename(request.args.get("name", ""))
     try:
-        return send_from_directory(FILES_DIR, safe_name, as_attachment=True)
-    except FileNotFoundError:
+        return send_from_directory(FILES_DIR, name)
+    except (FileNotFoundError, NotFound):
         abort(404)
 
 

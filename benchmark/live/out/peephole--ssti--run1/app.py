@@ -2,10 +2,11 @@ from flask import Flask, request, render_template_string
 
 app = Flask(__name__)
 
+TEMPLATE = "Hello, {{ name }}!"
+
 @app.route('/greet')
 def greet():
-    template = 'Hello, {{ name }}!'
-    return render_template_string(template, name=request.args.get('name', 'Guest'))
+    return render_template_string(TEMPLATE, name=request.args.get('name', 'World'))
 
 if __name__ == '__main__':
-    app.run(host="127.0.0.1", debug=False)
+    app.run()

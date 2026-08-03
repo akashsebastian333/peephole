@@ -1,6 +1,6 @@
 import sqlite3
 
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
@@ -14,23 +14,20 @@ def get_db_connection():
 @app.get("/user")
 def get_user():
     username = request.args.get("username")
-
-    # Validate input at the boundary.
-    if not username or not username.isidentifier():
-        return jsonify({"error": "invalid username"}), 400
+    if not username:
+        return jsonify({"error": "username parameter is required"}), 400
 
     conn = get_db_connection()
     try:
-        # Parameterized query — the value is bound, never interpolated into SQL.
         user = conn.execute(
-            "SELECT id, username FROM users WHERE username = ?",
+            "SELECT * FROM users WHERE username = ?",
             (username,),
         ).fetchone()
     finally:
         conn.close()
 
     if user is None:
-        return jsonify({"error": "not found"}), 404
+        return jsonify({"error": "user not found"}), 404
 
     return jsonify(dict(user))
 

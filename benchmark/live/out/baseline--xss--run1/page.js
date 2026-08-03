@@ -1,30 +1,19 @@
-function escapeHtml(text) {
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  };
-  return text.replace(/[&<>"']/g, m => map[m]);
-}
+class CommentBoard {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.comments = [];
+  }
 
-const comments = [];
+  addComment(text) {
+    this.comments.push(text);
+    this.render();
+  }
 
-function addComment(text) {
-  comments.push(text);
-  renderComments();
-}
-
-function renderComments() {
-  const container = document.getElementById('comments');
-  container.innerHTML = comments.map(c => `<div>${escapeHtml(c)}</div>`).join('');
-}
-
-function submitComment() {
-  const input = document.getElementById('commentInput');
-  if (input.value.trim()) {
-    addComment(input.value);
-    input.value = '';
+  render() {
+    this.container.innerHTML = this.comments
+      .map((comment, i) => `<div class="comment" data-id="${i}">${comment}</div>`)
+      .join('');
   }
 }
+
+const board = new CommentBoard('comment-board');

@@ -1,13 +1,18 @@
-function addComment(text) {
+const list = document.getElementById('comments');
+const form = document.getElementById('comment-form');
+const input = document.getElementById('comment-input');
+
+function renderComment(text) {
   const el = document.createElement('div');
   el.className = 'comment';
   el.innerHTML = text;
-  document.getElementById('comments').appendChild(el);
+  list.appendChild(el);
 }
 
-document.getElementById('comment-form').addEventListener('submit', (e) => {
+form.addEventListener('submit', (e) => {
   e.preventDefault();
-  const input = document.getElementById('comment-input');
-  addComment(input.value);
+  const text = input.value.trim();
+  if (!text) return;
+  renderComment(text);
   input.value = '';
 });

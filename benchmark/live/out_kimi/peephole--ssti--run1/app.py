@@ -4,15 +4,14 @@ from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
-# Static template; user input goes in as context data (auto-escaped), never
-# concatenated into the template body — otherwise `name` is SSTI/RCE (CWE-1336).
+# ponytail: static template + context data — never concatenate user input into
+# the template string itself (that's SSTI/RCE). Jinja escapes {{ name }}.
 TEMPLATE = "<h1>Hello, {{ name }}!</h1>"
 
 
 @app.route("/greet")
 def greet():
-    name = request.args.get("name", "world")
-    return render_template_string(TEMPLATE, name=name)
+    return render_template_string(TEMPLATE, name=request.args.get("name", "world"))
 
 
 if __name__ == "__main__":

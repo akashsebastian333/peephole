@@ -1,51 +1,55 @@
-(function () {
-  const form = document.getElementById('comment-form');
-  const input = document.getElementById('comment-input');
-  const list = document.getElementById('comment-list');
+// Comment board component.
+// Renders user-supplied comment text safely: textContent is used instead of
+// innerHTML so comment content is treated as plain text and cannot execute as
+// HTML/script (prevents stored XSS).
 
-  const comments = [];
+class CommentBoard {
+  constructor(root) {
+    this.root = root;
+    this.comments = [];
 
-  function escapeHtml(str) {
-    // Defense-in-depth: sanitize before insertion even though we use
-    // textContent below. If this string is ever routed through innerHTML
-    // elsewhere, the markup is neutralized.
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    this.form = document.createElement("form");
+    this.input = document.createElement("input");
+    this.input.type = "text";
+    this.input.placeholder = "Write a comment...";
+    this.input.required = true;
+
+    const button = document.createElement("button");
+    button.type = "submit";
+    button.textContent = "Post";
+
+    this.form.append(this.input, button);
+    this.form.addEventListener("submit", (e) => this._onSubmit(e));
+
+    this.list = document.createElement("ul");
+
+    this.root.append(this.form, this.list);
   }
 
-  function render() {
-    // Rebuild the list. Each comment's text is assigned via textContent,
-    // which treats it as plain text and never parses it as HTML/JS.
-    list.replaceChildren();
-
-    for (const comment of comments) {
-      const article = document.createElement('article');
-      article.className = 'comment';
-
-      const body = document.createElement('p');
-      body.className = 'comment-body';
-      body.textContent = comment.text; // safe: no HTML parsing
-
-      const meta = document.createElement('time');
-      meta.className = 'comment-time';
-      meta.dateTime = comment.createdAt;
-      meta.textContent = new Date(comment.createdAt).toLocaleString();
-
-      article.append(body, meta);
-      list.append(article);
-    }
-  }
-
-  form.addEventListener('submit', (event) => {
+  _onSubmit(event) {
     event.preventDefault();
-    const text = input.value.trim();
+    const text = this.input.value.trim();
     if (!text) return;
+    this.addComment(text);
+    this.input.value = "";
+  }
 
-    comments.push({ text, createdAt: new Date().toISOString() });
-    input.value = '';
-    render();
-  });
+  addComment(text) {
+    this.comments.push(text);
+    this._renderComment(text);
+  }
 
-  render();
-})();
+  _renderComment(text) {
+    const item = document.createElement("li");
+
+    const body = document.createElement("span");
+    body.className = "comment-body";
+    // textContent safely escapes the comment text; innerHTML would not.
+    body.textContent = text;
+
+    item.appendChild(body);
+    this.list.appendChild(item);
+  }
+}
+
+window.CommentBoard = CommentBoard;

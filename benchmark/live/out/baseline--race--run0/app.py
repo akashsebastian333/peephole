@@ -2,18 +2,22 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# ponytail: in-memory store, swap for DB when persistence matters
 balances = {}
 
-
-@app.route("/withdraw", methods=["POST"])
+@app.route('/withdraw', methods=['POST'])
 def withdraw():
-    user = request.json.get("user")
-    amount = request.json.get("amount")
-    balance = balances.get(user, 0)
+    data = request.get_json()
+    user_id = data.get('user_id')
+    amount = data.get('amount')
 
-    if balance < amount:
-        return jsonify({"error": "insufficient funds"}), 400
+    if user_id not in balances:
+        return jsonify({'error': 'User not found'}), 404
 
-    balances[user] = balance - amount
-    return jsonify({"user": user, "balance": balances[user]})
+    if balances[user_id] >= amount:
+        balances[user_id] -= amount
+        return jsonify({'balance': balances[user_id]})
+
+    return jsonify({'error': 'Insufficient balance'}), 400
+
+if __name__ == '__main__':
+    app.run()

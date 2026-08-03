@@ -1,7 +1,9 @@
-import os
 from flask import Flask, send_file, request, abort
+import os
 
 app = Flask(__name__)
+
+FILES_DIR = os.path.abspath('./files')
 
 @app.route('/download')
 def download():
@@ -9,16 +11,16 @@ def download():
     if not name:
         abort(400)
 
-    base_dir = os.path.abspath('./files')
-    file_path = os.path.abspath(os.path.join(base_dir, name))
+    filepath = os.path.abspath(os.path.join(FILES_DIR, name))
+    relpath = os.path.relpath(filepath, FILES_DIR)
 
-    if not file_path.startswith(base_dir + os.sep):
+    if relpath.startswith('..'):
         abort(403)
 
-    if not os.path.isfile(file_path):
+    if not os.path.isfile(filepath):
         abort(404)
 
-    return send_file(file_path)
+    return send_file(filepath)
 
 if __name__ == '__main__':
     app.run()

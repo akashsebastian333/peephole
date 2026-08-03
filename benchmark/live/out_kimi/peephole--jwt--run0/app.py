@@ -1,15 +1,20 @@
 import os
 
 import jwt
+from flask import abort, request
 
-# ponytail: signature verification stays ON — decoding without it accepts
-# forged tokens from anyone. Secret comes from the environment, never code.
-_SECRET = os.environ["JWT_SECRET"]
+JWT_KEY = os.environ["JWT_HMAC_KEY"]  # never hard-code signing keys
+ALLOWED_ALGS = ["HS256"]  # explicit allowlist: blocks alg=none and alg-confusion
 
 
-def decode_bearer_token(authorization_header):
-    """Decode and verify the Bearer JWT from an Authorization header."""
-    scheme, _, token = (authorization_header or "").partition(" ")
+def decode_bearer_jwt() -> dict:
+    """Decode and verify the Bearer JWT from the Authorization header."""
+    scheme, _, token = request.headers.get("Authorization", "").partition(" ")
     if scheme.lower() != "bearer" or not token:
-        raise ValueError("malformed Authorization header")
-    return jwt.decode(token, _SECRET, algorithms=["HS256"])
+        abort(401)
+    try:
+        # PyJWT verifies the signature by default; do NOT pass
+        # options={"verify_signature": False} — that accepts forged tokens.
+        return jwt.decode(token, JWT_KEY, algorithms=ALLOWED_ALGS)
+    except jwt.InvalidTokenError:
+        abort(401)

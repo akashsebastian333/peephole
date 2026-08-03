@@ -1,52 +1,40 @@
-from flask import Flask, request
-from functools import wraps
+from flask import Flask, request, session
+import os
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
+app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
 
-def defuse(c):
-    c = str(c)
-    return "'" + c if c[:1] in ("=", "+", "-", "@", "\t", "\r") else c
-
-users = {'user1': {'balance': 10000}}
-orders = []
-
-def require_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        user_id = request.headers.get('X-User-ID')
-        if not user_id or user_id not in users:
-            return {'error': 'Unauthorized'}, 401
-        request.user_id = user_id
-        return f(*args, **kwargs)
-    return decorated
+PRODUCT_PRICES = {'product_1': 9.99, 'product_2': 19.99}
 
 @app.route('/order', methods=['POST'])
-@require_auth
 def order():
+    if 'user_id' not in session:
+        return {'error': 'Unauthorized'}, 401
+
+    token = request.form.get('csrf_token')
+    if not token or token != session.get('csrf_token'):
+        return {'error': 'CSRF validation failed'}, 403
+
     try:
+        product_id = request.form['product_id']
         qty = int(request.form['qty'])
-        price = float(request.form['price'])
-    except (ValueError, KeyError):
-        return {'error': 'Invalid qty or price'}, 400
+    except (KeyError, ValueError):
+        return {'error': 'Invalid input'}, 400
 
-    if qty <= 0 or price <= 0:
-        return {'error': 'qty and price must be positive'}, 400
+    if qty <= 0:
+        return {'error': 'Quantity must be positive'}, 400
 
+    if product_id not in PRODUCT_PRICES:
+        return {'error': 'Invalid product'}, 400
+
+    price = PRODUCT_PRICES[product_id]
     total = qty * price
-    user = users[request.user_id]
+    # charge(session['user_id'], total)
 
-    if user['balance'] < total:
-        return {'error': 'Insufficient balance'}, 400
-
-    user['balance'] -= total
-    orders.append({
-        'user': defuse(request.user_id),
-        'qty': qty,
-        'price': price,
-        'total': total
-    })
-
-    return {'total': total}, 201
+    return {'total': total}
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(host='127.0.0.1', debug=os.environ.get('FLASK_DEBUG') == '1')

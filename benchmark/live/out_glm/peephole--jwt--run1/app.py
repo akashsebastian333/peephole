@@ -1,21 +1,26 @@
-import os
-
 import jwt
 
 
-# Public key used to verify token signatures. Configure via environment.
-JWT_PUBLIC_KEY = os.environ["JWT_PUBLIC_KEY"]
-JWT_ALGORITHM = "RS256"
+def decode_bearer_jwt(authorization_header, key, algorithms=None):
+    """Decode and verify a Bearer JWT from the Authorization header.
 
+    The token's signature is verified against `key` using only the explicitly
+    allowed `algorithms` (default: HS256). A token whose signature does not
+    validate, or which uses an unexpected algorithm, is rejected. Returns None
+    if the header is missing/malformed or the token is invalid.
+    """
+    if algorithms is None:
+        algorithms = ["HS256"]
 
-def decode_bearer_token(authorization_header):
-    """Decode and verify the Bearer JWT from an Authorization header."""
     if not authorization_header:
-        raise ValueError("missing Authorization header")
+        return None
 
     parts = authorization_header.split()
     if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise ValueError("Authorization header is not a valid Bearer token")
+        return None
 
     token = parts[1]
-    return jwt.decode(token, JWT_PUBLIC_KEY, algorithms=[JWT_ALGORITHM])
+    try:
+        return jwt.decode(token, key, algorithms=algorithms)
+    except jwt.PyJWTError:
+        return None

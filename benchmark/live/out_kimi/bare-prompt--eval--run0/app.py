@@ -13,13 +13,12 @@ _OPS = {
     ast.FloorDiv: operator.floordiv,
     ast.Mod: operator.mod,
     ast.Pow: operator.pow,
-    ast.UAdd: operator.pos,
     ast.USub: operator.neg,
+    ast.UAdd: operator.pos,
 }
 
 
 def _eval(node):
-    """Evaluate an arithmetic-only AST. No names, calls, attributes."""
     if isinstance(node, ast.Expression):
         return _eval(node.body)
     if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
@@ -31,22 +30,15 @@ def _eval(node):
     raise ValueError("unsupported expression")
 
 
-@app.get("/calc")
+@app.route("/calc")
 def calc():
+    # ponytail: safe eval via ast whitelist — raw eval() here would be RCE
     expr = request.args.get("expr", "")
-    if not expr or len(expr) > 200:
-        return jsonify(error="invalid expr"), 400
     try:
         result = _eval(ast.parse(expr, mode="eval"))
-    except (ValueError, SyntaxError, KeyError, MemoryError, RecursionError):
-        return jsonify(error="invalid expr"), 400
-    except (ZeroDivisionError, OverflowError):
-        return jsonify(error="math error"), 400
-    if result != result or isinstance(result, complex):  # NaN / complex
-        return jsonify(error="invalid result"), 400
-    if isinstance(result, int) and result.bit_length() > 4096:
-        return jsonify(error="result too large"), 400
-    return jsonify(expr=expr, result=result)
+    except (SyntaxError, ValueError, TypeError, ZeroDivisionError, RecursionError):
+        return jsonify(error="invalid expression"), 400
+    return jsonify(result=result)
 
 
 if __name__ == "__main__":

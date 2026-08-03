@@ -1,22 +1,27 @@
-function addComment(commentText) {
-  const container = document.getElementById('comments');
-  const commentEl = document.createElement('div');
-  commentEl.className = 'comment';
-  commentEl.textContent = commentText;
-  container.appendChild(commentEl);
+class CommentBoard {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+  }
+
+  addComment(text) {
+    const commentEl = document.createElement('div');
+    commentEl.className = 'comment';
+    commentEl.textContent = text;
+    this.container.appendChild(commentEl);
+  }
 }
 
-function initCommentBoard() {
+const board = new CommentBoard('comments');
+
+document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('comment-form');
   const input = document.getElementById('comment-input');
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     if (input.value.trim()) {
-      addComment(input.value);
+      board.addComment(input.value);
       input.value = '';
     }
   });
-}
-
-document.addEventListener('DOMContentLoaded', initCommentBoard);
+});

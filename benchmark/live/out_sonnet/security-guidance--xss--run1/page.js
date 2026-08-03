@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from 'react';
 
 export default function Page() {
@@ -9,19 +8,15 @@ export default function Page() {
   function addComment(e) {
     e.preventDefault();
     if (!text.trim()) return;
-    setComments((prev) => [...prev, text]);
+    setComments([...comments, text]);
     setText('');
   }
 
   return (
     <div>
-      <h1>Comment Board</h1>
+      <h1>Comments</h1>
       <form onSubmit={addComment}>
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Add a comment"
-        />
+        <input value={text} onChange={(e) => setText(e.target.value)} />
         <button type="submit">Post</button>
       </form>
       <ul>

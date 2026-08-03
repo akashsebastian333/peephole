@@ -1,50 +1,37 @@
 from flask import Flask, request, jsonify
 import sqlite3
-from werkzeug.security import check_password_hash
+import bcrypt
 
 app = Flask(__name__)
-DB = "users.db"
-
-
-def get_db():
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    return conn
-
 
 def init_db():
-    with get_db() as conn:
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS users ("
-            " id INTEGER PRIMARY KEY,"
-            " username TEXT UNIQUE NOT NULL,"
-            " password_hash TEXT NOT NULL)"
-        )
-        conn.commit()
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users
+                 (id INTEGER PRIMARY KEY, username TEXT UNIQUE, password TEXT)''')
+    conn.commit()
+    conn.close()
 
-
-@app.post("/login")
+@app.route('/login', methods=['POST'])
 def login():
-    data = request.get_json(silent=True) or {}
-    username = data.get("username", "")
-    password = data.get("password", "")
+    data = request.get_json() or {}
+    username = data.get('username', '')
+    password = data.get('password', '')
 
     if not username or not password:
-        return jsonify({"error": "missing credentials"}), 401
+        return jsonify({'error': 'Missing credentials'}), 401
 
-    with get_db() as conn:
-        row = conn.execute(
-            "SELECT password_hash FROM users WHERE username = ?",
-            (username,),
-        ).fetchone()
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('SELECT password FROM users WHERE username = ?', (username,))
+    result = c.fetchone()
+    conn.close()
 
-    if row and check_password_hash(row["password_hash"], password):
-        return jsonify({"status": "ok"}), 200
+    if not result or not bcrypt.checkpw(password.encode(), result[0].encode()):
+        return jsonify({'error': 'Invalid credentials'}), 401
 
-    return jsonify({"error": "invalid credentials"}), 401
+    return jsonify({'message': 'Login successful'}), 200
 
-
-init_db()
-
-if __name__ == "__main__":
+if __name__ == '__main__':
+    init_db()
     app.run(debug=True)

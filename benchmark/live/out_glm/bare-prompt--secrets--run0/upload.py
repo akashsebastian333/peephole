@@ -1,53 +1,62 @@
-#!/usr/bin/env python3
 """Upload a local file to an S3 bucket using boto3.
 
-AWS credentials are read from the environment / standard AWS
-credential chain — never hardcoded. See:
-  AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN (optional)
+Credentials are NOT hardcoded. They are resolved through boto3's default
+credential chain (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY env vars,
+~/.aws/credentials, instance/role metadata, etc.).
 """
 
-import os
+from __future__ import annotations
+
+import argparse
+import mimetypes
 import sys
+from pathlib import Path
 
 import boto3
 from botocore.exceptions import ClientError
 
 
-def upload_to_s3(local_path: str, bucket: str, key: str, region: str | None = None) -> str:
-    """Upload `local_path` to s3://`bucket`/`key` and return the object URL.
+def upload_file(bucket: str, key: str, source: Path, region: str | None = None) -> str:
+    """Upload `source` to s3://bucket/key. Returns the object URI."""
+    if not source.is_file():
+        raise FileNotFoundError(f"not a file: {source}")
 
-    Raises FileNotFoundError if the local file does not exist and
-    ClientError on upload failure.
-    """
-    if not os.path.isfile(local_path):
-        raise FileNotFoundError(f"local file not found: {local_path}")
+    # Extra safety net so a path traversal-ish key never escapes the prefix.
+    key = key.lstrip("/")
 
-    # Credentials are sourced automatically from the environment / IAM role /
-    # shared credentials file by boto3. Do not pass them explicitly here.
-    session = boto3.Session(region_name=region)
-    s3 = session.client("s3")
+    session = boto3.session.Session(region_name=region)
+    client = session.client("s3")
+
+    content_type, _ = mimetypes.guess_type(source.name)
+    extra_args: dict[str, str] = {}
+    if content_type:
+        extra_args["ContentType"] = content_type
 
     try:
-        s3.upload_file(local_path, bucket, key)
+        client.upload_file(
+            str(source),
+            bucket,
+            key,
+            ExtraArgs=extra_args or None,
+        )
     except ClientError as exc:
-        raise RuntimeError(f"failed to upload {local_path} to s3://{bucket}/{key}") from exc
+        raise RuntimeError(f"upload failed: {exc}") from exc
 
-    region = region or session.region_name or "us-east-1"
-    return f"https://{bucket}.s3.{region}.amazonaws.com/{key}"
+    return f"s3://{bucket}/{key}"
 
 
-def main(argv: list[str]) -> int:
-    if len(argv) != 4:
-        print(f"usage: {argv[0]} <local_path> <bucket> <key>", file=sys.stderr)
-        return 2
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Upload a file to S3.")
+    parser.add_argument("bucket", help="target S3 bucket name")
+    parser.add_argument("key", help="destination object key in the bucket")
+    parser.add_argument("file", help="local path to the file to upload")
+    parser.add_argument("--region", help="AWS region (optional)")
+    args = parser.parse_args(argv)
 
-    local_path, bucket, key = argv[1], argv[2], argv[3]
-    region = os.environ.get("AWS_REGION")
-
-    url = upload_to_s3(local_path, bucket, key, region=region)
-    print(url)
+    uri = upload_file(args.bucket, args.key, Path(args.file), region=args.region)
+    print(uri)
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv))
+    sys.exit(main())

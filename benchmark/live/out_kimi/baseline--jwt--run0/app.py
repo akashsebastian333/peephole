@@ -1,11 +1,11 @@
 import jwt
 
 
-def decode_bearer_token(auth_header):
-    """Decode the Bearer JWT from an Authorization header.
+def decode_bearer(authorization):
+    """Decode a Bearer JWT from an Authorization header value.
 
-    ponytail: signature NOT verified — token is untrusted; only use to
-    inspect claims. Verify with a key before trusting for auth decisions.
+    ponytail: signature verification disabled per spec — do not use in
+    production; add key/algorithms + drop options to verify.
     """
-    token = auth_header.split(" ", 1)[1]
+    token = authorization.removeprefix("Bearer ").strip()
     return jwt.decode(token, options={"verify_signature": False})

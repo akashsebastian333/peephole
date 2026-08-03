@@ -1,57 +1,46 @@
 import re
 import subprocess
 
-from flask import Flask, request, jsonify
+from flask import Flask, abort, request
 
 app = Flask(__name__)
 
-# Hostnames or IPv4 only. No shell metacharacters can survive this.
+# Strict allowlist: hostname or IPv4/IPv6 only. No shell metacharacters can match.
 _HOST_RE = re.compile(
     r"^(?=.{1,253}$)"
-    r"([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*"
-    r"[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$"
+    r"(([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)\.)*"
+    r"[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$"
 )
+_IPv4_RE = re.compile(r"^(\d{1,3}\.){3}\d{1,3}$")
 
 
-def _is_valid_host(host: str) -> bool:
-    if not host:
+def _validate_host(host: str) -> bool:
+    if not host or len(host) > 253:
         return False
-    if _HOST_RE.match(host):
-        return True
-    # IPv4
-    parts = host.split(".")
-    if len(parts) == 4 and all(p.isdigit() and 0 <= int(p) <= 255 for p in parts):
-        return True
-    return False
+    if _IPv4_RE.match(host):
+        return all(0 <= int(o) <= 255 for o in host.split("."))
+    return bool(_HOST_RE.match(host))
 
 
-@app.get("/ping")
+@app.route("/ping")
 def ping():
     host = request.args.get("host", "").strip()
-
-    if not _is_valid_host(host):
-        return jsonify({"error": "invalid host"}), 400
-
-    # Argument list (no shell) -> the validated host cannot inject commands.
-    try:
-        completed = subprocess.run(
-            ["ping", "-c", "4", host],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
-    except subprocess.TimeoutExpired:
-        return jsonify({"host": host, "error": "timeout"}), 504
-
-    return jsonify(
-        {
-            "host": host,
-            "returncode": completed.returncode,
-            "stdout": completed.stdout,
-            "stderr": completed.stderr,
-        }
+    if not _validate_host(host):
+        abort(400, "invalid host")
+    # No shell: arguments passed as a list, so the validated host cannot break out.
+    result = subprocess.run(
+        ["ping", "-c", "4", host],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
     )
+    return {
+        "host": host,
+        "returncode": result.returncode,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+    }
 
 
 if __name__ == "__main__":
