@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -255,6 +256,30 @@ func TestBashPhpDashRInline(t *testing.T) {
 	// -r must stay php-only: `node -r module` is a module preload, not inline code.
 	if b := analyzeBash(`node -r ./config.js server.js`); len(b.Payloads) > 0 {
 		t.Errorf("node -r (module preload) wrongly treated as inline code: %+v", b.Payloads)
+	}
+}
+
+func TestAddSessionSetConcurrent(t *testing.T) {
+	// Concurrent tool calls spawn concurrent PostToolUse hooks that all union into
+	// the same semreview set; an unlocked read-modify-write dropped classes, so the
+	// Stop self-review silently skipped them. Every class written must be retained.
+	sd := t.TempDir()
+	os.MkdirAll(sd, 0o700)
+	classes := []string{"idor", "race", "csrf", "bizlogic", "ratelimit", "xss", "ssrf", "path"}
+	var wg sync.WaitGroup
+	for _, c := range classes {
+		wg.Add(1)
+		go func(c string) { defer wg.Done(); markSemReview(sd, "s1", []string{c}) }(c)
+	}
+	wg.Wait()
+	got := map[string]bool{}
+	for _, k := range sessionSemReview(sd, "s1") {
+		got[k] = true
+	}
+	for _, c := range classes {
+		if !got[c] {
+			t.Errorf("concurrent write lost class %q (kept: %v)", c, got)
+		}
 	}
 }
 

@@ -76,24 +76,34 @@ func sessionSemReview(sd, sid string) []string    { return readSessionSet(sd, si
 func markReviewedClasses(sd, sid string, keys []string) { addSessionSet(sd, sid, "reviewed", keys) }
 func sessionReviewedClasses(sd, sid string) []string    { return readSessionSet(sd, sid, "reviewed") }
 
-// addSessionSet unions keys into a comma-joined per-session set file.
+// addSessionSet unions keys into a comma-joined per-session set file. Concurrent
+// tool calls spawn concurrent PostToolUse hooks that all write the same set, so
+// the read-modify-write is serialized with withLock (an unlocked version loses a
+// class, silently dropping the Stop self-review it should trigger) and the write
+// is atomic temp+rename so an unlocked reader never sees a torn set token.
 func addSessionSet(sd, sid, name string, keys []string) {
 	if len(keys) == 0 {
 		return
 	}
-	m := map[string]bool{}
-	for _, k := range readSessionSet(sd, sid, name) {
-		m[k] = true
-	}
-	for _, k := range keys {
-		m[k] = true
-	}
-	all := make([]string, 0, len(m))
-	for k := range m {
-		all = append(all, k)
-	}
-	sort.Strings(all)
-	_ = os.WriteFile(sidFile(sd, sid, name), []byte(strings.Join(all, ",")), 0o600)
+	withLock(sd, func() {
+		m := map[string]bool{}
+		for _, k := range readSessionSet(sd, sid, name) {
+			m[k] = true
+		}
+		for _, k := range keys {
+			m[k] = true
+		}
+		all := make([]string, 0, len(m))
+		for k := range m {
+			all = append(all, k)
+		}
+		sort.Strings(all)
+		f := sidFile(sd, sid, name)
+		tmp := f + ".tmp"
+		if os.WriteFile(tmp, []byte(strings.Join(all, ",")), 0o600) == nil {
+			_ = os.Rename(tmp, f)
+		}
+	})
 }
 
 func readSessionSet(sd, sid, name string) []string {
