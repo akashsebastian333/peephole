@@ -36,10 +36,13 @@ import (
 
 var (
 	tlWord   = regexp.MustCompile(`[A-Za-z_$][\w$]*`)
-	// An optional const/let/var lets JS/TS declarations bind the real variable
-	// (const q = ...) instead of capturing the keyword; \s+ after it means a name
-	// like `constant` is not mistaken for the keyword.
-	tlAssign = regexp.MustCompile(`(?m)^[ \t]*(?:(?:const|let|var)\s+)?([A-Za-z_$][\w$]*)\s*(?::=|=)\s*(.+)$`)
+	// group 1 = variable, group 2 = augmenting op (empty for plain = / :=), group 3
+	// = RHS. An optional const/let/var lets JS/TS declarations bind the real
+	// variable (const q = ...) instead of the keyword; \s+ after it means a name
+	// like `constant` is not mistaken for the keyword. Capturing the op lets an
+	// augmented assign (cmd += user, q .= $_GET) accumulate taint instead of the
+	// plain-= overwrite that laundered it clean.
+	tlAssign = regexp.MustCompile(`(?m)^[ \t]*(?:(?:const|let|var)\s+)?([A-Za-z_$][\w$]*)\s*(?:([-+*/%|&^.]?)=|:=)\s*(.+)$`)
 
 	// A quoted string literal with an optional prefix (f/r/b/u...), plus JS
 	// template literals. Used to strip literal text before reference extraction.
@@ -209,7 +212,7 @@ func tlTaint(content string) (user, dyn, sens map[string]bool) {
 	for pass := 0; pass < 4; pass++ {
 		changed := false
 		for _, m := range assigns {
-			lhs, rhs := m[1], m[2]
+			lhs, op, rhs := m[1], m[2], m[3]
 			refs := tlRefs(rhs)
 			// An assignment OVERWRITES the variable: its taint is computed FRESH
 			// from the RHS, not OR-ed with the variable's prior state. So a
@@ -262,6 +265,15 @@ func tlTaint(content string) (user, dyn, sens map[string]bool) {
 						ns = true
 					}
 				}
+			}
+			// An augmented assignment (cmd += x, q .= $_GET) ACCUMULATES: unlike a
+			// plain =, it keeps the variable's prior taint and only adds the RHS's,
+			// so `cmd = "ping "; cmd += user; os.system(cmd)` stays tainted instead
+			// of being laundered clean by the second line.
+			if op != "" {
+				nu = nu || user[lhs]
+				nd = nd || dyn[lhs]
+				ns = ns || sens[lhs]
 			}
 			set(user, lhs, nu, &changed)
 			set(dyn, lhs, nd, &changed)

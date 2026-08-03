@@ -68,7 +68,18 @@ var (
 	reUnresolvableTarget = regexp.MustCompile(`[*?\[\]{}$~]`)
 	reInterpDashC        = regexp.MustCompile(`\b(?:(?:python3?|node|deno|bun|ruby|perl|bash|sh)(?:\s+-[\w-]+)*\s+(?:-c|-e)|php(?:\s+-[\w-]+)*\s+-r)\b`)
 	reShellNoise         = regexp.MustCompile("[\"'\\\\\\[\\]{}]")
-	reCmdSubst           = regexp.MustCompile(`\$\(|` + "`" + `|\$[A-Za-z_]`)
+	// $( command sub, backtick, ${...} parameter/brace expansion, and $VAR - all
+	// make the written bytes runtime-determined. The brace form ${VAR} was missing,
+	// so `echo "${CODE}" > f` slipped the determinability check the unbraced $VAR hit.
+	reCmdSubst           = regexp.MustCompile(`\$[({]|` + "`" + `|\$[A-Za-z_]`)
+	// coreutils `install` is a copy-with-mode (install -m 0755 src dst) - a write
+	// primitive like cp/mv/dd, kept out of reCopyMove so it can't collide with
+	// `pip/npm install pkg` (which has no dash-flag before the package name).
+	reInstallBin         = regexp.MustCompile(`\binstall\s+-[DmogtTsSbpvcd]`)
+	// echo -e / printf with \xNN, \0NN, or %b decode escapes at runtime, so the
+	// bytes landing in the file are not the literal we see. Scoped to a write (has
+	// a redirect) so a benign `printf "%b\n" "$x"` to stdout is not flagged.
+	reEscapeDecodeWrite  = regexp.MustCompile(`\b(?:echo\s+-e\b|printf\b)[^;&|]*(?:\\x[0-9a-fA-F]|\\0[0-7]{2}|%b)[^;&|]*>`)
 	rePkgClean           = regexp.MustCompile(`^[@A-Za-z0-9._/-]+`)
 	reFlagValue          = regexp.MustCompile(`^-(?:r|c|f|e|-requirement|-constraint|-find-links|-editable)$`)
 	reFilePath           = regexp.MustCompile(`\.(?:txt|whl|tar|gz|tgz|zip|cfg|toml|lock|in|json)$`)
@@ -158,6 +169,18 @@ func analyzeBash(cmd string) BashAnalysis {
 		a.Uninspectable = true
 		if a.Reason == "" {
 			a.Reason = "patch application - content not statically inspectable"
+		}
+	}
+	if reInstallBin.MatchString(cmd) {
+		a.Uninspectable = true
+		if a.Reason == "" {
+			a.Reason = "coreutils install (copy-with-mode) - content not statically inspectable"
+		}
+	}
+	if reEscapeDecodeWrite.MatchString(cmd) {
+		a.Uninspectable = true
+		if a.Reason == "" {
+			a.Reason = "escape-decoded write (echo -e / printf %b) - runtime-decoded, not statically determinable"
 		}
 	}
 	// 7. sed -i in-place edit.
