@@ -92,7 +92,7 @@ func cliMCP() {
 
 var scanToolSpec = map[string]any{
 	"name": "scan_code",
-	"description": "Check a code snippet for security vulnerabilities (176 CWE rules across 31 languages) " +
+	"description": "Check a code snippet for security vulnerabilities (181 CWE rules across 31 languages) " +
 		"BEFORE writing it to disk. Call this on any security-sensitive code you are about to write - " +
 		"queries, auth, crypto, file/URL/command handling, deserialization, secrets, IaC, smart contracts. " +
 		"Returns HIGH-confidence findings that should be fixed before writing, plus lower-confidence review items.",

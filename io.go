@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -46,13 +47,87 @@ func readEvent() Event {
 	var e Event
 	dec := json.NewDecoder(os.Stdin)
 	_ = dec.Decode(&e)
+	// Fold each non-Claude host's event/tool taxonomy onto Claude's, so the same
+	// decision logic gates every hook-based agent. Escalation-only: Claude's own
+	// names map to themselves, and an unknown name is left as-is (falls through to
+	// passthrough exactly as before) - this can only make the gate handle MORE
+	// events, never fewer.
+	e.HookEventName = normalizeEvent(e.HookEventName)
+	e.ToolName = normalizeTool(e.ToolName)
 	return e
+}
+
+// canonicalEvents maps host-native pre/post-tool event names onto Claude's.
+// Keyed lowercase so casing variants (Cursor's preToolUse) also fold.
+var canonicalEvents = map[string]string{
+	"pretooluse": "PreToolUse", "beforetool": "PreToolUse", "beforetooluse": "PreToolUse",
+	"beforetoolcall": "PreToolUse",
+	"posttooluse":    "PostToolUse", "aftertool": "PostToolUse", "aftertooluse": "PostToolUse",
+	"sessionstart": "SessionStart", "subagentstart": "SubagentStart",
+	"userpromptsubmit": "UserPromptSubmit", "stop": "Stop", "configchange": "ConfigChange",
+}
+
+// canonicalTools maps host-native tool names onto Claude's Write/Edit/Bash family
+// so the write-path gate fires regardless of host. MCP tools (mcp__*) are left
+// untouched for the dedicated MCP path.
+var canonicalTools = map[string]string{
+	"write": "Write", "write_file": "Write", "writefile": "Write", "create_file": "Write", "createfile": "Write",
+	"edit": "Edit", "replace": "Edit", "str_replace": "Edit", "strreplace": "Edit", "str_replace_editor": "Edit",
+	"apply_patch": "Edit", "applypatch": "Edit", "multiedit": "MultiEdit", "notebookedit": "NotebookEdit",
+	"bash": "Bash", "shell": "Bash", "run_shell_command": "Bash", "runshellcommand": "Bash",
+	"execute_command": "Bash", "executecommand": "Bash", "run_command": "Bash",
+}
+
+func normalizeEvent(name string) string {
+	if c, ok := canonicalEvents[strings.ToLower(name)]; ok {
+		return c
+	}
+	return name
+}
+
+func normalizeTool(name string) string {
+	if strings.HasPrefix(name, "mcp__") {
+		return name
+	}
+	if c, ok := canonicalTools[strings.ToLower(name)]; ok {
+		return c
+	}
+	return name
 }
 
 func (e Event) toolInput() ToolInput {
 	var t ToolInput
-	if len(e.ToolInput) > 0 {
-		_ = json.Unmarshal(e.ToolInput, &t)
+	if len(e.ToolInput) == 0 {
+		return t
+	}
+	_ = json.Unmarshal(e.ToolInput, &t)
+	// Non-Claude hosts use camelCase / alternate keys for the same values (Go's
+	// json is case-insensitive but does not bridge snake_case <-> camelCase). Fill
+	// any empty canonical field from a documented alias so the path and edit text
+	// still reach the scanner instead of the write being a silent no-op. (content
+	// and command are already the shared key across every listed host.)
+	var m map[string]json.RawMessage
+	if json.Unmarshal(e.ToolInput, &m) == nil {
+		pick := func(keys ...string) string {
+			for _, k := range keys {
+				if raw, ok := m[k]; ok {
+					var s string
+					if json.Unmarshal(raw, &s) == nil && s != "" {
+						return s
+					}
+				}
+			}
+			return ""
+		}
+		if t.FilePath == "" {
+			t.FilePath = pick("filePath", "path", "absolute_path")
+		}
+		if t.NewString == "" {
+			t.NewString = pick("newString")
+		}
+		if t.Content == "" {
+			t.Content = pick("contents")
+		}
 	}
 	return t
 }

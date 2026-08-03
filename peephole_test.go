@@ -111,6 +111,42 @@ func TestSQLiDeniedInStrict(t *testing.T) {
 	}
 }
 
+func TestNonClaudeHostsGate(t *testing.T) {
+	// The same gate must fire regardless of host event/tool taxonomy - the product
+	// advertises hard pre-write blocking for Gemini/Codex/Cursor/OpenCode/etc.,
+	// which was a silent no-op because their names never matched Claude's.
+	sqli := `cur.execute(f"SELECT * FROM users WHERE id={uid}")`
+	cases := []struct{ name, event, tool string; ti map[string]any }{
+		{"gemini-write_file", "BeforeTool", "write_file", map[string]any{"file_path": "a.py", "content": sqli}},
+		{"gemini-replace", "BeforeTool", "replace", map[string]any{"file_path": "a.py", "new_string": sqli}},
+		{"cursor-casing", "preToolUse", "Write", map[string]any{"file_path": "a.py", "content": sqli}},
+		{"opencode-write-camel", "PreToolUse", "write", map[string]any{"filePath": "a.py", "content": sqli}},
+		{"opencode-edit-newString", "PreToolUse", "edit", map[string]any{"filePath": "a.py", "newString": sqli}},
+		{"gemini-shell", "BeforeTool", "run_shell_command", map[string]any{"command": "cat > a.py <<EOF\n" + sqli + "\nEOF"}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			p := newProject(t, "strict")
+			ho, exit, raw := runHookJSON(t, map[string]any{
+				"hook_event_name": c.event, "tool_name": c.tool, "cwd": p, "tool_input": c.ti,
+			})
+			assertNotExit1(t, exit)
+			if ho.HookSpecificOutput.PermissionDecision != "deny" {
+				t.Fatalf("%s must deny SQLi, got %q (%s)", c.name, ho.HookSpecificOutput.PermissionDecision, raw)
+			}
+		})
+	}
+	// A read-only tool from a non-Claude host must still pass through (no over-block).
+	p := newProject(t, "strict")
+	ho, _, _ := runHookJSON(t, map[string]any{
+		"hook_event_name": "BeforeTool", "tool_name": "read_file", "cwd": p,
+		"tool_input": map[string]any{"file_path": "a.py"},
+	})
+	if ho.HookSpecificOutput.PermissionDecision == "deny" {
+		t.Fatalf("a read-only tool must not be blocked, got deny")
+	}
+}
+
 func TestCleanWriteNoDecision(t *testing.T) {
 	// A clean write must not emit an explicit allow (that would auto-approve and
 	// override the user's own permission rules), it emits no decision.
