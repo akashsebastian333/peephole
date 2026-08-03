@@ -54,12 +54,13 @@ var owaspName = map[string]string{
 	"A09": "Logging & Alerting Failures", "A10": "Mishandling of Exceptional Conditions",
 }
 
-// owaspOf returns the rule's OWASP categories: its declared ones, else the
-// CWE-derived one, else "A00" (uncategorized).
+// owaspOf returns the rule's OWASP 2025 category, derived from its CWE. The
+// rule's declared `owasp` field is OWASP 2021 and must NOT be used here: the
+// SARIF/audit consumers label these "OWASP-2025", and the 2021->2025 numbering
+// differs (Injection A03->A05, Crypto A02->A04), so emitting the 2021 number
+// under a 2025 label mislabels every rule that declares one. The 2025 CWE table
+// is authoritative and matches the /sec-audit rollup.
 func owaspOf(r *Rule) []string {
-	if len(r.OWASP) > 0 {
-		return r.OWASP
-	}
 	if c, ok := cweToOWASP[r.CWE]; ok {
 		return []string{c}
 	}
@@ -141,12 +142,18 @@ func cliSarif(paths []string) {
 		Message   map[string]string        `json:"message"`
 		Locations []map[string]interface{} `json:"locations"`
 	}
-	seen := map[string]bool{}
+	// Dedup rules by CWE, but keep the STRONGEST severity seen: GitHub derives an
+	// alert's severity from the rule's security-severity, so freezing it on the
+	// first-seen finding would understate a later, more severe same-CWE finding.
+	idx := map[string]int{}
+	curSev := map[string]string{}
+	sevRank := map[string]int{"critical": 4, "high": 3, "medium": 2, "low": 1}
 	var rules []sarifRule
 	var results []result
 	for _, p := range paths {
 		b, err := os.ReadFile(p)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "peephole: cannot read %s: %v\n", p, err)
 			continue
 		}
 		content := string(b)
@@ -154,8 +161,14 @@ func cliSarif(paths []string) {
 		for _, f := range kb.scan(p, content) {
 			r := f.Rule
 			sev := ruleSeverity(r)
-			if !seen[r.CWE] {
-				seen[r.CWE] = true
+			if i, ok := idx[r.CWE]; ok {
+				if sevRank[sev] > sevRank[curSev[r.CWE]] { // upgrade to the strongest per CWE
+					curSev[r.CWE] = sev
+					rules[i].Properties["security-severity"] = securityScore(sev)
+				}
+			} else {
+				idx[r.CWE] = len(rules)
+				curSev[r.CWE] = sev
 				tags := []string{"security", "external/cwe/" + strings.ToLower(r.CWE)}
 				for _, o := range owaspOf(r) {
 					tags = append(tags, "OWASP-2025/"+o)

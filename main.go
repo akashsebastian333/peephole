@@ -341,9 +341,14 @@ func cliScan(args []string) {
 	}
 	kb := loadKB()
 	total, high := 0, 0
+	readErr := false
 	for _, p := range paths {
 		b, err := os.ReadFile(p)
 		if err != nil {
+			// Never drop a requested path silently: a typo/dir/permission error would
+			// otherwise produce a clean-looking report and pass a --gate hook.
+			fmt.Fprintf(os.Stderr, "peephole: cannot read %s: %v\n", p, err)
+			readErr = true
 			continue
 		}
 		findings := kb.scan(p, string(b))
@@ -362,8 +367,8 @@ func cliScan(args []string) {
 		}
 	}
 	fmt.Printf("total findings: %d (%d high-confidence)\n", total, high)
-	if gate && high > 0 {
-		fmt.Fprintln(os.Stderr, "peephole: blocking - high-confidence security findings above. Fix them, or commit with --no-verify to override.")
+	if gate && (high > 0 || readErr) {
+		fmt.Fprintln(os.Stderr, "peephole: blocking - high-confidence security findings or unreadable paths above. Fix them, or commit with --no-verify to override.")
 		os.Exit(2)
 	}
 }

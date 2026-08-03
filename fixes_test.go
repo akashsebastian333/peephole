@@ -332,6 +332,14 @@ func TestOWASP2025Mapping(t *testing.T) {
 			t.Fatalf("owaspName missing %s", c)
 		}
 	}
+	// owaspOf (the SARIF/audit tag source) must derive from the 2025 CWE table and
+	// IGNORE the rule's declared owasp field, which is 2021 - emitting a 2021 number
+	// under an "OWASP-2025" label mislabels the finding (Injection A03->A05).
+	for cwe, want := range map[string]string{"CWE-78": "A05", "CWE-89": "A05", "CWE-327": "A04", "CWE-829": "A03", "CWE-502": "A08"} {
+		if got := owaspOf(&Rule{CWE: cwe, OWASP: []string{"A03"}}); len(got) != 1 || got[0] != want {
+			t.Errorf("owaspOf(%s) = %v, want [%s]; the 2021 owasp field must be ignored", cwe, got, want)
+		}
+	}
 }
 
 func TestScan100KBUnderBudget(t *testing.T) {
