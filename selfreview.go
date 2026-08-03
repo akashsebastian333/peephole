@@ -31,7 +31,7 @@ type semReviewBlock struct {
 // so they are broad; over-firing only costs a continuation the review would have
 // run anyway.
 var semReviewBlocks = []semReviewBlock{
-	{"idor", regexp.MustCompile(`(?i)<int:\w*id|<\w*id>|get_object_or_404|\.get\(\s*(?:pk|id)\s*=|\binvoice\b|\.query\.get\(|find_by_id|/(?:user|account|order|invoice|document|record)/<|WHERE\s+id\s*=`),
+	{"idor", regexp.MustCompile(`(?i)<int:\w*id|<\w*id>|get_object_or_404|\.get\(\s*(?:pk|id)\s*=|\binvoice\b|\.query\.get\(|find_by_id|findbyid|findbypk|findunique|req\.params\.\w*id|/:\w*id\b|/(?:user|account|order|invoice|document|record)/[<:]|WHERE\s+id\s*=`),
 		`- IDOR / object authorization: every fetch or mutation of a record by a client-supplied id
   MUST filter by the authenticated owner in the SAME query (WHERE id=? AND owner_id=?), not
   fetch-then-maybe-check; return 404 on mismatch. Quote the ownership check or add it.
@@ -42,7 +42,7 @@ var semReviewBlocks = []semReviewBlock{
   SELECT ... FOR UPDATE in a transaction, or compare-and-set - never compute the new value in
   app code from a separately-read value. Quote the atomic op or add it. (Exploit: two
   concurrent requests drive the balance below zero.)`},
-	{"csrf", regexp.MustCompile(`(?i)methods\s*=\s*\[[^]]*(?:POST|PUT|DELETE|PATCH)|@\w+\.(?:post|put|delete|patch)\b|\btransfer\b|\bsession\[|set_cookie|login_user`),
+	{"csrf", regexp.MustCompile(`(?i)methods\s*=\s*\[[^]]*(?:POST|PUT|DELETE|PATCH)|@\w+\.(?:post|put|delete|patch)\b|\b(?:router|app)\.(?:post|put|delete|patch)\s*\(|\btransfer\b|\bsession\[|set_cookie|login_user`),
 		`- CSRF: every state-changing, cookie-authenticated endpoint MUST enforce an anti-CSRF token
   and SameSite cookies (a token-in-Authorization-header API is exempt - say which applies).
   Quote it or add it.`},

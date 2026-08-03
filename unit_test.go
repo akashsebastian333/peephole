@@ -259,6 +259,21 @@ func TestBashPhpDashRInline(t *testing.T) {
 	}
 }
 
+func TestSemReviewTagsJSIdorCsrf(t *testing.T) {
+	// The Stop self-review fires on the classes semReviewKeys tags; the detectors
+	// were Python-only, so the whole JS/Node web-IDOR shape went unreviewed.
+	for name, code := range map[string]string{
+		"express-idor":  "app.get('/api/orders/:id', async (req,res) => {\n  const o = await Order.findById(req.params.id);\n});",
+		"sequelize-pk":  "const u = await User.findByPk(req.params.id);",
+		"prisma-unique": "const o = await prisma.order.findUnique({where:{id:req.params.id}});",
+		"express-post":  "router.post('/transfer', handler);",
+	} {
+		if len(semReviewKeys(code)) == 0 {
+			t.Errorf("%s: JS IDOR/CSRF not tagged, Stop self-review would not fire: %q", name, code)
+		}
+	}
+}
+
 func TestBashWritePrimitiveEvasions(t *testing.T) {
 	// Each of these writes runtime-determined or copied content and must be flagged
 	// uninspectable (a caught form has an uncaught sibling otherwise).

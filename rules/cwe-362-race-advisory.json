@@ -5,7 +5,7 @@
   "rank": 0,
   "kev": false,
   "severity": "high",
-  "task_triggers": ["transfer", "withdraw", "deposit", "balance", "payment", "wallet", "credit", "debit", "counter", "increment", "decrement", "inventory", "stock", "booking", "reserve", "concurrent", "atomic", "race", "double spend", "quota", "rate limit", "coupon", "redeem"],
+  "task_triggers": ["transfer", "withdraw", "deposit", "balance", "payment", "wallet", "credit", "debit", "counter", "increment", "decrement", "inventory", "stock", "booking", "reserve", "concurrent", "atomic", "race", "double spend", "quota", "rate limit", "coupon", "redeem", "like", "upvote", "vote", "poll", "reaction", "view count"],
   "patterns": [],
   "absence_requirements": [
     "This looks like a read-check-write on shared state (a balance, counter, stock level, or quota). A non-atomic 'read value → check → write new value' is a TOCTOU race: two concurrent requests both pass the check and double-spend. Make it atomic — use a database transaction with row locking (SELECT ... FOR UPDATE), a single atomic UPDATE with a guard (UPDATE ... SET balance = balance - :amt WHERE balance >= :amt), an atomic increment/CAS, or an application-level lock.",

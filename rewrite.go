@@ -11,7 +11,10 @@ var secureRewrites = []struct {
 	re   *regexp.Regexp
 	repl string
 }{
-	{regexp.MustCompile(`\byaml\.load\(`), "yaml.safe_load("},
+	// Only the single-argument form: safe_load takes no Loader kwarg, so rewriting
+	// yaml.load(f, Loader=...) to yaml.safe_load(f, Loader=...) would crash at
+	// runtime. The Loader= form falls through to normal deny/guidance instead.
+	{regexp.MustCompile(`\byaml\.load\(([^),]*)\)`), "yaml.safe_load(${1})"},
 	{regexp.MustCompile(`\bverify(\s*=\s*)False\b`), "verify${1}True"},
 	{regexp.MustCompile(`rejectUnauthorized(\s*:\s*)false`), "rejectUnauthorized${1}true"},
 }

@@ -5,7 +5,7 @@
   "rank": 4,
   "kev": false,
   "severity": "high",
-  "task_triggers": ["endpoint", "route", "api", "login", "admin", "account", "user id", "profile", "delete", "update", "order", "invoice", "session"],
+  "task_triggers": ["endpoint", "route", "api", "login", "admin", "account", "user id", "profile", "delete", "update", "order", "invoice", "session", "two-factor", "2fa", "mfa", "authentication", "like", "vote", "follow", "subscribe"],
   "patterns": [],
   "absence_requirements": [
     "AuthZ cannot be proven present from one hunk — confirm this route checks authorization server-side, keyed on the session subject, not a client-supplied id (CWE-862/863).",
