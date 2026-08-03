@@ -18,11 +18,32 @@ Two facts shape everything below:
 
 | Integration | Blocks before write? | Agents |
 |---|---|---|
-| **Native pre-tool hook** (`peephole hook --exit2`) | **Yes, hard** | Claude Code, Gemini CLI, OpenAI Codex CLI, Qwen Code, Charm Crush, Block Goose, Cursor (shell + MCP paths) |
-| **In-process plugin** (shells to `peephole hook`) | **Yes, hard** | OpenCode, Sourcegraph Amp, OpenHands, Cline (SDK) |
+| **Native pre-tool hook** (`peephole hook --exit2`) | **Yes, hard** (deny) | Claude Code, Gemini CLI, OpenAI Codex CLI, Qwen Code, Charm Crush, Cursor (shell + MCP paths) |
+| **In-process plugin** (shells to `peephole hook`) | **Yes, hard** | OpenCode |
 | **git pre-commit** (`peephole scan --gate --staged`) | **Yes, at commit** | Universal — any git repo (Aider auto-commits, so effectively per edit) |
 | **MCP server** (`peephole mcp`) | No — advisory | Windsurf, Trae, Tongyi Lingma, Comate, CodeGeeX, iFlyCode, Qoder, + MCP mode of every CLI agent |
 | **LSP diagnostics** (`peephole lsp`) | No — warn only | Zed, JetBrains AI, VS Code / Copilot |
+| **Unverified / no working hook** | Advisory + git backstop | Block Goose, Cline, Sourcegraph Amp, OpenHands (see caveats below) |
+
+**Honest hook-host caveats.** A hook host hard-blocks only if it honors the block
+signal. peephole emits **exit code 2** (plus the reason on stderr) under
+`--exit2`, and the six native hosts above plus OpenCode's plugin honor it
+(verified). But:
+
+- **Block Goose** has no external pre-tool hook system (only in-process
+  Always/Ask/Never permission modes), so a `hooks.json` is consumed by nothing —
+  a config that installs cleanly and blocks nothing. Use the git pre-commit hook
+  + `peephole mcp` (advisory) instead.
+- **Cline** approves tools via an in-process SDK callback (`{approved:false}`),
+  which an exit-2 process can't reach; a working plugin (mirroring
+  `opencode-plugin.ts`, returning `{approved:false}` when peephole exits 2) is not
+  yet shipped. Until it is, treat Cline as advisory + git backstop.
+- **Sourcegraph Amp / OpenHands** plugins are not verified against the host's
+  current deny contract — treat as unverified until a plugin is confirmed.
+- **Exit-2 hosts enforce *deny* only.** A lower-confidence *ask* finding (e.g.
+  `curl … | bash`, CWE-494) exits 0 (allow) on exit-code hosts; only Claude Code's
+  native JSON dialect surfaces it as an approval prompt. So exit-2 hosts enforce a
+  strictly smaller set (hard denies) than Claude Code.
 
 Editors (VS Code/Copilot, Cursor file-edits, Windsurf, Zed) mostly cannot veto an
 AI *edit* synchronously — they expose only post-hoc events or diagnostics. For
@@ -61,13 +82,6 @@ use an absolute path in the `command`. All use `peephole hook --exit2`.
 { "hooks": { "PreToolUse": [ { "matcher": ".*", "command": "peephole hook --exit2", "timeout": 10 } ] } }
 ```
 
-**Block Goose** — a plugin dir with `hooks/hooks.json`:
-
-```json
-{ "hooks": { "PreToolUse": [ { "matcher": ".*",
-  "hooks": [ { "type": "command", "command": "peephole hook --exit2", "timeout": 10 } ] } ] } }
-```
-
 **Cursor** — `.cursor/hooks.json` (blocks shell + MCP paths pre-write; file edits
 are retro-scanned):
 
@@ -91,9 +105,11 @@ export const Peephole = async ({ $ }) => ({
 });
 ```
 
-**Sourcegraph Amp** — `~/.config/amp/plugins/peephole.ts`, register a `tool.call`
-handler that shells to `peephole hook --exit2` and returns
-`"reject-and-continue"` when the exit code is 2, else `"allow"`.
+**Sourcegraph Amp** (unverified) — the sketch is a `~/.config/amp/plugins/peephole.ts`
+`tool.call` handler that shells to `peephole hook --exit2` and rejects when the
+exit code is 2, but the exact deny return value has not been verified against
+Amp's current plugin API. Confirm it against Amp's docs before relying on it; use
+the git pre-commit backstop meanwhile.
 
 ## MCP server (advisory — for editors that can't block)
 

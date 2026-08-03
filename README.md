@@ -31,12 +31,12 @@ no runtime — with a hook path under 10ms per event. See
 
 **Docs:** [Design](docs/DESIGN.md) · [Benchmark](docs/BENCHMARK.md) · [Integrations](docs/INTEGRATIONS.md) · [Review history](docs/REVIEW.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
 
-> **Not just Claude Code.** The same binary gates writes in any hook-based agent,
-> Gemini CLI, OpenAI Codex CLI, Qwen Code, Charm Crush, Block Goose, Cursor,
-> OpenCode, Amp, via `peephole hook --exit2` (exit code 2 is the universal block
-> signal), plus a universal `git pre-commit` backstop for everything else. See
-> [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) for drop-in configs and a
-> coverage matrix (which agents block pre-write vs. only advise).
+> **Not just Claude Code.** The same binary hard-blocks writes in Gemini CLI,
+> OpenAI Codex CLI, Qwen Code, Charm Crush, and Cursor (plus OpenCode via its
+> plugin) — every host that honors `peephole hook --exit2`'s exit-code-2 block
+> signal — with a universal `git pre-commit` backstop for everything else. See
+> [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) for drop-in configs, the coverage
+> matrix, and the honest caveats (which hosts can't hard-block yet).
 
 ## Install
 
@@ -81,8 +81,8 @@ full setup and the coverage rationale are in
 
 | Integration | Blocks before write? | Agents / IDEs |
 |---|---|---|
-| **Native pre-tool hook**: `peephole hook --exit2` | **Yes, hard** | Claude Code · Gemini CLI · OpenAI Codex CLI · Qwen Code · Charm Crush · Block Goose · Cursor *(shell + MCP paths)* |
-| **In-process plugin**: shells to the hook | **Yes, hard** | OpenCode · Sourcegraph Amp · OpenHands · Cline (SDK) |
+| **Native pre-tool hook**: `peephole hook --exit2` | **Yes, hard** (deny) | Claude Code · Gemini CLI · OpenAI Codex CLI · Qwen Code · Charm Crush · Cursor *(shell + MCP paths)* |
+| **In-process plugin**: shells to the hook | **Yes, hard** | OpenCode |
 | **git pre-commit**: `peephole scan --gate --staged` | **Yes, at commit** | Universal, any git repo (Aider auto-commits, so effectively per edit) |
 | **MCP server**: `peephole mcp` | Advisory | Windsurf · Trae · Tongyi Lingma (通义灵码) · Comate (文心快码) · CodeGeeX · iFlyCode · Qoder · + the MCP mode of any CLI agent |
 | **LSP diagnostics**: `peephole lsp` | Warn only | Zed · JetBrains AI · VS Code / GitHub Copilot |
@@ -90,6 +90,17 @@ full setup and the coverage rationale are in
 Only hooks and in-process plugins can *veto* a write pre-emptively. Most editors
 expose only post-hoc events or diagnostics, so there peephole *advises* (MCP/LSP)
 and the real block is the git pre-commit hook.
+
+**Honest coverage caveats.** A hook host hard-blocks only if it honors the block
+signal (exit code 2). Verified for the six exit-2 hosts above and OpenCode's
+plugin (reads exit 2). **Not** verified for **Block Goose** (no external hook
+system — use the git/MCP backstop), **Cline** (in-process SDK; needs a plugin
+that returns `{approved:false}` on exit 2 — not yet shipped), and **Sourcegraph
+Amp / OpenHands** (plugin unverified); treat those as advisory + git-backstop
+until a working plugin ships. Also, exit-2 hosts enforce **deny only** — a
+lower-confidence *ask* finding (e.g. `curl … | bash`) passes on them, whereas
+Claude Code surfaces it as an approval prompt. See
+[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
 
 ## Modes
 
