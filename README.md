@@ -12,7 +12,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-C79A3B" alt="MIT license">
   <img src="https://img.shields.io/badge/go-1.26-00ADD8" alt="Go 1.26">
-  <img src="https://img.shields.io/badge/rules-177%20CWE-0F1420" alt="177 CWE rules">
+  <img src="https://img.shields.io/badge/rules-181%20CWE-0F1420" alt="181 CWE rules">
   <img src="https://img.shields.io/badge/languages-31-0F1420" alt="31 languages">
   <img src="https://img.shields.io/badge/deps-0-brightgreen" alt="zero dependencies">
 </p>
@@ -227,7 +227,7 @@ treat as marketing-aware claims).
 |---|---|---|---|---|---|---|
 | Acts **before** code lands | ✅ PreToolUse deny | ❌ PostToolUse warn | ❌ post-write scan | ❌ in-loop scan | ✅ pre-commit deps | ✅ pre-install deps |
 | Blocks the write | ✅ strict/hardened | ❌ advisory only | regen-until-clean (Guardian) | ❌ | ✅ (deps only) | ✅ (deps only) |
-| App-code pattern breadth | 176 rules / 77 CWEs *(measured)* | 25 patterns *(measured)* | large SAST corpus, taint engine | medium | none (deps) | none (deps) |
+| App-code pattern breadth | 181 rules / 78 CWEs *(measured)* | 25 patterns *(measured)* | large SAST corpus, taint engine | medium | none (deps) | none (deps) |
 | Semantic / LLM review | ⚠️ diff-grounded self-review (host model, zero-cost) | ✅ LLM diff review | ✅ taint (OSS) + more | ✅ | ❌ | ❌ |
 | Supply-chain gate | ✅ installs + manifests | ❌ | partial (SCA product) | ✅ | ✅ | ✅ |
 | Tamper-evident audit log | ✅ hash-chained | ❌ | ❌ | platform | platform | ❌ |

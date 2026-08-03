@@ -73,7 +73,7 @@ IN (v1 core, mechanisms N1–N6 + experimental N7, KB across ~28 language bucket
 - Enforcement plane: PreToolUse gate on Write/Edit/MultiEdit/NotebookEdit;
   Bash write-path payload extraction (with benign-producer carve-out); slopsquat
   gate on installs AND manifest edits; path-aware self-protection.
-- CWE-keyed KB (174 rules embedded as JSON) with presence_patterns (enforced) vs
+- CWE-keyed KB (181 rules embedded as JSON) with presence_patterns (enforced) vs
   absence_requirements (advisory checklist only); full §4.1 schema per rule.
 - N3 task classifier at UserPromptSubmit (keyword → CWE candidates + exemplars +
   attack scenarios + KEV + org policy from .peephole-policy.json).
@@ -192,7 +192,7 @@ go test ./...   # end-to-end hook contract tests + KB self-consistency + tamper 
   hooks run, preventing a repo from swapping peephole's hooks. Recommended managed
   default.
 - **Statusline badge:** add a `statusLine` command running `peephole statusline` to
-  show `peephole strict | N blocked M flagged | 177 rules` in your status bar.
+  show `peephole strict | N blocked M flagged | 181 rules` in your status bar.
 - **N7 taint-echo (experimental, off by default):** create `.peephole/taint-echo`
   to enable provenance escalation (code derived from fetched/README/MCP content
   reaching a sink → ask). It also requires wiring WebFetch/Read into PostToolUse;

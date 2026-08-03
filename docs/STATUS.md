@@ -15,7 +15,7 @@ what's deliberately deferred. Updated as work proceeds.
 | N6 | Adversarial Self-Check Mandate (Stop negative-test gate + diff-grounded, CWE-targeted self-review, N3-triggered) | **done** | `handlers.go` handleStop + `diff.go`; audit warns, max 2 continuations, exhaustion logged; effect on Haiku self-review documented honestly (BENCHMARK §D) |
 | N7 | Diff-Provenance Taint Echo | **done (experimental opt-in)** | `taint.go`; ask by default, deny behind `.peephole/taint-deny`; off unless enabled |
 
-**KB: 174 rules, 77 distinct CWEs, 504 presence patterns** across ~28 language
+**KB: 181 rules, 78 distinct CWEs, 558 presence patterns** across ~31 language
 buckets (python, js/ts, go, java/kotlin, php, ruby, rust, c/c++, c#, sql, yaml,
 webserver, objc, bicep, solidity, terraform-adjacent, shell, powershell, and
 lang-agnostic). Every rule ships the full §4.1 record — task triggers, attack
