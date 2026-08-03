@@ -53,6 +53,18 @@ func TestRuleCorpus(t *testing.T) {
 		{"CWE-89", "db.kt", `val c = db.rawQuery("SELECT * FROM users WHERE name = ?", arrayOf(name))`, false},
 		{"CWE-89", "q.swift", "let rs = try db.executeQuery(\"SELECT * FROM u WHERE name = '\\(name)'\", values: nil)", true},
 		{"CWE-89", "q.swift", `let rs = try db.executeQuery("SELECT * FROM u WHERE name = ?", values: [name])`, false},
+		// Round-4: GHA pwn-request, C format-string, CloudFormation
+		{"CWE-829", "wf.yml", "on: pull_request_target\njobs:\n  b:\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.pull_request.head.sha }}", true},
+		{"CWE-829", "wf.yml", "on: pull_request\njobs:\n  b:\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.pull_request.head.sha }}", false}, // read-only trigger
+		{"CWE-829", "wf.yml", "on: pull_request_target\njobs:\n  b:\n    steps:\n      - uses: actions/checkout@v4", false}, // base checkout
+		{"CWE-134", "a.c", `fprintf(stderr, user_msg);`, true},
+		{"CWE-134", "a.c", `printf(buf);`, true},
+		{"CWE-134", "a.c", `fprintf(stderr, "%s", user_msg);`, false}, // fixed format
+		{"CWE-134", "a.c", `printf("done\n");`, false},
+		{"CWE-732", "cfn.yml", "SecurityGroupIngress:\n  - CidrIp: 0.0.0.0/0", true},
+		{"CWE-732", "cfn.yml", "CidrIp: 10.0.0.0/16", false}, // scoped
+		{"CWE-732", "cfn.yml", "StorageEncrypted: false", true},
+		{"CWE-732", "cfn.yml", "StorageEncrypted: true", false},
 		// CWE-78 command injection
 		{"CWE-78", "a.py", `os.system(f"ping {h}")`, true},
 		{"CWE-78", "a.py", `subprocess.run(["ping", h])`, false}, // argv list

