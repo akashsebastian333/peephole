@@ -55,16 +55,19 @@ a visible notice — peephole never blocks the workflow because it cannot run.
 This is distinct from fail-**closed**, which applies only when the binary ran and
 hit an internal error mid-decision.
 
-**Hot-path performance (< 10ms per event).** PreToolUse fires on every
-Write/Edit/Bash, so the whole path is tuned to stay under the threshold a dev
-would feel: the launcher execs the cached binary directly; the CWE knowledge
-base ships as build-time-generated Go literals with precomputed literal-set
-prefilters, so `loadKB` is ~7µs rather than ~2ms of JSON parsing, and there is
-no file I/O to load rules on the hot path (compiled-in literals also mean a local
-attacker can't quietly edit rule files the binary would ignore); a detached
-SessionStart `warmcache` pre-warms the slopsquat cache so the first install
-verdict skips a cold ~500ms registry round-trip. Measured hook process ~8ms;
-the rest of any latency is model generation.
+**Hot-path performance (~4ms for a typical write).** PreToolUse fires on every
+Write/Edit/Bash, so the whole path is tuned: the launcher execs the cached binary
+directly; the CWE knowledge base ships as build-time-generated Go literals with
+precomputed literal-set prefilters, so `loadKB` is ~7µs rather than ~2ms of JSON
+parsing, and there is no file I/O to load rules on the hot path (compiled-in
+literals also mean a local attacker can't quietly edit rule files the binary would
+ignore); a detached SessionStart `warmcache` pre-warms the slopsquat cache so the
+first install verdict skips a cold ~500ms registry round-trip. Measured: a small
+write is ~4ms end-to-end, of which ~2.7ms is the Go process floor and the scan is
+sub-2ms. The scan cost is linear in file size (a full 256KB hot-path window is
+~40ms); the taint pass now skips files with no sink literal (prefilter recovery
+via the regex AST), so scan allocations on clean files dropped to zero. The rest
+of any observed latency is model generation.
 
 ## Scope (what this build includes vs defers)
 

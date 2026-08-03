@@ -26,7 +26,8 @@ Where the incumbent plugin warns *after* a write lands (PostToolUse,
 detect-then-regenerate), peephole denies *before* it (PreToolUse): in
 strict/hardened mode the insecure hunk never touches disk, so code is *born*
 secure, not repaired. It's a single **static Go binary** — no Node, no Python,
-no runtime — with a hook path under 10ms per event. See
+no runtime — with a ~4ms hook path for a typical write (larger writes scale with
+size; the 256KB hot-path window is retro-scanned beyond that). See
 [docs/DESIGN.md](docs/DESIGN.md) for the architecture and platform contract.
 
 **Docs:** [Design](docs/DESIGN.md) · [Benchmark](docs/BENCHMARK.md) · [Integrations](docs/INTEGRATIONS.md) · [Review history](docs/REVIEW.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
