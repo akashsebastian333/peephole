@@ -21,7 +21,7 @@ import (
 type policy struct {
 	global  []string
 	byCWE   map[string][]string
-	enforce map[string]bool // CWE -> always deny (org mandate). ESCALATION ONLY.
+	enforce map[string]bool // CWE -> deny in strict/hardened (org mandate). ESCALATION ONLY; audit still measure-only.
 	minMode string          // org floor: the effective mode is never weaker than this
 }
 

@@ -481,9 +481,11 @@ func handleBash(e Event, kb *KB, mode string, ti ToolInput, pol policy) {
 func decisionFor(mode string, f Finding, content string, pol policy) (string, bool) {
 	marked := secDebtNear(content, firstMatchLine(f.Rule, "", content))
 	decision, mk := baseDecision(mode, f, marked)
-	// Org mandate: an enforced CWE hard-denies in every mode and is not waivable
-	// by a marker. Applied here so it reaches every write surface (Write, Bash
-	// write-path, MCP), not just the Write family.
+	// Org mandate: an enforced CWE hard-denies in the enforcing modes (strict/
+	// hardened) and is not waivable by a marker or the deny-budget. In audit mode
+	// (measure-only by design) it is warn+logged like everything else - pair
+	// `enforce` with `min_mode` to guarantee the block. Applied here so it reaches
+	// every write surface (Write, Bash write-path, MCP), not just the Write family.
 	if pol.mustDeny(f.Rule.CWE) && decision != "deny" {
 		return "deny", false
 	}
