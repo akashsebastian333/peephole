@@ -33,6 +33,11 @@
       "lang": "javascript",
       "confidence": "high",
       "re": "(?:Handlebars\\.compile|_\\.template|ejs\\.(?:render|compile))\\(\\s*`[^`]*\\$\\{"
+    },
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "render\\s+inline:\\s*[^,\\n]*params\\[|ERB\\.new\\(\\s*[^)]*params\\["
     }
   ],
   "attack_scenario": "user input is placed into the template SOURCE (not passed as data), so the template engine evaluates attacker markup — a full remote-code-execution path in Jinja2/Mako/Handlebars",

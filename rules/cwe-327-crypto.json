@@ -67,6 +67,16 @@
       "lang": "java",
       "confidence": "high",
       "re": "\"AES/ECB/|Cipher\\.getInstance\\(\\s*[\"'][^\"']*ECB"
+    },
+    {
+      "lang": "csharp",
+      "confidence": "high",
+      "re": "\\b(?:DES|TripleDES|RC2|MD4)(?:CryptoServiceProvider|Managed)?\\.Create\\(\\)|new\\s+(?:DES|TripleDES|RC2|MD4)(?:CryptoServiceProvider|Managed)\\s*\\("
+    },
+    {
+      "lang": "csharp",
+      "confidence": "medium",
+      "re": "\\b(?:MD5|SHA1)(?:CryptoServiceProvider|Managed)?\\.Create\\(\\)|new\\s+(?:MD5|SHA1)(?:CryptoServiceProvider|Managed)\\s*\\("
     }
   ],
   "attack_scenario": "an attacker who obtains the hash store cracks fast/weak password hashes at GPU speed; under ECB, identical plaintext blocks yield identical ciphertext, leaking structure",

@@ -19,7 +19,8 @@
     {"lang": "elixir", "confidence": "high", "re": "Code\\.eval_(?:string|quoted)\\("},
     {"lang": "perl", "confidence": "medium", "re": "\\beval\\s*[\"']"},
     {"lang": "r", "confidence": "high", "re": "\\beval\\s*\\(\\s*parse\\s*\\("},
-    {"lang": "", "confidence": "medium", "re": "\\$\\{\\{\\s*github\\.(?:head_ref\\b|event\\.(?:issue|pull_request|comment|review|discussion|commits|head_commit|pages|inputs)[^}]*\\.(?:title|body|name|email|message|ref|label|login|value))", "reject_re": "(?m)^\\s*[\\w.-]+\\s*:\\s*\\$\\{\\{"}
+    {"lang": "", "confidence": "medium", "re": "\\$\\{\\{\\s*github\\.(?:head_ref\\b|event\\.(?:issue|pull_request|comment|review|discussion|commits|head_commit|pages|inputs)[^}]*\\.(?:title|body|name|email|message|ref|label|login|value))", "reject_re": "(?m)^\\s*[\\w.-]+\\s*:\\s*\\$\\{\\{"},
+    {"lang": "php", "confidence": "high", "re": "\\b(?:eval|assert)\\s*\\(\\s*[^)]*\\$_(?:GET|POST|REQUEST|COOKIE)"}
   ],
   "attack_scenario": "attacker supplies an expression that reaches the runtime's import/require facility, achieving remote code execution as the application user",
   "negative_test_hint": ["feed expr = \"__import__('os').popen('id').read()\" and assert it is rejected, not executed"],

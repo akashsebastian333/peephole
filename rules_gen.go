@@ -322,6 +322,12 @@ var generatedRules = []Rule{
 				Confidence: "high",
 				prefilter:  []string{"render", "compile"},
 			},
+			{
+				Lang:       "ruby",
+				Re:         "render\\s+inline:\\s*[^,\\n]*params\\[|ERB\\.new\\(\\s*[^)]*params\\[",
+				Confidence: "high",
+				prefilter:  []string{"render", "params"},
+			},
 		},
 		Absence:        nil,
 		AttackScenario: "user input is placed into the template SOURCE (not passed as data), so the template engine evaluates attacker markup — a full remote-code-execution path in Jinja2/Mako/Handlebars",
@@ -1550,6 +1556,18 @@ var generatedRules = []Rule{
 				Re:         "\"AES/ECB/|Cipher\\.getInstance\\(\\s*[\"'][^\"']*ECB",
 				Confidence: "high",
 				prefilter:  []string{"aes", "getinstance"},
+			},
+			{
+				Lang:       "csharp",
+				Re:         "\\b(?:DES|TripleDES|RC2|MD4)(?:CryptoServiceProvider|Managed)?\\.Create\\(\\)|new\\s+(?:DES|TripleDES|RC2|MD4)(?:CryptoServiceProvider|Managed)\\s*\\(",
+				Confidence: "high",
+				prefilter:  []string{"create", "new"},
+			},
+			{
+				Lang:       "csharp",
+				Re:         "\\b(?:MD5|SHA1)(?:CryptoServiceProvider|Managed)?\\.Create\\(\\)|new\\s+(?:MD5|SHA1)(?:CryptoServiceProvider|Managed)\\s*\\(",
+				Confidence: "medium",
+				prefilter:  []string{"create", "new"},
 			},
 		},
 		Absence:        nil,
@@ -4467,6 +4485,18 @@ var generatedRules = []Rule{
 				Confidence: "high",
 				prefilter:  []string{"system", "exec", "spawn"},
 			},
+			{
+				Lang:       "csharp",
+				Re:         "(?i)(?:Process\\.Start|new\\s+ProcessStartInfo)\\s*\\(\\s*@?\"(?:cmd|bash|sh|zsh|powershell|/bin/(?:sh|bash)|cmd\\.exe)[^\"]*\"\\s*,\\s*[^)\\n]*(?:\"\\s*\\+|\\$@?\"[^\"]*\\{)",
+				Confidence: "high",
+				prefilter:  nil,
+			},
+			{
+				Lang:       "csharp",
+				Re:         "(?i)\\.Arguments\\s*=\\s*(?:[^;\\n]*\"\\s*\\+|\\$@?\"[^\"]*\\{)",
+				Confidence: "medium",
+				prefilter:  []string{"arguments"},
+			},
 		},
 		Absence:        nil,
 		AttackScenario: "attacker appends a shell metacharacter and a second command to the interpolated field; the shell parses and runs it with the service's privileges",
@@ -5688,6 +5718,41 @@ var generatedRules = []Rule{
 	},
 	{
 		CWE:          "CWE-89",
+		Name:         "Android SQLite query built by string concatenation (rawQuery/execSQL)",
+		Rank:         0,
+		KEV:          false,
+		OWASP:        nil,
+		Severity:     "",
+		TaskTriggers: []string{"sqlite", "rawquery", "execsql", "android database", "room query", "database helper"},
+		Patterns: []Pattern{
+			{
+				Lang:       "java",
+				Re:         "\\.(?:rawQuery|execSQL|compileStatement)\\s*\\(\\s*\"[^\"]*\"\\s*\\+",
+				Confidence: "high",
+				prefilter:  []string{"rawquery", "execsql", "compilestatement"},
+			},
+			{
+				Lang:       "java",
+				Re:         "\\.(?:rawQuery|execSQL|compileStatement)\\s*\\(\\s*\"[^\"]*\\$\\{?[A-Za-z_]",
+				Confidence: "high",
+				prefilter:  []string{"rawquery", "execsql", "compilestatement"},
+			},
+		},
+		Absence:        nil,
+		AttackScenario: "A malicious value (e.g. name = ' OR '1'='1' --) closes the string literal and appends attacker SQL, turning a single-row SQLite lookup into an arbitrary read/write or auth bypass on the on-device database.",
+		NegativeHints:  []string{"submit name = \"' OR '1'='1' -- \" and assert rawQuery returns a single row or errors, not the whole table"},
+		Exemplar: struct {
+			Noncompliant string `json:"noncompliant"`
+			Compliant    string `json:"compliant"`
+			Explanation  string `json:"explanation"`
+		}{
+			Noncompliant: "val c = db.rawQuery(\"SELECT * FROM users WHERE name = '\" + name + \"'\", null)",
+			Compliant:    "val c = db.rawQuery(\"SELECT * FROM users WHERE name = ?\", arrayOf(name))",
+			Explanation:  "SQLiteDatabase.rawQuery/execSQL take raw SQL, so a concatenated or Kotlin-interpolated value is parsed as SQL and can inject clauses. Pass the value as a ? placeholder with the selectionArgs array (arrayOf(name)); the driver binds it as data that can never be reinterpreted as SQL.",
+		},
+	},
+	{
+		CWE:          "CWE-89",
 		Name:         "MyBatis ${} string interpolation SQL injection",
 		Rank:         0,
 		KEV:          false,
@@ -6130,6 +6195,18 @@ var generatedRules = []Rule{
 				Confidence: "high",
 				prefilter:  []string{"select", "insert", "update", "delete"},
 			},
+			{
+				Lang:       "csharp",
+				Re:         "(?i)\"[^\"]*\\b(?:select|insert|update|delete)\\b[^\"]*\\b(?:from|into|where|set|values)\\b[^\"]*['=]\\s*\"\\s*\\+",
+				Confidence: "high",
+				prefilter:  []string{"select", "insert", "update", "delete"},
+			},
+			{
+				Lang:       "csharp",
+				Re:         "(?i)\\$@?\"[^\"]*\\b(?:select|insert|update|delete)\\b[^\"]*\\b(?:from|into|where|set|values)\\b[^\"]*\\{",
+				Confidence: "high",
+				prefilter:  []string{"select", "insert", "update", "delete"},
+			},
 		},
 		Absence:        nil,
 		AttackScenario: "attacker submits input that closes the string literal and appends its own SQL clause, turning a single-row lookup into an arbitrary read, write, or auth bypass",
@@ -6142,6 +6219,35 @@ var generatedRules = []Rule{
 			Noncompliant: "cur.execute(f\"SELECT * FROM users WHERE email = '{email}'\")",
 			Compliant:    "cur.execute(\"SELECT * FROM users WHERE email = %s\", (email,))",
 			Explanation:  "parameterized query — the driver escapes the value, the SQL text is fixed",
+		},
+	},
+	{
+		CWE:          "CWE-89",
+		Name:         "Swift SQL query built by string interpolation (FMDB/SQLite.swift)",
+		Rank:         0,
+		KEV:          false,
+		OWASP:        nil,
+		Severity:     "",
+		TaskTriggers: []string{"sqlite", "fmdb", "executequery", "swift database", "db query"},
+		Patterns: []Pattern{
+			{
+				Lang:       "swift",
+				Re:         "(?is)\"[^\"]*\\b(?:select|insert|update|delete)\\b[^\"]*\\b(?:from|into|where|set|values)\\b[^\"]*\\\\\\(",
+				Confidence: "high",
+				prefilter:  []string{"select", "insert", "update", "delete"},
+			},
+		},
+		Absence:        nil,
+		AttackScenario: "A malicious value (e.g. name = ' OR '1'='1' --) interpolated with \\(name) into the SQL string closes the literal and appends attacker SQL, turning a single-row lookup into an arbitrary read/write or auth bypass.",
+		NegativeHints:  []string{"submit name = \"' OR '1'='1' -- \" and assert executeQuery returns a single row or errors, not the whole table"},
+		Exemplar: struct {
+			Noncompliant string `json:"noncompliant"`
+			Compliant    string `json:"compliant"`
+			Explanation  string `json:"explanation"`
+		}{
+			Noncompliant: "let rs = try db.executeQuery(\"SELECT * FROM users WHERE name = '\\(name)'\", values: nil)",
+			Compliant:    "let rs = try db.executeQuery(\"SELECT * FROM users WHERE name = ?\", values: [name])",
+			Explanation:  "Swift string interpolation \\(name) splices the value straight into the SQL text, so it is parsed as SQL. Use a ? placeholder and pass the value in the values array; FMDB/SQLite.swift bind it as data that can never be reinterpreted as SQL.",
 		},
 	},
 	{
@@ -6783,6 +6889,12 @@ var generatedRules = []Rule{
 				Confidence: "medium",
 				RejectRe:   "(?m)^\\s*[\\w.-]+\\s*:\\s*\\$\\{\\{",
 				prefilter:  []string{"github"},
+			},
+			{
+				Lang:       "php",
+				Re:         "\\b(?:eval|assert)\\s*\\(\\s*[^)]*\\$_(?:GET|POST|REQUEST|COOKIE)",
+				Confidence: "high",
+				prefilter:  []string{"eval", "assert"},
 			},
 		},
 		Absence:        nil,

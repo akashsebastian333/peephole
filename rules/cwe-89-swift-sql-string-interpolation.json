@@ -1,0 +1,29 @@
+{
+  "cwe_id": "CWE-89",
+  "name": "Swift SQL query built by string interpolation (FMDB/SQLite.swift)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "sqlite",
+    "fmdb",
+    "executequery",
+    "swift database",
+    "db query"
+  ],
+  "patterns": [
+    {
+      "lang": "swift",
+      "confidence": "high",
+      "re": "(?is)\"[^\"]*\\b(?:select|insert|update|delete)\\b[^\"]*\\b(?:from|into|where|set|values)\\b[^\"]*\\\\\\("
+    }
+  ],
+  "attack_scenario": "A malicious value (e.g. name = ' OR '1'='1' --) interpolated with \\(name) into the SQL string closes the literal and appends attacker SQL, turning a single-row lookup into an arbitrary read/write or auth bypass.",
+  "negative_test_hint": [
+    "submit name = \"' OR '1'='1' -- \" and assert executeQuery returns a single row or errors, not the whole table"
+  ],
+  "exemplar": {
+    "noncompliant": "let rs = try db.executeQuery(\"SELECT * FROM users WHERE name = '\\(name)'\", values: nil)",
+    "compliant": "let rs = try db.executeQuery(\"SELECT * FROM users WHERE name = ?\", values: [name])",
+    "explanation": "Swift string interpolation \\(name) splices the value straight into the SQL text, so it is parsed as SQL. Use a ? placeholder and pass the value in the values array; FMDB/SQLite.swift bind it as data that can never be reinterpreted as SQL."
+  }
+}

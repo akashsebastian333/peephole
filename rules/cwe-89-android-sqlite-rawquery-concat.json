@@ -1,0 +1,35 @@
+{
+  "cwe_id": "CWE-89",
+  "name": "Android SQLite query built by string concatenation (rawQuery/execSQL)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "sqlite",
+    "rawquery",
+    "execsql",
+    "android database",
+    "room query",
+    "database helper"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.(?:rawQuery|execSQL|compileStatement)\\s*\\(\\s*\"[^\"]*\"\\s*\\+"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.(?:rawQuery|execSQL|compileStatement)\\s*\\(\\s*\"[^\"]*\\$\\{?[A-Za-z_]"
+    }
+  ],
+  "attack_scenario": "A malicious value (e.g. name = ' OR '1'='1' --) closes the string literal and appends attacker SQL, turning a single-row SQLite lookup into an arbitrary read/write or auth bypass on the on-device database.",
+  "negative_test_hint": [
+    "submit name = \"' OR '1'='1' -- \" and assert rawQuery returns a single row or errors, not the whole table"
+  ],
+  "exemplar": {
+    "noncompliant": "val c = db.rawQuery(\"SELECT * FROM users WHERE name = '\" + name + \"'\", null)",
+    "compliant": "val c = db.rawQuery(\"SELECT * FROM users WHERE name = ?\", arrayOf(name))",
+    "explanation": "SQLiteDatabase.rawQuery/execSQL take raw SQL, so a concatenated or Kotlin-interpolated value is parsed as SQL and can inject clauses. Pass the value as a ? placeholder with the selectionArgs array (arrayOf(name)); the driver binds it as data that can never be reinterpreted as SQL."
+  }
+}

@@ -36,6 +36,23 @@ func TestRuleCorpus(t *testing.T) {
 		{"CWE-703", "c.sol", `msg.sender.send(amt);`, true},
 		{"CWE-703", "c.sol", `require(msg.sender.send(amt));`, false}, // return checked
 		{"CWE-703", "c.sol", `bool ok = msg.sender.send(amt);`, false}, // return consumed
+		// Round-3: C#/.NET, Android SQLite, PHP eval, Ruby SSTI, Swift SQL
+		{"CWE-89", "a.cs", `var q = new SqlCommand("SELECT * FROM Users WHERE Name = '" + name + "'", conn);`, true},
+		{"CWE-89", "a.cs", `var q = $"SELECT * FROM Users WHERE Id = {userId}";`, true},
+		{"CWE-89", "a.cs", `var q = new SqlCommand("SELECT * FROM Users WHERE Id = @id", conn);`, false},
+		{"CWE-89", "a.cs", `log.Info($"Selected {count} rows from the report");`, false}, // "Selected"/"from" prose, not SQL concat
+		{"CWE-78", "a.cs", `Process.Start("cmd.exe", "/c ping " + host);`, true},
+		{"CWE-78", "a.cs", `Process.Start("ping", host);`, false}, // argv, safe
+		{"CWE-327", "a.cs", `var des = new DESCryptoServiceProvider();`, true},
+		{"CWE-327", "a.cs", `var h = SHA256.Create();`, false}, // strong
+		{"CWE-94", "a.php", `eval($_GET["code"]);`, true},
+		{"CWE-94", "a.php", `eval("return 1 + 2;");`, false}, // static
+		{"CWE-1336", "a.rb", `render inline: params[:tpl]`, true},
+		{"CWE-1336", "a.rb", `render inline: "<%= @user.name %>"`, false}, // static template
+		{"CWE-89", "db.kt", `val c = db.rawQuery("SELECT * FROM users WHERE name = '" + name + "'", null)`, true},
+		{"CWE-89", "db.kt", `val c = db.rawQuery("SELECT * FROM users WHERE name = ?", arrayOf(name))`, false},
+		{"CWE-89", "q.swift", "let rs = try db.executeQuery(\"SELECT * FROM u WHERE name = '\\(name)'\", values: nil)", true},
+		{"CWE-89", "q.swift", `let rs = try db.executeQuery("SELECT * FROM u WHERE name = ?", values: [name])`, false},
 		// CWE-78 command injection
 		{"CWE-78", "a.py", `os.system(f"ping {h}")`, true},
 		{"CWE-78", "a.py", `subprocess.run(["ping", h])`, false}, // argv list

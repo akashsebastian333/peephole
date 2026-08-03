@@ -103,6 +103,16 @@
       "lang": "ruby",
       "confidence": "high",
       "re": "\\b(?:system|exec|spawn)\\s*\\(\\s*[\"'][^\"']*[\"']\\s*\\+"
+    },
+    {
+      "lang": "csharp",
+      "confidence": "high",
+      "re": "(?i)(?:Process\\.Start|new\\s+ProcessStartInfo)\\s*\\(\\s*@?\"(?:cmd|bash|sh|zsh|powershell|/bin/(?:sh|bash)|cmd\\.exe)[^\"]*\"\\s*,\\s*[^)\\n]*(?:\"\\s*\\+|\\$@?\"[^\"]*\\{)"
+    },
+    {
+      "lang": "csharp",
+      "confidence": "medium",
+      "re": "(?i)\\.Arguments\\s*=\\s*(?:[^;\\n]*\"\\s*\\+|\\$@?\"[^\"]*\\{)"
     }
   ],
   "attack_scenario": "attacker appends a shell metacharacter and a second command to the interpolated field; the shell parses and runs it with the service's privileges",
