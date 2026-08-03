@@ -4157,7 +4157,7 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "",
-				Re:         "(?i)(?:httponly|secure|SESSION_COOKIE_SECURE|CSRF_COOKIE_SECURE|SESSION_COOKIE_HTTPONLY)\\s*[:=]\\s*(?:False|false)\\b",
+				Re:         "(?i)(?:httponly|secure|SESSION_COOKIE_SECURE|CSRF_COOKIE_SECURE|SESSION_COOKIE_HTTPONLY)['\"]?\\]?\\s*[:=]\\s*(?:False|false)\\b",
 				Confidence: "high",
 				prefilter:  []string{"httponly", "secure", "session_cookie_secure", "csrf_cookie_secure", "session_cookie_httponly"},
 			},

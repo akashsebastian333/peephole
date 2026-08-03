@@ -65,6 +65,9 @@ func TestRuleCorpus(t *testing.T) {
 		{"CWE-732", "cfn.yml", "CidrIp: 10.0.0.0/16", false}, // scoped
 		{"CWE-732", "cfn.yml", "StorageEncrypted: false", true},
 		{"CWE-732", "cfn.yml", "StorageEncrypted: true", false},
+		// Round-5: cookie-flag disabled in the bracket-subscript config form
+		{"CWE-732", "settings.py", `app.config['SESSION_COOKIE_SECURE'] = False`, true},
+		{"CWE-732", "settings.py", `app.config['DEBUG'] = False`, false}, // unrelated key stays clean
 		// CWE-78 command injection
 		{"CWE-78", "a.py", `os.system(f"ping {h}")`, true},
 		{"CWE-78", "a.py", `subprocess.run(["ping", h])`, false}, // argv list
