@@ -4,7 +4,12 @@
 // generator (cmd/kbgen).
 package litset
 
-import "strings"
+import (
+	"regexp/syntax"
+	"strings"
+)
+
+const minLit = 3 // a literal shorter than this is not selective enough to prefilter on
 
 // Required extracts the prefilter SET for a regex: lowercase literals, at
 // least one of which is guaranteed present in any string the regex matches.
@@ -17,12 +22,24 @@ func Required(src string) []string {
 	for _, branch := range splitTopLevelAlternation(src) {
 		set := branchLiteralSet(branch)
 		if len(set) == 0 {
-			return nil // a branch with no guaranteed literal defeats the filter
+			// The string scanner can't extract a guaranteed literal from this branch
+			// (e.g. a nested alternation like `(?:requests\.(?:get|post)|urlopen)`).
+			// Fall back to the regex AST, which computes the required set soundly by
+			// recursion - recovery only, so it never changes a branch the scanner
+			// already handled, and nil there means "always run" (sound, just slower).
+			return dedupCap(requiredSetAST(src))
 		}
 		out = append(out, set...)
 		if len(out) > 10 {
 			return nil // too broad to be selective
 		}
+	}
+	return dedupCap(out)
+}
+
+func dedupCap(out []string) []string {
+	if len(out) == 0 || len(out) > 10 {
+		return nil
 	}
 	seen := map[string]bool{}
 	dedup := out[:0]
@@ -33,6 +50,76 @@ func Required(src string) []string {
 		}
 	}
 	return dedup
+}
+
+// requiredSetAST computes the guaranteed-literal set from the parsed regex AST: a
+// set S such that every string the regex matches contains at least one member of
+// S (or nil if no such guarantee). Recursion: a literal run >= minLit is itself;
+// an alternation is the UNION of its arms' sets (nil if any arm has none, since
+// that arm could match with no literal); a concatenation takes the most-selective
+// child's set (all children are present, so any one child's literal suffices); a
+// 0-or-more/optional yields nil (may be absent); a 1-or-more/capture recurses.
+func requiredSetAST(src string) []string {
+	re, err := syntax.Parse(src, syntax.Perl)
+	if err != nil {
+		return nil
+	}
+	return requiredSet(re.Simplify())
+}
+
+func requiredSet(re *syntax.Regexp) []string {
+	switch re.Op {
+	case syntax.OpLiteral:
+		s := strings.ToLower(string(re.Rune))
+		if len(s) >= minLit {
+			return []string{s}
+		}
+		return nil
+	case syntax.OpConcat:
+		var best []string
+		for _, sub := range re.Sub {
+			if s := requiredSet(sub); setScore(s) > setScore(best) {
+				best = s
+			}
+		}
+		return best
+	case syntax.OpAlternate:
+		var union []string
+		for _, sub := range re.Sub {
+			s := requiredSet(sub)
+			if len(s) == 0 {
+				return nil // an arm with no required literal defeats the whole alternation
+			}
+			union = append(union, s...)
+		}
+		return union
+	case syntax.OpCapture:
+		return requiredSet(re.Sub[0])
+	case syntax.OpPlus:
+		return requiredSet(re.Sub[0]) // 1+ -> the sub occurs at least once
+	case syntax.OpRepeat:
+		if re.Min >= 1 {
+			return requiredSet(re.Sub[0])
+		}
+		return nil
+	default:
+		return nil // star, quest, char class, any-char, anchors, empty match
+	}
+}
+
+// setScore ranks a required set's selectivity: a set is only as selective as its
+// weakest (shortest) member, and fewer members is better. nil scores 0.
+func setScore(s []string) int {
+	if len(s) == 0 {
+		return 0
+	}
+	minLen := 1 << 30
+	for _, l := range s {
+		if len(l) < minLen {
+			minLen = len(l)
+		}
+	}
+	return minLen*4 - len(s)
 }
 
 // RequiredOne extracts a single lowercase literal guaranteed present in any

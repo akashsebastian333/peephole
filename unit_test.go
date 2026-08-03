@@ -108,9 +108,9 @@ func TestPrefilterSoundness(t *testing.T) {
 		{`MODE_ECB\b|\bmodes\.ECB\(`, []string{"mode_ecb", "modes"}},
 		{`(?:eval|exec)\(`, []string{"eval", "exec"}},
 		{`(?i)(?:razorpay_signature|payu_hash)\b`, []string{"razorpay_signature", "payu_hash"}},
-		{`__\$\{[^}\n]*\}__`, nil},          // no literal -> no prefilter
-		{`foo|bar`, []string{"foo", "bar"}}, // top-level alternation -> union set
-		{`ab|cd`, nil},                      // alternatives too short to be selective/sound (<3)
+		{`__\$\{[^}\n]*\}__`, []string{"__${"}}, // guaranteed leading literal (AST recovery)
+		{`foo|bar`, []string{"foo", "bar"}},     // top-level alternation -> union set
+		{`ab|cd`, nil},                          // alternatives too short to be selective/sound (<3)
 	}
 	for _, c := range cases {
 		got := requiredLiterals(c.re)
