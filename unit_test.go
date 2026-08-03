@@ -282,7 +282,9 @@ func TestHeredocBombBounded(t *testing.T) {
 	cmd := strings.Repeat("<<E\n", 256*1024/4) // 256KB of openers
 	start := time.Now()
 	a := analyzeBash(cmd)
-	if d := time.Since(start); d > 500*time.Millisecond {
+	// The timing assertion is meaningful only without the race detector (~20x
+	// instrumentation overhead swamps it); the non-race test run enforces it.
+	if d := time.Since(start); !raceEnabled && d > 500*time.Millisecond {
 		t.Fatalf("heredoc-bomb took %v - still superlinear", d)
 	}
 	if !a.Uninspectable {
