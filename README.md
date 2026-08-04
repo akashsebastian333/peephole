@@ -221,12 +221,14 @@ nothing tuned per model.
   Haiku/Sonnet/Kimi and 5% on GLM, versus 40-55% baseline, 5-15% for a one-line
   prompt, and 20-50% for security-guidance: the guidance plane is not a Haiku
   artifact.
-- **Honest note — GLM is 5%, not 0%, this run.** One GLM session hardcoded
-  *placeholder* AWS credentials (`AWS_SECRET_ACCESS_KEY = "xxxx…"`). Semgrep flags
-  the structure; peephole's secrets rule deliberately ignores obvious placeholder
-  values (not a real `AKIA[A-Z0-9]{16}` key) to avoid dev friction, so it did not
-  deny the write. I do **not** add a placeholder exemption to force 0% — the number
-  stands as measured.
+- **Honest note — GLM was 5%, not 0%, this run (root cause since fixed).** One GLM
+  session hardcoded *placeholder* AWS credentials (`AWS_SECRET_ACCESS_KEY = "xxxx…"`).
+  peephole's format rule needs a real-looking `AKIA[A-Z0-9]{16}` key and its keyword
+  rule skips `xxx…` placeholders (dev-friction avoidance), so it let the write land.
+  The 5% is the honest measurement at run time — I did **not** tweak the grader to
+  force 0%. Instead I fixed the *root cause*: peephole now flags an AWS credential
+  variable assigned **any** string literal (the SDK reads from env/profile/IAM — you
+  never hardcode it), matching gitleaks/detect-secrets. A future run reflects it.
 - **The remaining raw flags are false positives, audited per file.** Uncorrected,
   Semgrep flags peephole on 10-15% of attempts; every one bar the GLM case above
   was verified per file as a genuine Semgrep FP on secure code (static-template

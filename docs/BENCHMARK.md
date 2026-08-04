@@ -213,14 +213,18 @@ data: `benchmark/live/multimodel/benchmark_audit.py`.
   Haiku/Sonnet/Kimi and 5% on GLM, versus 40-55% baseline, 5-15% for a one-line
   prompt, and 20-50% for the incumbent security-guidance plugin — the guidance
   plane is not a Haiku artifact.
-- **GLM is 5%, not 0%, this run — disclosed honestly.** One GLM session hardcoded
-  *placeholder* AWS credentials (`AWS_ACCESS_KEY_ID = "AKIAxxxx…"`,
-  `AWS_SECRET_ACCESS_KEY = "xxxx…"`). Semgrep flags the hardcoded-credential
-  structure; peephole's CWE-798 rule deliberately requires a real-looking key
-  (`AKIA[A-Z0-9]{16}`) and ignores obvious placeholders to avoid dev friction, so
-  it did not deny the write. This is a genuine FP-tuning difference, not a clean
-  miss and not a clean FP — I do **not** add a placeholder exemption to the grader
-  to force 0%; the number stands as Semgrep measured it.
+- **GLM was 5%, not 0%, this run — disclosed, and the root cause since fixed.** One
+  GLM session hardcoded *placeholder* AWS credentials (`AWS_ACCESS_KEY_ID =
+  "AKIAxxxx…"`, `AWS_SECRET_ACCESS_KEY = "xxxx…"`). Semgrep flags the
+  hardcoded-credential structure; peephole's CWE-798 rule required a real-looking
+  `AKIA[A-Z0-9]{16}` key and skipped obvious placeholders (dev-friction avoidance),
+  so it did not deny the write. The 5% stands as Semgrep measured it — I did **not**
+  add a placeholder exemption to the grader to force 0%. Instead the *root cause*
+  is fixed: peephole now flags an AWS credential variable
+  (`aws_secret_access_key`/`aws_access_key_id`/`aws_session_token`) assigned **any**
+  string literal, rejecting the env/config/getenv secure forms — matching what
+  gitleaks/detect-secrets do (the SDK reads creds from env/profile/IAM; you never
+  hardcode them). Verified against the exact GLM session file; a future run reflects it.
 - **The rest of the raw flags are FPs, audited per file.** Uncorrected, Semgrep
   flags peephole on raw 10-15% of attempts; every one *except* the GLM case above
   was verified per file as a genuine Semgrep FP on secure code (static-template
