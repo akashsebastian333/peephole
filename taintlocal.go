@@ -49,8 +49,13 @@ var (
 	tlStrLit = regexp.MustCompile("([fFrRbBuU]*)(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')|(`(?:[^`\\\\]|\\\\.)*`)")
 	tlInterp = regexp.MustCompile(`[{$]\{?([^{}]+)\}`)
 
-	// RHS traces to user-controlled input (evaluated on the de-stringed RHS).
-	tlSource = regexp.MustCompile(`request\b|\.args\b|\.form\b|\.values\b|\.get_json\b|\.cookies\b|\.headers\b|\binput\s*\(|sys\.argv|os\.environ|getenv\s*\(|\.read\s*\(|\breq\.(?:query|body|params)\b|process\.argv|process\.env`)
+	// RHS traces to user-controlled (request) input, evaluated on the de-stringed
+	// RHS. Env vars (os.environ/getenv/process.env) and a bare .read() are NOT
+	// request taint - they are operator config and local file/stream reads, and
+	// treating them as user input painted ordinary vars (VERSION, cwd, config)
+	// tainted, which then tripped every f-string that referenced them. Secret env
+	// reads are still covered separately by tlSensSource (CWE-532).
+	tlSource = regexp.MustCompile(`request\b|\.args\b|\.form\b|\.get_json\b|\.cookies\b|\binput\s*\(|sys\.argv|\breq\.(?:query|body|params)\b|process\.argv`)
 	// RHS builds a dynamic string (evaluated on the RAW RHS: needs the quotes).
 	tlDynStr = regexp.MustCompile("f[\"'][^\"'\\n]*\\{[^}\\n]*\\}|`[^`]*\\$\\{|[\"'][^\"'\\n]*[\"']\\s*[+%]|\\+\\s*[frbu]*[\"']|\\.format\\s*\\(|%\\s*[A-Za-z_(]")
 	// RHS is sanitized/cast: clears taint.
@@ -69,6 +74,11 @@ var (
 	tlSensSource = regexp.MustCompile(`(?i)getpass|\.headers\.get\(\s*["']authorization|request\.headers\[["']authorization|\.form\[["'](?:password|token|secret)|os\.environ(?:\.get\()?\[?["'][A-Z_]*(?:SECRET|TOKEN|PASSWORD|API_?KEY|PRIVATE_?KEY|CRED)|dict\(\s*os\.environ|\{\s*\*\*\s*os\.environ`)
 	// Redaction clears sensitivity (masked / hashed before logging).
 	tlRedact = regexp.MustCompile(`(?i)redact|mask|\bsha\d|hashlib|\*{3,}|\[:\d\]|truncate|last4`)
+	// An f-string field using an !r/!s/!a conversion is a repr/debug rendering
+	// (a __repr__ body, a "python -m {mod!r}" message), not raw HTML/response
+	// output - so it is not reflected XSS. Applied only to reflected-output specs
+	// (see taintSpecHits), never to secret-logging where a repr still leaks.
+	tlReprConv = regexp.MustCompile(`![rsa][}:]`)
 )
 
 // tlRefs returns the RHS with plain string-literal bodies removed but the
@@ -169,6 +179,9 @@ func taintSpecHits(s *TaintSpec, lang, lc, content string, user, dyn, sens map[s
 				// returned value, mask()/hash() for a logged secret).
 				if args == "" || tlRedact.MatchString(args) || tlSanitizer.MatchString(args) {
 					continue
+				}
+				if s.tUser && !s.tSens && tlReprConv.MatchString(args) {
+					continue // repr/debug rendering (!r/!s), not raw response output
 				}
 				for _, id := range tlWord.FindAllString(tlRefs(args), -1) {
 					if (s.tSens && (sens[id] || tlSensName.MatchString(id))) ||

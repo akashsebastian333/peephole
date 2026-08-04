@@ -158,6 +158,11 @@ func TestRuleCorpus(t *testing.T) {
 		{"CWE-521", "a.yaml", `password: ""`, false},                                            // empty = auto-generate default
 		{"CWE-79", "a.jsx", `<div dangerouslySetInnerHTML={{ __html: "<p>hi</p>" }} />`, false}, // constant HTML literal
 		{"CWE-79", "a.jsx", `<div dangerouslySetInnerHTML={{ __html: userInput }} />`, true},    // tainted HTML kept
+		// Round-11: reflected-XSS taint precision (source tightening + repr skip)
+		{"CWE-79", "a.py", "url = request.args.get('u')\nreturn f\"<Req({url!r})>\"", false},     // __repr__ (!r), not response output
+		{"CWE-79", "a.py", "url = request.args.get('u')\nreturn f\"<Req({url})>\"", true},        // raw reflected user input kept
+		{"CWE-79", "a.py", "VERSION = os.environ.get('V', '1')\nreturn f\"=={VERSION}\"", false}, // env config, not user input
+		{"CWE-79", "a.py", "SRC = fp.read()\nreturn f\"config: {SRC}\"", false},                  // local file read, not user input
 		// CWE-327 crypto
 		{"CWE-327", "a.py", `pw = hashlib.md5(password.encode()).hexdigest()`, true},
 		{"CWE-327", "a.py", `h = hashlib.sha256(file_bytes).hexdigest()`, false}, // non-password sha256
