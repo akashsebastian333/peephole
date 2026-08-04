@@ -3619,7 +3619,7 @@ var generatedRules = []Rule{
 				Lang:       "python",
 				Re:         "\\.(?:findall?|findtext)\\(\\s*(?:f[\"']|\"[^\"]*\"\\s*(?:\\+|%|\\.format\\()|'[^']*'\\s*(?:\\+|%|\\.format\\())",
 				Confidence: "high",
-				prefilter:  []string{"find"},
+				prefilter:  []string{".find"},
 			},
 		},
 		Absence:        nil,
@@ -5512,7 +5512,7 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "",
-				Re:         "(?i)\\b(?:aws_(?:secret_access_key|access_key_id|session_token)|azure_(?:client_secret|storage_key)|gcp_(?:private_key|client_secret)|stripe_(?:secret|api)_key|twilio_auth_token|slack_(?:bot_)?token|sendgrid_api_key|github_token|gitlab_token|npm_token|do_?token|digitalocean_token)\\s*[:=]\\s*[\"'][^\"'\\n]+[\"']",
+				Re:         "(?i)\\b(?:aws_(?:secret_access_key|access_key_id|session_token)|azure_(?:client_secret|storage_key)|gcp_(?:private_key|client_secret)|stripe_(?:secret|api)_key|twilio_auth_token|slack_(?:bot_)?token|sendgrid_api_key|github_token|gitlab_token|npm_token)\\s*[:=]\\s*[\"'][^\"'\\n]+[\"']",
 				Confidence: "high",
 				RejectRe:   "(?i)os\\.environ|getenv|process\\.env|config\\[|settings\\.|current_app|vault|secretmanager|\\$\\{|\\{\\{|<[^>]*>|%[sw]|\\bnull\\b",
 				prefilter:  nil,
@@ -5527,7 +5527,7 @@ var generatedRules = []Rule{
 				Lang:       "",
 				Re:         "\\bgh[pousr]_[A-Za-z0-9]{36,}\\b",
 				Confidence: "high",
-				prefilter:  nil,
+				prefilter:  []string{"gho_", "ghp_", "ghr_", "ghs_", "ghu_"},
 			},
 			{
 				Lang:       "",

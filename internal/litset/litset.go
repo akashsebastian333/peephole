@@ -76,7 +76,11 @@ func requiredSet(re *syntax.Regexp) []string {
 		}
 		return nil
 	case syntax.OpConcat:
-		var best []string
+		// Expanding a leading run of literals + small char classes recovers a
+		// selective prefilter for patterns that begin with a bounded class
+		// (gh[pousr]_ -> {ghp_,gho_,ghu_,ghs_,ghr_}) - every match starts with one
+		// of these, so the set is sound. Compare it against the best single child.
+		best := expandedPrefix(re.Sub)
 		for _, sub := range re.Sub {
 			if s := requiredSet(sub); setScore(s) > setScore(best) {
 				best = s
@@ -105,6 +109,69 @@ func requiredSet(re *syntax.Regexp) []string {
 	default:
 		return nil // star, quest, char class, any-char, anchors, empty match
 	}
+}
+
+const (
+	maxClassExpand = 8  // expand a char class only when it has few members
+	maxPrefixes    = 12 // cap the cartesian product of expanded prefixes
+)
+
+// expandedPrefix builds the guaranteed leading-literal SET of a concatenation by
+// walking its children and expanding literals + small char classes into prefixes,
+// stopping at the first node that isn't a fixed-width literal/class (a quantifier,
+// group, etc.). Zero-width anchors are skipped. Every match of the concat begins
+// with one of the returned prefixes, so the set is sound; nil if any prefix would
+// be shorter than minLit or nothing was accumulated.
+func expandedPrefix(subs []*syntax.Regexp) []string {
+	prefixes := []string{""}
+	for _, sub := range subs {
+		switch sub.Op {
+		case syntax.OpBeginLine, syntax.OpEndLine, syntax.OpBeginText, syntax.OpEndText,
+			syntax.OpWordBoundary, syntax.OpNoWordBoundary, syntax.OpEmptyMatch:
+			continue // zero-width, doesn't change the literal prefix
+		case syntax.OpLiteral:
+			lit := strings.ToLower(string(sub.Rune))
+			for i := range prefixes {
+				prefixes[i] += lit
+			}
+		case syntax.OpCharClass:
+			var runes []rune
+			for i := 0; i+1 < len(sub.Rune); i += 2 {
+				lo, hi := sub.Rune[i], sub.Rune[i+1]
+				if hi-lo+1 > maxClassExpand || len(runes)+int(hi-lo+1) > maxClassExpand {
+					return finishPrefixes(prefixes) // class too large to expand soundly-selectively
+				}
+				for r := lo; r <= hi; r++ {
+					runes = append(runes, r)
+				}
+			}
+			if len(runes) == 0 || len(prefixes)*len(runes) > maxPrefixes {
+				return finishPrefixes(prefixes)
+			}
+			var np []string
+			for _, p := range prefixes {
+				for _, r := range runes {
+					np = append(np, p+strings.ToLower(string(r)))
+				}
+			}
+			prefixes = np
+		default:
+			return finishPrefixes(prefixes) // stop at the first variable-width node
+		}
+	}
+	return finishPrefixes(prefixes)
+}
+
+func finishPrefixes(prefixes []string) []string {
+	if len(prefixes) == 0 || (len(prefixes) == 1 && prefixes[0] == "") {
+		return nil
+	}
+	for _, p := range prefixes {
+		if len(p) < minLit {
+			return nil // a prefix too short to be a sound, selective literal
+		}
+	}
+	return prefixes
 }
 
 // setScore ranks a required set's selectivity: a set is only as selective as its
