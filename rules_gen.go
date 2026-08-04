@@ -5512,6 +5512,13 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "",
+				Re:         "(?i)\\baws_(?:secret_access_key|access_key_id|session_token)\\s*[:=]\\s*[\"'][^\"'\\n]+[\"']",
+				Confidence: "high",
+				RejectRe:   "(?i)os\\.environ|getenv|process\\.env|config\\[|settings\\.|current_app|\\$\\{|\\{\\{|<[^>]*>",
+				prefilter:  []string{"aws_"},
+			},
+			{
+				Lang:       "",
 				Re:         "\\bgh[pousr]_[A-Za-z0-9]{36,}\\b",
 				Confidence: "high",
 				prefilter:  nil,

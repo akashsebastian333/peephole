@@ -100,6 +100,13 @@ func TestRuleCorpus(t *testing.T) {
 		{"CWE-22", "a.py", `os.path.join(BASE, "static", "x.css")`, false},
 		// CWE-798 secrets
 		{"CWE-798", "a.py", `AWS = "AKIAIOSFODNN7EXAMPLE"`, true},
+		// hardcoded AWS credential VARIABLE assigned any literal (even a placeholder)
+		// is the anti-pattern - the SDK reads from env/profile/IAM. (root-cause fix
+		// for a benchmark miss where a placeholder value slipped the format rule.)
+		{"CWE-798", "a.py", `AWS_SECRET_ACCESS_KEY = "xxxxxxxxxxxxxxxxxxxx"`, true},
+		{"CWE-798", "a.py", `AWS_ACCESS_KEY_ID = "AKIAxxxxxxxxxxxxxxxx"`, true},
+		{"CWE-798", "a.py", `AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]`, false},     // env, secure
+		{"CWE-798", "a.py", `boto3.client("s3", aws_secret_access_key=AWS_SECRET_ACCESS_KEY)`, false}, // variable, not literal
 		{"CWE-798", "a.py", `DB_PASSWORD = os.environ["DB_PASSWORD"]`, false},
 		{"CWE-798", "a.py", `password = "<your-password-here>"`, false}, // placeholder
 		{"CWE-798", "a.js", `const k = process.env.STRIPE_KEY`, false},
