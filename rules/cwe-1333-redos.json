@@ -8,7 +8,7 @@
   "task_triggers": ["regex", "regexp", "validate", "pattern", "match", "sanitize", "parse"],
   "patterns": [
     {"lang": "python", "confidence": "medium", "re": "re\\.(?:compile|match|search|fullmatch|sub)\\(\\s*r?[\"'][^\"']*\\([^)]*[+*][^)]*\\)[+*]"},
-    {"lang": "javascript", "confidence": "medium", "re": "(?:new RegExp\\(\\s*[\"']|/)[^\"'/]*\\([^)]*[+*][^)]*\\)[+*]"}
+    {"lang": "javascript", "confidence": "medium", "re": "(?:new RegExp\\(\\s*[\"']|(?:[=(,:!]|return|match|test|replace|split|&&|\\|\\|)\\s*/)[^\"'/\\n]*\\([^)]*[+*][^)]*\\)[+*]", "reject_re": "(?m)^\\s*(?://|/\\*|\\*)"}
   ],
   "attack_scenario": "a generated regex has a nested/overlapping quantifier (e.g. (a+)+ or (.*)*), so a crafted input triggers catastrophic backtracking and hangs the process — a denial of service",
   "negative_test_hint": ["feed the string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!\" (40 a's then a '!') and assert the match returns in milliseconds, not seconds"],

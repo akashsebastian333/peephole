@@ -7,8 +7,8 @@
   "severity": "medium",
   "task_triggers": ["error handling", "try", "catch", "except", "validate", "verify", "auth"],
   "patterns": [
-    {"lang": "python", "confidence": "medium", "re": "except(?:\\s+[\\w.]+(?:\\s+as\\s+\\w+)?)?\\s*:\\s*pass\\b"},
-    {"lang": "javascript", "confidence": "medium", "re": "catch\\s*(?:\\([^)]*\\))?\\s*\\{\\s*\\}"},
+    {"lang": "python", "confidence": "medium", "re": "except\\s*:\\s*pass\\b|except\\s+(?:Exception|BaseException)(?:\\s+as\\s+\\w+)?\\s*:\\s*pass\\b"},
+    {"lang": "javascript", "confidence": "medium", "re": "catch\\s*(?:\\([^)]*\\))?\\s*\\{\\s*\\}", "reject_re": "(?i)//\\s*(?:ignore|noop|no-?op|nothing|do nothing|intentional|empty|skip|swallow|best.?effort|expected)|/\\*\\s*(?:ignore|noop|nothing)"},
     {"lang": "go", "confidence": "medium", "re": "(?i)(?:verify|validate|check|auth|compare|decode|parse)\\w*\\([^)]*\\)\\s*(?://[^\\n]*)?\\n\\s*//\\s*ignore|_\\s*,\\s*_\\s*=\\s*[\\w.]+\\.(?:Verify|Validate|Check|Compare)"},
     {"lang": "rust", "confidence": "high", "re": "\\.(?:verify|verify_signature|authenticate|check_password)\\w*\\([^)]*\\)\\s*\\.(?:unwrap|expect)\\("},
     {"lang": "solidity", "confidence": "medium", "re": "(?m)^\\s*[A-Za-z_][\\w.\\[\\]]*\\.send\\s*\\([^;]*\\)\\s*;"}

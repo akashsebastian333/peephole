@@ -172,8 +172,9 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "javascript",
-				Re:         "(?:new RegExp\\(\\s*[\"']|/)[^\"'/]*\\([^)]*[+*][^)]*\\)[+*]",
+				Re:         "(?:new RegExp\\(\\s*[\"']|(?:[=(,:!]|return|match|test|replace|split|&&|\\|\\|)\\s*/)[^\"'/\\n]*\\([^)]*[+*][^)]*\\)[+*]",
 				Confidence: "medium",
+				RejectRe:   "(?m)^\\s*(?://|/\\*|\\*)",
 				prefilter:  nil,
 			},
 		},
@@ -2248,21 +2249,21 @@ var generatedRules = []Rule{
 				Lang:       "python",
 				Re:         "\\brequests\\.(?:get|post|put|patch|delete|head|request)\\(",
 				Confidence: "medium",
-				RejectRe:   "timeout\\s*=",
+				RejectRe:   "(?m)timeout\\s*=|^\\s*(?:>>>|\\.\\.\\.|#|\\*)",
 				prefilter:  []string{"requests"},
 			},
 			{
 				Lang:       "python",
 				Re:         "\\bhttpx\\.(?:get|post|put|patch|delete)\\(",
 				Confidence: "medium",
-				RejectRe:   "timeout\\s*=",
+				RejectRe:   "(?m)timeout\\s*=|^\\s*(?:>>>|\\.\\.\\.|#|\\*)",
 				prefilter:  []string{"httpx"},
 			},
 			{
 				Lang:       "python",
 				Re:         "urllib\\.request\\.urlopen\\(",
 				Confidence: "medium",
-				RejectRe:   "timeout\\s*=",
+				RejectRe:   "(?m)timeout\\s*=|^\\s*(?:>>>|\\.\\.\\.|#|\\*)",
 				prefilter:  []string{"request"},
 			},
 		},
@@ -3207,6 +3208,7 @@ var generatedRules = []Rule{
 				Lang:       "",
 				Re:         "(?i)in production(?:,| you| this| we| it)|in a real (?:app|system|deployment|world)|for (?:demo|example|testing|illustration) purposes|replace (?:this )?with your|your (?:real |actual )?(?:api[_-]?key|secret|token|password)(?: goes)? here|not for production|do not use in production|skip(?:ping)? (?:auth|authentication|validation|verification) for now",
 				Confidence: "medium",
+				RejectRe:   "(?i)not (?:very )?(?:useful|helpful|practical|great|ideal|meaningful)|useless|which we use for",
 				prefilter:  []string{"production", "real", "purposes", "replace", "your", "skip"},
 			},
 			{
@@ -3920,7 +3922,7 @@ var generatedRules = []Rule{
 		Patterns: []Pattern{
 			{
 				Lang:       "python",
-				Re:         "except(?:\\s+[\\w.]+(?:\\s+as\\s+\\w+)?)?\\s*:\\s*pass\\b",
+				Re:         "except\\s*:\\s*pass\\b|except\\s+(?:Exception|BaseException)(?:\\s+as\\s+\\w+)?\\s*:\\s*pass\\b",
 				Confidence: "medium",
 				prefilter:  []string{"except"},
 			},
@@ -3928,6 +3930,7 @@ var generatedRules = []Rule{
 				Lang:       "javascript",
 				Re:         "catch\\s*(?:\\([^)]*\\))?\\s*\\{\\s*\\}",
 				Confidence: "medium",
+				RejectRe:   "(?i)//\\s*(?:ignore|noop|no-?op|nothing|do nothing|intentional|empty|skip|swallow|best.?effort|expected)|/\\*\\s*(?:ignore|noop|nothing)",
 				prefilter:  []string{"catch"},
 			},
 			{

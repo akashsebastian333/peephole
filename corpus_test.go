@@ -163,6 +163,15 @@ func TestRuleCorpus(t *testing.T) {
 		{"CWE-79", "a.py", "url = request.args.get('u')\nreturn f\"<Req({url})>\"", true},        // raw reflected user input kept
 		{"CWE-79", "a.py", "VERSION = os.environ.get('V', '1')\nreturn f\"=={VERSION}\"", false}, // env config, not user input
 		{"CWE-79", "a.py", "SRC = fp.read()\nreturn f\"config: {SRC}\"", false},                  // local file read, not user input
+		// Round-12: ask-level friction reduction (swallowed-error, timeout, ReDoS)
+		{"CWE-703", "a.py", "try:\n    import ujson\nexcept ImportError:\n    pass", false}, // specific except = intentional
+		{"CWE-703", "a.py", "try:\n    critical()\nexcept:\n    pass", true},                // bare except swallows everything
+		{"CWE-703", "a.js", "try { risky() } catch {} // intentional noop", false},          // self-documented empty catch
+		{"CWE-703", "a.js", "try { risky() } catch {}", true},                               // undocumented empty catch kept
+		{"CWE-400", "a.py", ">>> requests.get('http://api.x/data')", false},                 // doctest example
+		{"CWE-400", "a.py", "r = requests.get('http://api.x/data')", true},                  // real call, no timeout
+		{"CWE-1333", "a.ts", "const globs = 'src/**/(*.)+(spec|test).ts'", false},           // glob string, not a regex
+		{"CWE-1333", "a.js", "const re = /(a+)+/g", true},                                   // real nested-quantifier regex
 		// CWE-327 crypto
 		{"CWE-327", "a.py", `pw = hashlib.md5(password.encode()).hexdigest()`, true},
 		{"CWE-327", "a.py", `h = hashlib.sha256(file_bytes).hexdigest()`, false}, // non-password sha256

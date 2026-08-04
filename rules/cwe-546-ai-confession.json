@@ -7,7 +7,7 @@
   "severity": "medium",
   "task_triggers": ["auth", "secret", "prototype", "demo", "example", "todo", "production"],
   "patterns": [
-    {"lang": "", "confidence": "medium", "re": "(?i)in production(?:,| you| this| we| it)|in a real (?:app|system|deployment|world)|for (?:demo|example|testing|illustration) purposes|replace (?:this )?with your|your (?:real |actual )?(?:api[_-]?key|secret|token|password)(?: goes)? here|not for production|do not use in production|skip(?:ping)? (?:auth|authentication|validation|verification) for now"},
+    {"lang": "", "confidence": "medium", "re": "(?i)in production(?:,| you| this| we| it)|in a real (?:app|system|deployment|world)|for (?:demo|example|testing|illustration) purposes|replace (?:this )?with your|your (?:real |actual )?(?:api[_-]?key|secret|token|password)(?: goes)? here|not for production|do not use in production|skip(?:ping)? (?:auth|authentication|validation|verification) for now", "reject_re": "(?i)not (?:very )?(?:useful|helpful|practical|great|ideal|meaningful)|useless|which we use for"},
     {"lang": "", "confidence": "medium", "re": "(?i)(?:TODO|FIXME|HACK|XXX)\\b[^\\n]{0,40}(?:auth|security|secure|validate|sanitize|encrypt|permission|escape|csrf|injection)"},
     {"lang": "", "confidence": "medium", "re": "示例|简化实现|仅供演示|生产环境中|实际生产|실제로는|프로덕션에서는|セキュリティは省略"}
   ],
