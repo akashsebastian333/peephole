@@ -105,10 +105,13 @@ func TestRuleCorpus(t *testing.T) {
 		// for a benchmark miss where a placeholder value slipped the format rule.)
 		{"CWE-798", "a.py", `AWS_SECRET_ACCESS_KEY = "xxxxxxxxxxxxxxxxxxxx"`, true},
 		{"CWE-798", "a.py", `AWS_ACCESS_KEY_ID = "AKIAxxxxxxxxxxxxxxxx"`, true},
-		{"CWE-798", "a.py", `AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]`, false},     // env, secure
-		{"CWE-798", "a.py", `boto3.client("s3", aws_secret_access_key=AWS_SECRET_ACCESS_KEY)`, false}, // variable, not literal
-		{"CWE-798", "a.py", `STRIPE_SECRET_KEY = "sk_placeholder_value_here"`, true},                  // provider credential var = literal
-		{"CWE-798", "a.py", `slack_token = config["slack_token"]`, false},                             // from config, secure
+		{"CWE-798", "a.py", `AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]`, false},                                                      // env, secure
+		{"CWE-798", "a.py", `boto3.client("s3", aws_secret_access_key=AWS_SECRET_ACCESS_KEY)`, false},                                                  // variable, not literal
+		{"CWE-798", "a.py", `STRIPE_SECRET_KEY = "sk_placeholder_value_here"`, true},                                                                   // provider credential var = literal
+		{"CWE-798", "a.py", `slack_token = config["slack_token"]`, false},                                                                              // from config, secure
+		{"CWE-798", "a.py", `github_token = "{token}".format(token=lookup())`, false},                                                                  // runtime .format template, not a literal
+		{"CWE-798", "a.py", `gitlab_token = "%(gitlab_token)s"`, false},                                                                                // named-% template, not a literal
+		{"CWE-798", "a.js", `const c = "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==";`, false}, // Azurite public emulator key
 		{"CWE-798", "a.py", `DB_PASSWORD = os.environ["DB_PASSWORD"]`, false},
 		{"CWE-798", "a.py", `password = "<your-password-here>"`, false}, // placeholder
 		{"CWE-798", "a.js", `const k = process.env.STRIPE_KEY`, false},
