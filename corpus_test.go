@@ -115,6 +115,34 @@ func TestRuleCorpus(t *testing.T) {
 		{"CWE-798", "a.py", `DB_PASSWORD = os.environ["DB_PASSWORD"]`, false},
 		{"CWE-798", "a.py", `password = "<your-password-here>"`, false}, // placeholder
 		{"CWE-798", "a.js", `const k = process.env.STRIPE_KEY`, false},
+		// Round-9: FP-audit fixes (safe code that must NOT match; TPs that must still match)
+		{"CWE-798", "a.py", `PARTITION_KEY = os.getenv("PARTITION_KEY", "default")`, false},        // non-secret KEY-name + config default
+		{"CWE-798", "a.js", `const s = process.env.SHARD_KEY || "shard-default"`, false},           // non-secret KEY-name default
+		{"CWE-798", "a.py", `SECRET_KEY = os.getenv("SECRET_KEY", "dev-insecure-1a2b3c4d")`, true}, // real hardcoded default kept
+		{"CWE-798", "a.rs", `let token = "identifier";`, false},                                    // rust lexer token type, not a secret
+		{"CWE-798", "a.rs", `let password_column = "hashed_password";`, false},                     // rust db column name
+		{"CWE-798", "a.rs", `let api_key = "AKz9fLm2Qx8vPd41XYZ";`, true},                          // real rust secret (mixed-case value)
+		{"CWE-90", "a.java", `String f = "(uid=" + LdapEncoder.filterEncode(u) + ")";`, false},     // escaped LDAP filter
+		{"CWE-90", "a.py", `filt = "(uid=" + escape_filter_chars(username) + ")"`, false},          // escaped LDAP filter
+		{"CWE-916", "a.py", `h = hashlib.pbkdf2_hmac("sha256", pw, salt, 600000, 32)`, false},      // strong iters w/ dklen
+		{"CWE-916", "a.py", `h = hashlib.pbkdf2_hmac("sha256", pw, salt, 1000)`, true},             // weak iters kept
+		{"CWE-676", "a.c", `realpath(userpath, resolved);`, false},                                 // realpath is the safe canonicalizer
+		{"CWE-676", "a.c", `sscanf(line, "%d", &n);`, false},                                       // bounded numeric scanf
+		{"CWE-676", "a.c", `sscanf(line, "%s", buf);`, true},                                       // unbounded %s scanf kept
+		{"CWE-676", "a.c", `strcpy(dst, src);`, true},                                              // strcpy still flagged
+		{"CWE-732", "a.py", `insecure = False`, false},                                             // substring 'secure' must not match
+		{"CWE-732", "a.tf", `unencrypted = false`, false},                                          // substring 'encrypted' must not match
+		{"CWE-732", "settings.py", `app.config["SESSION_COOKIE_SECURE"] = False`, true},            // real insecure cookie kept
+		{"CWE-732", "a.sql", `GRANT SELECT ON *.* TO 'backup'@'localhost';`, false},                // read-only global grant (backups)
+		{"CWE-732", "a.sql", `GRANT ALL PRIVILEGES ON *.* TO 'app'@'%';`, true},                    // ALL PRIVILEGES kept
+		{"CWE-502", "a.php", `unserialize($data, ["allowed_classes" => false]);`, false},           // safe unserialize form
+		{"CWE-502", "a.php", `unserialize($_GET["x"]);`, true},                                     // tainted unserialize kept
+		{"CWE-330", "a.py", `secret_santa = random.shuffle(participants)`, false},                  // shuffle is not secret-gen
+		{"CWE-330", "a.py", `salt_amount = random.randint(1, 3)`, false},                           // non-security jitter/amount
+		{"CWE-330", "a.py", `session_token = random.choice(chars)`, true},                          // insecure token-gen kept
+		{"CWE-22", "a.js", "const c = fs.readFileSync(`${__dirname}/pkg.json`)", false},            // trusted __dirname interpolation
+		{"CWE-22", "a.py", `open(f"log_{date}.txt", "w")`, false},                                  // local-var f-string path
+		{"CWE-22", "a.py", `open(f"/data/{request.args['n']}")`, true},                             // request-derived path kept
 		// CWE-327 crypto
 		{"CWE-327", "a.py", `pw = hashlib.md5(password.encode()).hexdigest()`, true},
 		{"CWE-327", "a.py", `h = hashlib.sha256(file_bytes).hexdigest()`, false}, // non-password sha256

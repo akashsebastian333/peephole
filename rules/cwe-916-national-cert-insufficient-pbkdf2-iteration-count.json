@@ -26,7 +26,7 @@
     {
       "lang": "python",
       "confidence": "high",
-      "re": "\\bhashlib\\.pbkdf2_hmac\\([^)]*,\\s*\\d{1,4}\\s*\\)"
+      "re": "\\bhashlib\\.pbkdf2_hmac\\(\\s*[^,]+,\\s*[^,]+,\\s*[^,]+,\\s*\\d{1,4}\\s*[,)]"
     }
   ],
   "attack_scenario": "An attacker who exfiltrates the password-hash store runs an offline dictionary/brute-force attack; at 1000 iterations a commodity GPU tests billions of candidate passwords cheaply, recovering user passwords in minutes to hours instead of the years a 600k work-factor would impose.",

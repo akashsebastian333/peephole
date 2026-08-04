@@ -29,11 +29,6 @@
     },
     {
       "lang": "go",
-      "confidence": "medium",
-      "re": "http\\.(?:Get|Post|Head|PostForm)\\(\\s*fmt\\.Sprintf\\("
-    },
-    {
-      "lang": "go",
       "confidence": "high",
       "re": "http\\.NewRequest(?:WithContext)?\\([^;\\n]*,\\s*(?:fmt\\.Sprintf\\(\\s*\"[^\"]*://%|\"[^\"]*://\"\\s*\\+)"
     }

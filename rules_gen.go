@@ -20,9 +20,9 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "javascript",
-				Re:         "\\.(?:setHeader|set|append)\\(\\s*[\"'][^\"']+[\"']\\s*,\\s*(?:req\\.(?:query|params|body|headers|cookies)|`[^`]*\\$\\{)",
+				Re:         ".(?:setHeader|set|append)\\(\\s*[\"'][^\"']+[\"']\\s*,\\s*req\\.(?:query|params|body|headers|cookies)",
 				Confidence: "high",
-				prefilter:  []string{"setheader", "set", "append"},
+				prefilter:  []string{"req"},
 			},
 			{
 				Lang:       "java",
@@ -695,7 +695,7 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "python",
-				Re:         "open\\(\\s*f[\"'][^\"']*\\{",
+				Re:         "open\\(\\s*f[\\\"'][^\\\"']*\\{[^}]*(?:request|params|args|user_|input|flask)",
 				Confidence: "medium",
 				prefilter:  []string{"open"},
 			},
@@ -707,7 +707,7 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "javascript",
-				Re:         "fs(?:\\.promises)?\\.(?:readFile|readFileSync|createReadStream|writeFile|unlink)(?:Sync)?\\(\\s*`[^`]*\\$\\{",
+				Re:         "fs(?:\\.promises)?\\.(?:readFile|readFileSync|createReadStream|writeFile|unlink)(?:Sync)?\\(\\s*`[^`]*\\$\\{[^}]*(?:req|params|query|body|user)",
 				Confidence: "high",
 				prefilter:  []string{"readfile", "readfilesync", "createreadstream", "writefile", "unlink"},
 			},
@@ -1566,6 +1566,7 @@ var generatedRules = []Rule{
 				Lang:       "python",
 				Re:         "(?i)(?:token|secret|otp|nonce|salt|session|password|api_?key)[\\w\\[\\]'\".]*\\s*=\\s*[^;\\n]*\\brandom\\.(?:random|randint|choice|randrange|getrandbits)\\(",
 				Confidence: "high",
+				RejectRe:   "(?i)\\brandom\\.random\\(\\)\\s*\\*|_(?:amount|santa|refill|jitter|deck|count|delay|index|idx|color|colour|percent)\\b",
 				prefilter:  []string{"random"},
 			},
 			{
@@ -1578,6 +1579,7 @@ var generatedRules = []Rule{
 				Lang:       "javascript",
 				Re:         "(?i)(?:token|secret|otp|nonce|salt|session|password|api_?key|uuid)[\\w.]*\\s*=\\s*[^;\\n]*Math\\.random\\(\\)",
 				Confidence: "high",
+				RejectRe:   "(?i)santa|colou?r|jitter|delay|deck|dice|percent|_amount|_count",
 				prefilter:  []string{"random"},
 			},
 			{
@@ -1828,20 +1830,23 @@ var generatedRules = []Rule{
 		Patterns: []Pattern{
 			{
 				Lang:       "python",
-				Re:         "(?i)(?:token|otp|nonce|secret|salt|session|reset|api_?key|password)[\\w\\[\\]'\".]*\\s*=\\s*[^;\\n]*\\brandom\\.(?:random|randint|randrange|choice|choices|getrandbits|shuffle|sample)\\(",
+				Re:         "(?i)(?:token|otp|nonce|secret|salt|session|reset|api_?key|password)[\\w\\[\\]'\\\".]*\\s*=\\s*[^;\\n]*\\brandom\\.(?:random|randint|randrange|choice|choices|getrandbits)\\(",
 				Confidence: "high",
+				RejectRe:   "(?i)\\brandom\\.random\\(\\)\\s*\\*|_(?:amount|santa|refill|jitter|deck|count|delay|index|idx|color|colour|percent)\\b",
 				prefilter:  []string{"random"},
 			},
 			{
 				Lang:       "javascript",
 				Re:         "(?i)(?:token|otp|nonce|secret|salt|session|reset|api_?key|password|uuid)[\\w.]*\\s*=\\s*[^;\\n]*Math\\.random\\(\\)",
 				Confidence: "high",
+				RejectRe:   "(?i)santa|colou?r|jitter|delay|deck|dice|percent|_amount|_count",
 				prefilter:  []string{"random"},
 			},
 			{
 				Lang:       "go",
 				Re:         "(?i)(?:token|secret|api_?key|nonce|salt|otp|session_?id|password|csrf)\\w*\\s*[:=]{1,2}[^\\n]{0,60}\\brand\\.(?:Intn|Int31|Int63|Uint32|Uint64|Float64|Int)\\(",
 				Confidence: "high",
+				RejectRe:   "(?i)Refill|Jitter|Delay|Backoff|Float64\\(\\)\\s*\\*",
 				prefilter:  []string{"rand"},
 			},
 			{
@@ -1953,13 +1958,14 @@ var generatedRules = []Rule{
 			{
 				Lang:       "go",
 				Re:         "jwt\\.ParseUnverified\\(",
-				Confidence: "high",
+				Confidence: "medium",
 				prefilter:  []string{"parseunverified"},
 			},
 			{
 				Lang:       "go",
 				Re:         "\\b(?:SigningMethodNone|UnsafeAllowNoneSignatureType)\\b",
 				Confidence: "high",
+				RejectRe:   "(?i)(?:==|!=)\\s*(?:jwt\\.)?signingmethodnone|(?:jwt\\.)?signingmethodnone\\s*(?:==|!=)|case\\s+(?:jwt\\.)?signingmethodnone",
 				prefilter:  []string{"signingmethodnone", "unsafeallownonesignaturetype"},
 			},
 		},
@@ -2628,6 +2634,7 @@ var generatedRules = []Rule{
 				Lang:       "php",
 				Re:         "\\bunserialize\\s*\\(",
 				Confidence: "medium",
+				RejectRe:   "allowed_classes",
 				prefilter:  []string{"unserialize"},
 			},
 			{
@@ -3757,9 +3764,15 @@ var generatedRules = []Rule{
 		Patterns: []Pattern{
 			{
 				Lang:       "c",
-				Re:         "\\b(?:gets|strcpy|strcat|sprintf|vsprintf|scanf|sscanf|realpath|getwd)\\s*\\(",
+				Re:         "\\b(?:gets|strcpy|strcat|sprintf|vsprintf|getwd)\\s*\\(",
 				Confidence: "high",
-				prefilter:  []string{"gets", "strcpy", "strcat", "sprintf", "vsprintf", "scanf", "sscanf", "realpath", "getwd"},
+				prefilter:  []string{"gets", "strcpy", "strcat", "sprintf", "vsprintf", "getwd"},
+			},
+			{
+				Lang:       "c",
+				Re:         "\\b(?:scanf|sscanf|fscanf)\\s*\\([^;{)]*%s",
+				Confidence: "high",
+				prefilter:  []string{"scanf", "sscanf", "fscanf"},
 			},
 			{
 				Lang:       "c",
@@ -4157,7 +4170,7 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "",
-				Re:         "(?i)(?:httponly|secure|SESSION_COOKIE_SECURE|CSRF_COOKIE_SECURE|SESSION_COOKIE_HTTPONLY)['\"]?\\]?\\s*[:=]\\s*(?:False|false)\\b",
+				Re:         "(?i)\\b(?:httponly|secure|SESSION_COOKIE_SECURE|CSRF_COOKIE_SECURE|SESSION_COOKIE_HTTPONLY)['\"]?\\]?\\s*[:=]\\s*(?:False|false)\\b",
 				Confidence: "high",
 				prefilter:  []string{"httponly", "secure", "session_cookie_secure", "csrf_cookie_secure", "session_cookie_httponly"},
 			},
@@ -4229,7 +4242,7 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "",
-				Re:         "(?im)(?:encrypted|storage_encrypted)\\s*=\\s*false\\b",
+				Re:         "(?im)\\b(?:encrypted|storage_encrypted)\\s*=\\s*false\\b",
 				Confidence: "high",
 				prefilter:  []string{"false"},
 			},
@@ -4259,7 +4272,7 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "",
-				Re:         "(?im)[\"']?(?:StorageEncrypted|Encrypted)[\"']?\\s*:\\s*[\"']?false\\b",
+				Re:         "(?im)[\"']?\\b(?:StorageEncrypted|Encrypted)[\"']?\\s*:\\s*[\"']?false\\b",
 				Confidence: "high",
 				prefilter:  []string{"false"},
 			},
@@ -4297,12 +4310,6 @@ var generatedRules = []Rule{
 				Re:         "(?i)grant\\s+all\\s+on\\s+\\*\\.\\*",
 				Confidence: "high",
 				prefilter:  []string{"grant"},
-			},
-			{
-				Lang:       "sql",
-				Re:         "(?i)on\\s+\\*\\.\\*\\s+to",
-				Confidence: "high",
-				prefilter:  []string{"*.*"},
 			},
 			{
 				Lang:       "sql",
@@ -4962,6 +4969,7 @@ var generatedRules = []Rule{
 				Lang:       "go",
 				Re:         "\\btemplate\\.(?:HTML|JS|CSS|URL|HTMLAttr|Srcset|JSStr)\\(\\s*[A-Za-z_]",
 				Confidence: "high",
+				RejectRe:   "(?i)sanitize|bluemonday|htmlescape|template\\.HTMLEscape",
 				prefilter:  []string{"template"},
 			},
 		},
@@ -4989,7 +4997,7 @@ var generatedRules = []Rule{
 		Patterns: []Pattern{
 			{
 				Lang:       "go",
-				Re:         "\"text/template\"",
+				Re:         "text/template[\\s\\S]{0,800}\\.Execute(?:Template)?\\(\\s*(?:w|rw|writer|res|resp)\\b",
 				Confidence: "medium",
 				prefilter:  []string{"template"},
 			},
@@ -5578,19 +5586,21 @@ var generatedRules = []Rule{
 				Lang:       "javascript",
 				Re:         "process\\.env\\.[A-Z0-9_]*(?:SECRET|KEY|TOKEN|PASSWORD|SALT|PRIVATE)[A-Z0-9_]*\\s*\\|\\|\\s*[\"'][^\"']{6,}[\"']",
 				Confidence: "high",
+				RejectRe:   "(?i)(?:partition|sort|routing|shard|cache|public|composite|primary|clustering|idempotency)_key|_(?:header|prefix|path|name|file|column)\\b",
 				prefilter:  []string{"process"},
 			},
 			{
 				Lang:       "python",
 				Re:         "os\\.(?:getenv|environ\\.get)\\(\\s*[\"'][A-Z0-9_]*(?:SECRET|KEY|TOKEN|PASSWORD|SALT)[A-Z0-9_]*[\"']\\s*,\\s*[\"'][^\"']{6,}[\"']",
 				Confidence: "high",
+				RejectRe:   "(?i)(?:partition|sort|routing|shard|cache|public|composite|primary|clustering|idempotency)_key|_(?:header|prefix|path|name|file|column)\\b",
 				prefilter:  []string{"getenv", "environ.get"},
 			},
 			{
 				Lang:       "rust",
 				Re:         "(?i:const|static|let)\\s+(?:mut\\s+)?\\w*(?i:secret|api_?key|password|passwd|token|private_?key|access_?key)\\w*[^=\\n]*=\\s*[\"'][^\"']{8,}[\"']",
 				Confidence: "high",
-				RejectRe:   "env::var|std::env|example|changeme|your[-_]",
+				RejectRe:   "env::var|std::env|example|changeme|your[-_]|_(?:column|type|name|field|kind|index)\\b|=\\s*[\\\"'][a-z_]{8,}[\\\"']",
 				prefilter:  []string{"const", "static", "let"},
 			},
 			{
@@ -6353,18 +6363,21 @@ var generatedRules = []Rule{
 				Lang:       "python",
 				Re:         "f[\"'][^\"']*\\((?:uid|cn|mail|sAMAccountName|sn|givenName|objectClass)=\\{",
 				Confidence: "high",
+				RejectRe:   "(?i)filter_?encode|escape_filter_chars|encodeforldap|escapeldap|escapedn|ldap\\.escape|escapeforldap",
 				prefilter:  nil,
 			},
 			{
 				Lang:       "",
 				Re:         "[\"'][^\"']*\\((?:uid|cn|mail|sAMAccountName|objectClass)=[^\"']*[\"']\\s*(?:\\+|%|\\.format\\()",
 				Confidence: "high",
+				RejectRe:   "(?i)filter_?encode|escape_filter_chars|encodeforldap|escapeldap|escapedn|ldap\\.escape|escapeforldap",
 				prefilter:  nil,
 			},
 			{
 				Lang:       "javascript",
 				Re:         "`[^`]*\\((?:uid|cn|mail|sAMAccountName)=[^`]*\\$\\{",
 				Confidence: "high",
+				RejectRe:   "(?i)filter_?encode|escape_filter_chars|encodeforldap|escapeldap|escapedn|ldap\\.escape|escapeforldap",
 				prefilter:  nil,
 			},
 		},
@@ -6591,7 +6604,7 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "python",
-				Re:         "\\bhashlib\\.pbkdf2_hmac\\([^)]*,\\s*\\d{1,4}\\s*\\)",
+				Re:         "\\bhashlib\\.pbkdf2_hmac\\(\\s*[^,]+,\\s*[^,]+,\\s*[^,]+,\\s*\\d{1,4}\\s*[,)]",
 				Confidence: "high",
 				prefilter:  []string{"pbkdf2_hmac"},
 			},
@@ -6662,12 +6675,6 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "go",
-				Re:         "http\\.(?:Get|Post|Head|PostForm)\\(\\s*fmt\\.Sprintf\\(",
-				Confidence: "medium",
-				prefilter:  []string{"sprintf"},
-			},
-			{
-				Lang:       "go",
 				Re:         "http\\.NewRequest(?:WithContext)?\\([^;\\n]*,\\s*(?:fmt\\.Sprintf\\(\\s*\"[^\"]*://%|\"[^\"]*://\"\\s*\\+)",
 				Confidence: "high",
 				prefilter:  []string{"newrequest"},
@@ -6699,12 +6706,14 @@ var generatedRules = []Rule{
 				Lang:       "java",
 				Re:         "\\.(?:getForObject|getForEntity|postForObject|postForEntity|getForList|exchange)\\s*\\(\\s*\"[^\"]*\"\\s*\\+",
 				Confidence: "high",
+				RejectRe:   "://[\\w.\\-]+",
 				prefilter:  []string{"getforobject", "getforentity", "postforobject", "postforentity", "getforlist", "exchange"},
 			},
 			{
 				Lang:       "java",
 				Re:         "\\.uri\\s*\\(\\s*(?:\"[^\"]*\"|[A-Za-z_]\\w*)\\s*\\+",
 				Confidence: "high",
+				RejectRe:   "://[\\w.\\-]+",
 				prefilter:  []string{"uri"},
 			},
 		},
@@ -6816,7 +6825,7 @@ var generatedRules = []Rule{
 				Lang:       "python",
 				Re:         "\\b(?:requests|httpx|session)\\.(?:get|post|put|delete|head|patch|request)\\(\\s*f[\"']\\{",
 				Confidence: "medium",
-				RejectRe:   "f[\"']\\{[A-Z][A-Z0-9_]{2,}[\\}.]",
+				RejectRe:   "f[\\\"']\\{(?:[A-Z][A-Z0-9_]{2,}[\\}.]|self\\.|settings\\.|config|app\\.|[a-z_]*(?:url|host|base|uri|endpoint|domain))",
 				prefilter:  []string{"requests", "httpx", "session"},
 			},
 			{
@@ -6841,7 +6850,7 @@ var generatedRules = []Rule{
 				Lang:       "javascript",
 				Re:         "\\b(?:fetch|got|axios(?:\\.\\w+)?)\\(\\s*`\\$\\{",
 				Confidence: "medium",
-				RejectRe:   "`\\$\\{[A-Z][A-Z0-9_]{2,}[\\}.]",
+				RejectRe:   "`\\$\\{(?:[A-Z][A-Z0-9_]{2,}[\\}.]|this\\.|process\\.env|config|[\\w.]*(?:[Uu]rl|[Hh]ost|[Bb]ase|[Uu]ri|[Ee]ndpoint|[Dd]omain))",
 				prefilter:  []string{"`${"},
 			},
 		},

@@ -30,12 +30,12 @@ var popularPy = set(
 	"packaging", "typing-extensions", "flask", "django", "fastapi", "pydantic",
 	"sqlalchemy", "pytest", "click", "jinja2", "werkzeug", "scipy", "pillow",
 	"cryptography", "aiohttp", "httpx", "bcrypt", "argon2-cffi", "psycopg2",
-	"psycopg2-binary", "redis", "celery", "gunicorn", "uvicorn", "starlette",
+	"psycopg2-binary", "psycopg", "redis", "celery", "gunicorn", "uvicorn", "starlette",
 	"scikit-learn", "matplotlib", "torch", "transformers", "openai", "anthropic",
 )
 
 var popularJs = set(
-	"react", "react-dom", "lodash", "axios", "express", "chalk", "commander",
+	"react", "react-dom", "preact", "lodash", "axios", "express", "chalk", "commander",
 	"debug", "next", "vue", "typescript", "webpack", "eslint", "prettier",
 	"jest", "vite", "tailwindcss", "zod", "dotenv", "cors", "body-parser",
 	"jsonwebtoken", "bcrypt", "bcryptjs", "pg", "mongoose", "sequelize",
@@ -189,7 +189,14 @@ func checkPackageOffline(sd string, in Install) pkgVerdict {
 	case npm && (popularJs[name] || strings.HasPrefix(name, "@types/")):
 		return pkgOK
 	case in.Manager == "go":
-		return pkgUnknown // module proxy check out of scope for v1; never a silent allow
+		// Go modules are full self-documenting paths (host.tld/owner/repo); the
+		// short-name typosquat model barely applies and the dev reads the whole
+		// URL. Treat a well-formed module path as OK instead of asking on every
+		// `go get`. ponytail: the path shape is the signal; no proxy round-trip.
+		if reGoModPath.MatchString(name) {
+			return pkgOK
+		}
+		return pkgUnknown
 	}
 	// Ecosystem mismatch: a pip install of a name that is a well-known npm
 	// package (or vice-versa) is a dependency-confusion smell.
@@ -313,6 +320,9 @@ const freshWindow = 45 * 24 * time.Hour
 // so an attacker-controlled date in the readme/description body cannot spoof the
 // package into looking old and skipping the freshness ask.
 var reCreatedDate = regexp.MustCompile(`"(?:created|upload_time_iso_8601)"\s*:\s*"(\d{4}-\d{2}-\d{2})`)
+
+// reGoModPath matches a well-formed Go module path (host.tld/owner/repo...).
+var reGoModPath = regexp.MustCompile(`^[a-z0-9.-]+\.[a-z]{2,}/[\w./~-]+$`)
 
 // freshlyCreated reports whether the earliest publication date in a PyPI/npm
 // registry response is within freshWindow. ISO YYYY-MM-DD strings compare

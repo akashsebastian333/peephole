@@ -12,7 +12,7 @@
     {"lang": "", "confidence": "high", "re": "\\bchmod\\s+(?:-[RvfcH]+\\s+)*[0-7]{0,2}[2367]\\b"},
     {"lang": "", "confidence": "high", "re": "\\bumask\\s+0{1,3}\\b"},
     {"lang": "python", "confidence": "high", "re": "ssl\\.PROTOCOL_(?:SSLv2|SSLv3|SSLv23|TLSv1|TLSv1_1)\\b"},
-    {"lang": "", "confidence": "high", "re": "(?i)(?:httponly|secure|SESSION_COOKIE_SECURE|CSRF_COOKIE_SECURE|SESSION_COOKIE_HTTPONLY)['\"]?\\]?\\s*[:=]\\s*(?:False|false)\\b"},
+    {"lang": "", "confidence": "high", "re": "(?i)\\b(?:httponly|secure|SESSION_COOKIE_SECURE|CSRF_COOKIE_SECURE|SESSION_COOKIE_HTTPONLY)['\"]?\\]?\\s*[:=]\\s*(?:False|false)\\b"},
     {"lang": "", "confidence": "medium", "re": "(?i)samesite\\s*[:=]\\s*[\"']?none[\"']?\\b"},
     {"lang": "", "confidence": "high", "re": "--acl\\s+public-read(?:-write)?\\b|acl\\s*=\\s*[\"']public-read(?:-write)?[\"']|block_public_acls\\s*=\\s*false"},
     {"lang": "", "confidence": "high", "re": "(?i)(?:ingress|source_?ranges?|cidr_?blocks?)[^\\n]{0,60}0\\.0\\.0\\.0/0"},
@@ -24,12 +24,12 @@
     {"lang": "", "confidence": "high", "re": "(?im)^\\s*runAsUser\\s*:\\s*0\\b|(?im)^\\s*runAsNonRoot\\s*:\\s*false\\b"},
     {"lang": "", "confidence": "high", "re": "(?im)^\\s*-\\s*[\"']?(?:SYS_ADMIN|NET_ADMIN|SYS_PTRACE|SYS_MODULE)[\"']?\\s*$"},
     {"lang": "", "confidence": "medium", "re": "(?im)^\\s*automountServiceAccountToken\\s*:\\s*true\\b"},
-    {"lang": "", "confidence": "high", "re": "(?im)(?:encrypted|storage_encrypted)\\s*=\\s*false\\b"},
+    {"lang": "", "confidence": "high", "re": "(?im)\\b(?:encrypted|storage_encrypted)\\s*=\\s*false\\b"},
     {"lang": "", "confidence": "medium", "re": "(?im)\"Action\"\\s*:\\s*\"\\*\""},
     {"lang": "", "confidence": "medium", "re": "(?im)associate_public_ip_address\\s*=\\s*true\\b"},
     {"lang": "", "confidence": "high", "re": "(?im)^\\s*publicly_accessible\\s*=\\s*true\\b"},
     {"lang": "", "confidence": "high", "re": "(?im)[\"']?Cidr(?:Ip|Ipv6)[\"']?\\s*:\\s*[\"']?(?:0\\.0\\.0\\.0/0|::/0)"},
-    {"lang": "", "confidence": "high", "re": "(?im)[\"']?(?:StorageEncrypted|Encrypted)[\"']?\\s*:\\s*[\"']?false\\b"}
+    {"lang": "", "confidence": "high", "re": "(?im)[\"']?\\b(?:StorageEncrypted|Encrypted)[\"']?\\s*:\\s*[\"']?false\\b"}
   ],
   "absence_requirements": [
     "Session/auth cookies should set HttpOnly, Secure, and SameSite=Lax|Strict; confirm these flags are present.",

@@ -22,11 +22,6 @@
     },
     {
       "lang": "sql",
-      "confidence": "high",
-      "re": "(?i)on\\s+\\*\\.\\*\\s+to"
-    },
-    {
-      "lang": "sql",
       "confidence": "medium",
       "re": "(?i)with\\s+grant\\s+option"
     },

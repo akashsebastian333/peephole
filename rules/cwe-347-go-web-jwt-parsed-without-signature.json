@@ -17,13 +17,13 @@
   "patterns": [
     {
       "lang": "go",
-      "confidence": "high",
+      "confidence": "medium",
       "re": "jwt\\.ParseUnverified\\("
     },
     {
       "lang": "go",
       "confidence": "high",
-      "re": "\\b(?:SigningMethodNone|UnsafeAllowNoneSignatureType)\\b"
+      "re": "\\b(?:SigningMethodNone|UnsafeAllowNoneSignatureType)\\b", "reject_re": "(?i)(?:==|!=)\\s*(?:jwt\\.)?signingmethodnone|(?:jwt\\.)?signingmethodnone\\s*(?:==|!=)|case\\s+(?:jwt\\.)?signingmethodnone"
     }
   ],
   "attack_scenario": "Attacker base64-encodes {\"alg\":\"none\"} plus {\"sub\":\"admin\",\"role\":\"admin\"} with an empty signature; the server accepts it and grants admin access with no secret required.",

@@ -7,9 +7,9 @@
   "severity": "high",
   "task_triggers": ["token", "otp", "nonce", "session id", "reset", "api key", "password", "secret", "salt", "csrf", "verification code"],
   "patterns": [
-    {"lang": "python", "confidence": "high", "re": "(?i)(?:token|otp|nonce|secret|salt|session|reset|api_?key|password)[\\w\\[\\]'\".]*\\s*=\\s*[^;\\n]*\\brandom\\.(?:random|randint|randrange|choice|choices|getrandbits|shuffle|sample)\\("},
-    {"lang": "javascript", "confidence": "high", "re": "(?i)(?:token|otp|nonce|secret|salt|session|reset|api_?key|password|uuid)[\\w.]*\\s*=\\s*[^;\\n]*Math\\.random\\(\\)"},
-    {"lang": "go", "confidence": "high", "re": "(?i)(?:token|secret|api_?key|nonce|salt|otp|session_?id|password|csrf)\\w*\\s*[:=]{1,2}[^\\n]{0,60}\\brand\\.(?:Intn|Int31|Int63|Uint32|Uint64|Float64|Int)\\("},
+    {"lang": "python", "confidence": "high", "re": "(?i)(?:token|otp|nonce|secret|salt|session|reset|api_?key|password)[\\w\\[\\]'\\\".]*\\s*=\\s*[^;\\n]*\\brandom\\.(?:random|randint|randrange|choice|choices|getrandbits)\\(", "reject_re": "(?i)\\brandom\\.random\\(\\)\\s*\\*|_(?:amount|santa|refill|jitter|deck|count|delay|index|idx|color|colour|percent)\\b"},
+    {"lang": "javascript", "confidence": "high", "re": "(?i)(?:token|otp|nonce|secret|salt|session|reset|api_?key|password|uuid)[\\w.]*\\s*=\\s*[^;\\n]*Math\\.random\\(\\)", "reject_re": "(?i)santa|colou?r|jitter|delay|deck|dice|percent|_amount|_count"},
+    {"lang": "go", "confidence": "high", "re": "(?i)(?:token|secret|api_?key|nonce|salt|otp|session_?id|password|csrf)\\w*\\s*[:=]{1,2}[^\\n]{0,60}\\brand\\.(?:Intn|Int31|Int63|Uint32|Uint64|Float64|Int)\\(", "reject_re": "(?i)Refill|Jitter|Delay|Backoff|Float64\\(\\)\\s*\\*"},
     {"lang": "solidity", "confidence": "high", "re": "keccak256\\s*\\([^;]*\\bblock\\.(?:timestamp|number|difficulty|prevrandao|coinbase|gaslimit)"},
     {"lang": "solidity", "confidence": "high", "re": "keccak256\\s*\\([^;]*\\bblockhash\\s*\\("},
     {"lang": "solidity", "confidence": "medium", "re": "\\bblock\\.(?:timestamp|number|difficulty|prevrandao)\\s*%"}

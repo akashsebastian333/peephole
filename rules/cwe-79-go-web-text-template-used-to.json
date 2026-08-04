@@ -17,7 +17,7 @@
     {
       "lang": "go",
       "confidence": "medium",
-      "re": "\"text/template\""
+      "re": "text/template[\\s\\S]{0,800}\\.Execute(?:Template)?\\(\\s*(?:w|rw|writer|res|resp)\\b"
     }
   ],
   "attack_scenario": "A handler builds its HTML page with text/template; a username of <img src=x onerror=alert(document.domain)> is interpolated unescaped and executes as script in the victim's browser.",

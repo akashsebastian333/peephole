@@ -9,9 +9,9 @@
   "patterns": [
     {"lang": "python", "confidence": "high", "re": "os\\.path\\.join\\(\\s*[^,)]+,\\s*(?:request\\.|flask\\.request\\.|self\\.request\\.|params\\[|args\\[|user_input)"},
     {"lang": "python", "confidence": "high", "re": "send_file\\(\\s*os\\.path\\.join\\([^)]*(?:request\\.|params\\[|args\\[|user_)"},
-    {"lang": "python", "confidence": "medium", "re": "open\\(\\s*f[\"'][^\"']*\\{"},
+    {"lang": "python", "confidence": "medium", "re": "open\\(\\s*f[\\\"'][^\\\"']*\\{[^}]*(?:request|params|args|user_|input|flask)"},
     {"lang": "javascript", "confidence": "high", "re": "path\\.(?:join|resolve)\\(\\s*[^,)]+,\\s*req\\.(?:params|query|body)"},
-    {"lang": "javascript", "confidence": "high", "re": "fs(?:\\.promises)?\\.(?:readFile|readFileSync|createReadStream|writeFile|unlink)(?:Sync)?\\(\\s*`[^`]*\\$\\{"},
+    {"lang": "javascript", "confidence": "high", "re": "fs(?:\\.promises)?\\.(?:readFile|readFileSync|createReadStream|writeFile|unlink)(?:Sync)?\\(\\s*`[^`]*\\$\\{[^}]*(?:req|params|query|body|user)"},
     {"lang": "javascript", "confidence": "high", "re": "res\\.sendFile\\(\\s*path\\.(?:join|resolve)\\([^)]*req\\."}
   ],
   "attack_scenario": "attacker sends a relative path that escapes the intended directory, reading or overwriting arbitrary files as the service user",

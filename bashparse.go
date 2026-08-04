@@ -82,9 +82,9 @@ var (
 	// a redirect) so a benign `printf "%b\n" "$x"` to stdout is not flagged.
 	reEscapeDecodeWrite = regexp.MustCompile(`\b(?:echo\s+-e\b|printf\b)[^;&|]*(?:\\x[0-9a-fA-F]|\\0[0-7]{2}|%b)[^;&|]*>`)
 	rePkgClean          = regexp.MustCompile(`^[@A-Za-z0-9._/-]+`)
-	reFlagValue         = regexp.MustCompile(`^-(?:r|c|f|e|-requirement|-constraint|-find-links|-editable)$`)
+	reFlagValue         = regexp.MustCompile(`^-(?:r|c|f|e|i|-requirement|-constraint|-find-links|-editable|-index-url|-extra-index-url)$`)
 	reFilePath          = regexp.MustCompile(`\.(?:txt|whl|tar|gz|tgz|zip|cfg|toml|lock|in|json)$`)
-	reIndexURL          = regexp.MustCompile(`--(?:extra-)?index-url\s+(\S+)`)
+	reIndexURL          = regexp.MustCompile(`(?:--(?:extra-)?index-url|(?:^|\s)-i)\s+(\S+)`)
 	reRemoteInstall     = regexp.MustCompile(`\b(?:pip3?|npm|yarn|pnpm|bun)\s+(?:install|add|i)\s+[^\n;&|]*\b(git\+|https?://|git://|ssh://|file:)`)
 	rePypiHost          = regexp.MustCompile(`(?i)^https?://(?:[\w.-]+\.)?(?:pypi\.org|pythonhosted\.org|npmjs\.org|npmjs\.com)`)
 )
@@ -161,7 +161,9 @@ func analyzeBash(cmd string) BashAnalysis {
 			a.InstallSmells = append(a.InstallSmells, "install uses a non-official package index ("+m[1]+") - packages could be substituted; verify the host.")
 		}
 	}
-	if m := reRemoteInstall.FindStringSubmatch(cmd); m != nil {
+	// Strip any --index-url/-i value first: an index URL is already handled above
+	// (official hosts allowlisted) and must not also read as a remote source.
+	if m := reRemoteInstall.FindStringSubmatch(reIndexURL.ReplaceAllString(cmd, " ")); m != nil {
 		a.InstallSmells = append(a.InstallSmells, "install pulls from a remote/VCS source ("+m[1]+"...) that bypasses registry checks - confirm the source is trusted.")
 	}
 	// 6. cp/mv/dd/install/ln and git apply write a file with content we can't

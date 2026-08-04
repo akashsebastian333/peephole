@@ -27,8 +27,14 @@ var (
 		"yarn": true, "pnpm": true, "type": true, "main": true, "module": true, "engines": true}
 	rePyproj    = regexp.MustCompile(`["']\s*([A-Za-z0-9][A-Za-z0-9._-]+)\s*(?:[<>=!~;\[].*)?["']`)
 	rePoetryKey = regexp.MustCompile(`(?m)^\s*([A-Za-z0-9][A-Za-z0-9._-]+)\s*=\s*["{]`)
-	manifestPy  = map[string]bool{"requirements.txt": true, "pyproject.toml": true, "Pipfile": true}
-	manifestJs  = map[string]bool{"package.json": true}
+	// Restrict pyproject dependency extraction to dependency declarations so
+	// [project] metadata (version, license, classifiers, urls) is never read as
+	// a package name: `...dependencies... = [...]` arrays and [...dependencies]
+	// table bodies (poetry deps, optional-dependencies groups).
+	reDepArray   = regexp.MustCompile(`(?i)[\w.-]*dependencies[\w.-]*\s*=\s*\[([\s\S]*?)\]`)
+	reDepSection = regexp.MustCompile(`(?i)^\[[^\]]*dependencies[^\]]*\]`)
+	manifestPy   = map[string]bool{"requirements.txt": true, "pyproject.toml": true, "Pipfile": true}
+	manifestJs   = map[string]bool{"package.json": true}
 	// TOML metadata keys that are not dependencies (avoid false slopsquat flags).
 	tomlMetaKeys = map[string]bool{
 		"name": true, "version": true, "description": true, "authors": true,
@@ -82,22 +88,44 @@ func extractManifestDeps(path, content string) []Install {
 			out = append(out, Install{Manager: "pip", Pkg: m[1]})
 		}
 	case base == "pyproject.toml":
-		// PEP 621 quoted deps ("pkg>=1") and Poetry bare keys (pkg = "^1") under
-		// [tool.poetry(.group.*).dependencies], skipping the reserved python key.
-		for _, m := range rePyproj.FindAllStringSubmatch(content, -1) {
-			if n := m[1]; n != "" && n != "python" && !strings.ContainsAny(n, " ") {
+		// PEP 621 quoted deps ("pkg>=1") and Poetry bare keys (pkg = "^1"), scanned
+		// only within dependency sections (see pyprojDepText) so [project] metadata
+		// is never mistaken for a package.
+		dep := pyprojDepText(content)
+		for _, m := range rePyproj.FindAllStringSubmatch(dep, -1) {
+			if n := m[1]; n != "" && n != "python" && !tomlMetaKeys[n] && !strings.ContainsAny(n, " ") {
 				out = append(out, Install{Manager: "pip", Pkg: n})
 			}
 		}
-		if strings.Contains(content, "[tool.poetry") {
-			for _, m := range rePoetryKey.FindAllStringSubmatch(content, -1) {
-				if n := m[1]; !tomlMetaKeys[n] {
-					out = append(out, Install{Manager: "pip", Pkg: n})
-				}
+		for _, m := range rePoetryKey.FindAllStringSubmatch(dep, -1) {
+			if n := m[1]; !tomlMetaKeys[n] {
+				out = append(out, Install{Manager: "pip", Pkg: n})
 			}
 		}
 	}
 	return dedupInstalls(out)
+}
+
+// pyprojDepText returns only the dependency-declaring portions of a
+// pyproject.toml: every `...dependencies... = [ ... ]` array plus the body of
+// any [...dependencies] table. Everything else (the [project] metadata block)
+// is excluded so version/license/classifier strings are never read as packages.
+func pyprojDepText(content string) string {
+	var b strings.Builder
+	for _, m := range reDepArray.FindAllStringSubmatch(content, -1) {
+		b.WriteString(m[1])
+		b.WriteByte('\n')
+	}
+	inDep := false
+	for _, ln := range strings.Split(content, "\n") {
+		if t := strings.TrimSpace(ln); strings.HasPrefix(t, "[") {
+			inDep = reDepSection.MatchString(t)
+		} else if inDep {
+			b.WriteString(ln)
+			b.WriteByte('\n')
+		}
+	}
+	return b.String()
 }
 
 func dedupInstalls(in []Install) []Install {

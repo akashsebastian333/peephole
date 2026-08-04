@@ -19,12 +19,12 @@
     {
       "lang": "java",
       "confidence": "high",
-      "re": "\\.(?:getForObject|getForEntity|postForObject|postForEntity|getForList|exchange)\\s*\\(\\s*\"[^\"]*\"\\s*\\+"
+      "re": "\\.(?:getForObject|getForEntity|postForObject|postForEntity|getForList|exchange)\\s*\\(\\s*\"[^\"]*\"\\s*\\+", "reject_re": "://[\\w.\\-]+"
     },
     {
       "lang": "java",
       "confidence": "high",
-      "re": "\\.uri\\s*\\(\\s*(?:\"[^\"]*\"|[A-Za-z_]\\w*)\\s*\\+"
+      "re": "\\.uri\\s*\\(\\s*(?:\"[^\"]*\"|[A-Za-z_]\\w*)\\s*\\+", "reject_re": "://[\\w.\\-]+"
     }
   ],
   "attack_scenario": "Attacker sets host to 169.254.169.254 (AWS/GCP metadata) or an internal admin service; the server-side client fetches it and returns credentials or internal data.",

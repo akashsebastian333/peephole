@@ -81,7 +81,8 @@
     {
       "lang": "php",
       "confidence": "medium",
-      "re": "\\bunserialize\\s*\\("
+      "re": "\\bunserialize\\s*\\(",
+      "reject_re": "allowed_classes"
     },
     {
       "lang": "ruby",

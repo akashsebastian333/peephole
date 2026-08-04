@@ -7,7 +7,8 @@
   "severity": "high",
   "task_triggers": ["buffer", "string copy", "parse", "input", "c", "memory"],
   "patterns": [
-    {"lang": "c", "confidence": "high", "re": "\\b(?:gets|strcpy|strcat|sprintf|vsprintf|scanf|sscanf|realpath|getwd)\\s*\\("},
+    {"lang": "c", "confidence": "high", "re": "\\b(?:gets|strcpy|strcat|sprintf|vsprintf|getwd)\\s*\\("},
+    {"lang": "c", "confidence": "high", "re": "\\b(?:scanf|sscanf|fscanf)\\s*\\([^;{)]*%s"},
     {"lang": "c", "confidence": "high", "re": "\\b(?:system|popen|execlp|execvp)\\s*\\("},
     {"lang": "c", "confidence": "medium", "re": "\\b(?:alloca|strncpy|strncat|memcpy)\\s*\\("},
     {"lang": "rust", "confidence": "high", "re": "\\bmem::transmute\\b|\\btransmute::<"},

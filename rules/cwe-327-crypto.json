@@ -46,7 +46,7 @@
     {
       "lang": "python",
       "confidence": "high",
-      "re": "(?i)(?:token|secret|otp|nonce|salt|session|password|api_?key)[\\w\\[\\]'\".]*\\s*=\\s*[^;\\n]*\\brandom\\.(?:random|randint|choice|randrange|getrandbits)\\("
+      "re": "(?i)(?:token|secret|otp|nonce|salt|session|password|api_?key)[\\w\\[\\]'\".]*\\s*=\\s*[^;\\n]*\\brandom\\.(?:random|randint|choice|randrange|getrandbits)\\(", "reject_re": "(?i)\\brandom\\.random\\(\\)\\s*\\*|_(?:amount|santa|refill|jitter|deck|count|delay|index|idx|color|colour|percent)\\b"
     },
     {
       "lang": "javascript",
@@ -56,7 +56,7 @@
     {
       "lang": "javascript",
       "confidence": "high",
-      "re": "(?i)(?:token|secret|otp|nonce|salt|session|password|api_?key|uuid)[\\w.]*\\s*=\\s*[^;\\n]*Math\\.random\\(\\)"
+      "re": "(?i)(?:token|secret|otp|nonce|salt|session|password|api_?key|uuid)[\\w.]*\\s*=\\s*[^;\\n]*Math\\.random\\(\\)", "reject_re": "(?i)santa|colou?r|jitter|delay|deck|dice|percent|_amount|_count"
     },
     {
       "lang": "javascript",
