@@ -9,6 +9,27 @@ import (
 	"time"
 )
 
+// Test/fixture/example/vendor code downgrades high->medium (deny->ask): the
+// same dangerous pattern hard-blocks in production but only asks in a test file,
+// which is the dominant false-positive source on real projects.
+func TestLowAssurancePathDowngrade(t *testing.T) {
+	kb := loadKB()
+	code := `cur.execute(f"SELECT * FROM t WHERE id={x}")`
+	if f := kb.scan("src/db.py", code); len(f) == 0 || f[0].Confidence != "high" {
+		t.Fatalf("production path: want high finding, got %v", f)
+	}
+	for _, p := range []string{"tests/test_db.py", "vendor/x.py", "examples/demo.py", "src/__tests__/db.py", "spec/db.py"} {
+		f := kb.scan(p, code)
+		if len(f) == 0 {
+			t.Errorf("%s: expected a (downgraded) finding, got none", p)
+			continue
+		}
+		if f[0].Confidence == "high" {
+			t.Errorf("%s: expected downgrade to medium, still high", p)
+		}
+	}
+}
+
 // Every rule must catch its own noncompliant exemplar and pass its compliant
 // one. This keeps the KB honest: a regex that doesn't match the bad example it
 // ships is broken, and one that matches the good example is a false-positive

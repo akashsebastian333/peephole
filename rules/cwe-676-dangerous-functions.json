@@ -11,8 +11,7 @@
     {"lang": "c", "confidence": "high", "re": "\\b(?:scanf|sscanf|fscanf)\\s*\\([^;{)]*%s"},
     {"lang": "c", "confidence": "high", "re": "\\b(?:system|popen|execlp|execvp)\\s*\\("},
     {"lang": "c", "confidence": "medium", "re": "\\b(?:alloca|strncpy|strncat|memcpy)\\s*\\("},
-    {"lang": "rust", "confidence": "high", "re": "\\bmem::transmute\\b|\\btransmute::<"},
-    {"lang": "rust", "confidence": "medium", "re": "\\bunsafe\\s*\\{"}
+    {"lang": "rust", "confidence": "high", "re": "\\bmem::transmute\\b|\\btransmute::<"}
   ],
   "attack_scenario": "an unbounded string/format function (gets, strcpy, sprintf, scanf) copies attacker-controlled input past a fixed buffer, corrupting the stack/heap for a classic buffer-overflow exploit",
   "negative_test_hint": ["feed a 4096-byte \"AAAA...AAAA\" input into a 64-byte destination and assert bounded copy (truncation or rejection), never overflow"],

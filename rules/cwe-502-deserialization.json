@@ -24,7 +24,8 @@
     {
       "lang": "python",
       "confidence": "high",
-      "re": "\\b(?:pickle|cPickle|_pickle|dill|jsonpickle)\\.loads?\\("
+      "re": "\\b(?:pickle|cPickle|_pickle|dill|jsonpickle)\\.loads?\\(",
+      "reject_re": "(?:pickle|cPickle|_pickle)\\.dumps"
     },
     {
       "lang": "python",

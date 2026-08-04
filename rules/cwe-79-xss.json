@@ -53,13 +53,13 @@
       "lang": "javascript",
       "confidence": "high",
       "re": "\\.(?:inner|outer)HTML\\s*\\+?=\\s*[A-Za-z_$][\\w$.\\[\\]]*",
-      "reject_re": "DOMPurify|sanitize|escapeHtml|textContent"
+      "reject_re": "DOMPurify|sanitize|escapeHtml|textContent|__html"
     },
     {
       "lang": "javascript",
       "confidence": "high",
       "re": "dangerouslySetInnerHTML\\s*=\\s*\\{\\{\\s*__html",
-      "reject_re": "DOMPurify|sanitize"
+      "reject_re": "DOMPurify|sanitize|__html:\\s*['\"`]"
     },
     {
       "lang": "javascript",

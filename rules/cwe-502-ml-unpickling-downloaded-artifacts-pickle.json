@@ -15,7 +15,8 @@
     {
       "lang": "python",
       "confidence": "high",
-      "re": "\\bpickle\\.loads?\\s*\\("
+      "re": "\\bpickle\\.loads?\\s*\\(",
+      "reject_re": "(?:pickle|cPickle)\\.dumps"
     },
     {
       "lang": "python",

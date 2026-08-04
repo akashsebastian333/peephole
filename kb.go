@@ -263,9 +263,30 @@ func (kb *KB) scanBound(path, content string, bound int) []Finding {
 	// Framework-level cross-line taint: a variable built from user input or a
 	// dynamic string that reaches a sink on another line (additive, dedup by CWE).
 	out = append(out, kb.taintScan(lang, content, lc, tlHave(out))...)
+	// Test/fixture/example/vendor code: a security pattern there is far more often
+	// a test fixture or a demonstrated anti-pattern than a shipped vuln, so a hard
+	// deny would mostly block legitimate writes. Downgrade high->medium (deny->ask
+	// in strict): still surfaced for a human, never a silent pass, and hardened
+	// mode still denies (it denies on any finding regardless of confidence).
+	if lowAssurancePath(path) {
+		for i := range out {
+			if out[i].Confidence == "high" {
+				out[i].Confidence = "medium"
+			}
+		}
+	}
 	sort.SliceStable(out, func(i, j int) bool { return findingLess(out[i], out[j]) })
 	return out
 }
+
+// lowAssurancePath reports whether a path is test / fixture / example / vendor /
+// generated code. A finding there is downgraded from deny to ask (see scanBound):
+// these files legitimately contain self-signed certs, throwaway creds, constant
+// XSS/SQL strings, and demonstrated anti-patterns, so hard-blocking them is the
+// dominant false-positive source on real projects.
+var reLowAssurance = regexp.MustCompile(`(?i)(?:^|/)(?:tests?|__tests__|testdata|spec|specs?|__mocks__|fixtures?|examples?|sample|samples|demos?|benchmarks?|bench|perf|vendor|third_party|3rdparty|node_modules|\.storybook)(?:/|$)|(?:^|/)docs?/|[._-](?:test|spec|stories|fixture|bench)\.[a-z0-9]+$|[._/]min\.[a-z]+$`)
+
+func lowAssurancePath(path string) bool { return reLowAssurance.MatchString(path) }
 
 // sinkTokens: the relevance heuristic behind N2. A clean hunk counts as
 // security-relevant (born-secure numerator) only if it plausibly touches a

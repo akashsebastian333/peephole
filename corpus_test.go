@@ -143,6 +143,21 @@ func TestRuleCorpus(t *testing.T) {
 		{"CWE-22", "a.js", "const c = fs.readFileSync(`${__dirname}/pkg.json`)", false},            // trusted __dirname interpolation
 		{"CWE-22", "a.py", `open(f"log_{date}.txt", "w")`, false},                                  // local-var f-string path
 		{"CWE-22", "a.py", `open(f"/data/{request.args['n']}")`, true},                             // request-derived path kept
+		// Round-10: real-world FP fixes (mature-OSS scan) — safe must NOT match, TP must match
+		{"CWE-78", "a.rs", `let cmd = Command::new("cmd");`, false},                             // clap builder API, not a shell
+		{"CWE-78", "a.rs", `Command::new("sh").arg("-c").arg(format!("ping {}", host))`, true},  // real rust sh -c injection
+		{"CWE-78", "a.py", `os.system("cargo build --release")`, false},                         // constant, no interpolation
+		{"CWE-78", "a.py", `os.system(f"ping {host}")`, true},                                   // interpolated
+		{"CWE-676", "a.rs", `unsafe { libc::sysconf(x) }`, false},                               // unsafe is idiomatic Rust
+		{"CWE-502", "a.py", `obj = pickle.loads(pickle.dumps(request))`, false},                 // provable round-trip
+		{"CWE-502", "a.py", `obj = pickle.loads(resp.content)`, true},                           // untrusted unpickle kept
+		{"CWE-798", "a.md", `## -----BEGIN RSA PRIVATE KEY-----`, false},                        // PEM banner inside a comment
+		{"CWE-798", "a.pem", `-----BEGIN RSA PRIVATE KEY-----`, true},                           // real PEM banner kept
+		{"CWE-798", "a.tf", `url = "postgresql://postgres:${var.password}@h/db"`, false},        // templated credential
+		{"CWE-798", "a.tf", `url = "postgres://admin:S3cretPass@h/db"`, true},                   // literal credential kept
+		{"CWE-521", "a.yaml", `password: ""`, false},                                            // empty = auto-generate default
+		{"CWE-79", "a.jsx", `<div dangerouslySetInnerHTML={{ __html: "<p>hi</p>" }} />`, false}, // constant HTML literal
+		{"CWE-79", "a.jsx", `<div dangerouslySetInnerHTML={{ __html: userInput }} />`, true},    // tainted HTML kept
 		// CWE-327 crypto
 		{"CWE-327", "a.py", `pw = hashlib.md5(password.encode()).hexdigest()`, true},
 		{"CWE-327", "a.py", `h = hashlib.sha256(file_bytes).hexdigest()`, false}, // non-password sha256

