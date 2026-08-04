@@ -5512,10 +5512,16 @@ var generatedRules = []Rule{
 			},
 			{
 				Lang:       "",
-				Re:         "(?i)\\baws_(?:secret_access_key|access_key_id|session_token)\\s*[:=]\\s*[\"'][^\"'\\n]+[\"']",
+				Re:         "(?i)\\b(?:aws_(?:secret_access_key|access_key_id|session_token)|azure_(?:client_secret|storage_key)|gcp_(?:private_key|client_secret)|stripe_(?:secret|api)_key|twilio_auth_token|slack_(?:bot_)?token|sendgrid_api_key|github_token|gitlab_token|npm_token|do_?token|digitalocean_token)\\s*[:=]\\s*[\"'][^\"'\\n]+[\"']",
 				Confidence: "high",
-				RejectRe:   "(?i)os\\.environ|getenv|process\\.env|config\\[|settings\\.|current_app|\\$\\{|\\{\\{|<[^>]*>",
-				prefilter:  []string{"aws_"},
+				RejectRe:   "(?i)os\\.environ|getenv|process\\.env|config\\[|settings\\.|current_app|vault|secretmanager|\\$\\{|\\{\\{|<[^>]*>|%[sw]|\\bnull\\b",
+				prefilter:  nil,
+			},
+			{
+				Lang:       "",
+				Re:         "(?i)AccountKey=[A-Za-z0-9+/]{40,}={0,2}",
+				Confidence: "high",
+				prefilter:  []string{"accountkey"},
 			},
 			{
 				Lang:       "",

@@ -107,6 +107,8 @@ func TestRuleCorpus(t *testing.T) {
 		{"CWE-798", "a.py", `AWS_ACCESS_KEY_ID = "AKIAxxxxxxxxxxxxxxxx"`, true},
 		{"CWE-798", "a.py", `AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]`, false},     // env, secure
 		{"CWE-798", "a.py", `boto3.client("s3", aws_secret_access_key=AWS_SECRET_ACCESS_KEY)`, false}, // variable, not literal
+		{"CWE-798", "a.py", `STRIPE_SECRET_KEY = "sk_placeholder_value_here"`, true},                  // provider credential var = literal
+		{"CWE-798", "a.py", `slack_token = config["slack_token"]`, false},                             // from config, secure
 		{"CWE-798", "a.py", `DB_PASSWORD = os.environ["DB_PASSWORD"]`, false},
 		{"CWE-798", "a.py", `password = "<your-password-here>"`, false}, // placeholder
 		{"CWE-798", "a.js", `const k = process.env.STRIPE_KEY`, false},
