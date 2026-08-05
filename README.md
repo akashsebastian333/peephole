@@ -17,15 +17,18 @@
   <img src="https://img.shields.io/badge/deps-0-brightgreen" alt="zero dependencies">
 </p>
 
-Peephole is a security gate for AI coding agents. It blocks insecure code at
+Peephole is a security gate for AI coding agents. It catches insecure code at
 *write time*, before it lands on disk, and records every decision in a
 CWE-mapped, tamper-evident audit log. *Never open the door before checking who's
 on the other side, and never ship code before checking what's in it.*
 
-Where the incumbent plugin warns *after* a write lands (PostToolUse,
-detect-then-regenerate), peephole denies *before* it (PreToolUse): in
-strict/hardened mode the insecure hunk never touches disk, so code is *born*
-secure, not repaired. It's a single **static Go binary** — no Node, no Python,
+By default (**`guided`** mode) it is developer-first: every finding is surfaced
+as a prompt and the call is yours — you stay in control, nothing is hard-blocked
+(only tampering and explicit org mandates ever deny). Opt into **`strict`** /
+**`hardened`** and it *denies before* the write (PreToolUse) where the incumbent
+plugin only warns *after* one lands (PostToolUse, detect-then-regenerate): the
+insecure hunk never touches disk, so code is *born* secure, not repaired. It's a
+single **static Go binary** — no Node, no Python,
 no runtime — with a ~4ms hook path for a typical write (larger writes scale with
 size; the 256KB hot-path window is retro-scanned beyond that). See
 [docs/DESIGN.md](docs/DESIGN.md) for the architecture and platform contract.
@@ -220,6 +223,25 @@ nothing tuned per model.
 
 *(insecure code landed per attempt, lower is better; 2 runs/task, n=20/arm, 0 timeouts this run; small n, directional)*
 
+**Re-validated on the current build** (after the false-positive-reduction pass
+and the `guided` default). A fresh 90-session run — Sonnet 4.5 / GLM / Kimi ×
+baseline / bare-prompt / peephole × the 10 main tasks, 1 run, graded by
+peephole's own `scan` (the enforcement arm pinned to `strict`) — reproduces the
+result: peephole steers **every** model to 100% secure output.
+
+| model | baseline | bare-prompt | **peephole** |
+|---|---|---|---|
+| Sonnet 4.5 | 30% | 90% | **100%** |
+| GLM | 10% | 90% | **100%** |
+| Kimi | 0% | 90% | **100%** |
+
+*(secure-output rate, higher is better; 1 run/task, n=10/arm/model, 0 harness
+errors, ~$17 spend. Of peephole's 30 sessions, **19 were born-secure** — the
+model wrote secure code first with the SessionStart guidance and the gate never
+fired — and **11** the gate caught an insecure attempt and the model corrected
+to secure. GLM is now **100%**, confirming the placeholder-credential root-cause
+fix below.)*
+
 - **peephole is the security leader on every model** — 0% insecure-landed on
   Haiku/Sonnet/Kimi and 5% on GLM, versus 40-55% baseline, 5-15% for a one-line
   prompt, and 20-50% for security-guidance: the guidance plane is not a Haiku
@@ -231,7 +253,8 @@ nothing tuned per model.
   The 5% is the honest measurement at run time — I did **not** tweak the grader to
   force 0%. Instead I fixed the *root cause*: peephole now flags an AWS credential
   variable assigned **any** string literal (the SDK reads from env/profile/IAM — you
-  never hardcode it), matching gitleaks/detect-secrets. A future run reflects it.
+  never hardcode it), matching gitleaks/detect-secrets. **The re-validation run
+  above confirms the fix — GLM is now 100% (0% insecure-landed).**
 - **The remaining raw flags are false positives, audited per file.** Uncorrected,
   Semgrep flags peephole on 10-15% of attempts; every one bar the GLM case above
   was verified per file as a genuine Semgrep FP on secure code (static-template

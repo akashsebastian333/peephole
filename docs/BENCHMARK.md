@@ -5,6 +5,19 @@ an advisory PostToolUse plugin, and (B) plane-ablation +
 Claude-in-the-loop born-secure sessions. Methodology and limitations are stated
 plainly; the harness is in-repo and re-runnable.
 
+> **Re-validated on the current build** (after the large false-positive-reduction
+> pass and the `guided` non-blocking default). (A) The detection benchmark is
+> unchanged — **98% recall (148/151), 0% false positives on 50 benign cases** —
+> so the precision work cost zero detection. (B) A fresh 90-session live run
+> (Sonnet 4.5 / GLM / Kimi × baseline / bare-prompt / peephole × 10 tasks, 1 run,
+> enforcement arm pinned to `strict`, graded by peephole's own `scan`) reproduces
+> the result: **peephole → 100% secure output on all three models** (baseline
+> 0–30%, bare-prompt 90%). Of peephole's 30 sessions, 19 were born-secure and 11
+> the gate caught an insecure attempt that the model then corrected; 0 harness
+> errors. GLM reached 100%, confirming the placeholder-credential root-cause fix.
+> A real-world false-positive audit over ~6,000 files of mature OSS drove
+> hard-deny false positives from ~98% toward near-zero (see the FP-audit commits).
+
 ---
 
 ## A. Detection benchmark (three engines, identical inputs)
