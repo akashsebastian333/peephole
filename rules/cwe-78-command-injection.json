@@ -113,6 +113,16 @@
       "lang": "csharp",
       "confidence": "medium",
       "re": "(?i)\\.Arguments\\s*=\\s*(?:[^;\\n]*\"\\s*\\+|\\$@?\"[^\"]*\\{)"
+    },
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "\\b(?:system|exec|spawn)\\s*\\(\\s*[\"\\x27][^\"\\x27\\n]*#\\{"
+    },
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "`[^`\\n]*#\\{[^}]*\\}[^`\\n]*`"
     }
   ],
   "attack_scenario": "attacker appends a shell metacharacter and a second command to the interpolated field; the shell parses and runs it with the service's privileges",
@@ -122,6 +132,6 @@
   "exemplar": {
     "noncompliant": "subprocess.run(f\"ping -c1 {host}\", shell=True)",
     "compliant": "subprocess.run([\"ping\", \"-c1\", host], shell=False, check=True, timeout=5)",
-    "explanation": "argv list without a shell — metacharacters in host are passed as one literal argument, never parsed"
+    "explanation": "argv list without a shell \u2014 metacharacters in host are passed as one literal argument, never parsed"
   }
 }

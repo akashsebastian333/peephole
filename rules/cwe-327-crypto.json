@@ -46,7 +46,8 @@
     {
       "lang": "python",
       "confidence": "high",
-      "re": "(?i)(?:token|secret|otp|nonce|salt|session|password|api_?key)[\\w\\[\\]'\".]*\\s*=\\s*[^;\\n]*\\brandom\\.(?:random|randint|choice|randrange|getrandbits)\\(", "reject_re": "(?i)\\brandom\\.random\\(\\)\\s*\\*|_(?:amount|santa|refill|jitter|deck|count|delay|index|idx|color|colour|percent)\\b"
+      "re": "(?i)(?:token|secret|otp|nonce|salt|session|password|api_?key)[\\w\\[\\]'\".]*\\s*=\\s*[^;\\n]*\\brandom\\.(?:random|randint|choice|randrange|getrandbits)\\(",
+      "reject_re": "(?i)\\brandom\\.random\\(\\)\\s*\\*|_(?:amount|santa|refill|jitter|deck|count|delay|index|idx|color|colour|percent)\\b"
     },
     {
       "lang": "javascript",
@@ -56,7 +57,8 @@
     {
       "lang": "javascript",
       "confidence": "high",
-      "re": "(?i)(?:token|secret|otp|nonce|salt|session|password|api_?key|uuid)[\\w.]*\\s*=\\s*[^;\\n]*Math\\.random\\(\\)", "reject_re": "(?i)santa|colou?r|jitter|delay|deck|dice|percent|_amount|_count"
+      "re": "(?i)(?:token|secret|otp|nonce|salt|session|password|api_?key|uuid)[\\w.]*\\s*=\\s*[^;\\n]*Math\\.random\\(\\)",
+      "reject_re": "(?i)santa|colou?r|jitter|delay|deck|dice|percent|_amount|_count"
     },
     {
       "lang": "javascript",
@@ -77,6 +79,46 @@
       "lang": "csharp",
       "confidence": "medium",
       "re": "\\b(?:MD5|SHA1)(?:CryptoServiceProvider|Managed)?\\.Create\\(\\)|new\\s+(?:MD5|SHA1)(?:CryptoServiceProvider|Managed)\\s*\\("
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "hashlib\\.new\\(\\s*[\"\\x27](?:md5|sha1|md4)[\"\\x27]"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\b(?:ARC4|Blowfish)\\.new\\(|\\bDES\\.new\\("
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "Cipher\\.getInstance\\(\\s*[\"\\x27](?:DES|DESede|RC2|RC4|ARCFOUR|Blowfish|3DES)"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "Cipher\\.getInstance\\(\\s*[\"\\x27]AES[\"\\x27]\\s*[,)]"
+    },
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "\\b(?:des|rc4)\\.NewCipher\\("
+    },
+    {
+      "lang": "go",
+      "confidence": "medium",
+      "re": "\\b(?:md5|sha1)\\.(?:New|Sum)\\("
+    },
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "(?i)\\b(?:md5|sha1)\\s*\\(\\s*\\$\\w*(?:password|passwd|pwd|pass)\\b"
+    },
+    {
+      "lang": "ruby",
+      "confidence": "medium",
+      "re": "\\bDigest::(?:MD5|SHA1)\\b"
     }
   ],
   "attack_scenario": "an attacker who obtains the hash store cracks fast/weak password hashes at GPU speed; under ECB, identical plaintext blocks yield identical ciphertext, leaking structure",

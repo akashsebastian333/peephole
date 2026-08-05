@@ -92,6 +92,16 @@
       "lang": "csharp",
       "confidence": "high",
       "re": "(?i)\\$@?\"[^\"]*\\b(?:select|insert|update|delete)\\b[^\"]*\\b(?:from|into|where|set|values)\\b[^\"]*\\{"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.(?:executeQuery|executeUpdate|execute)\\s*\\(\\s*[\"\\x27][^\"\\x27\\n]*[\"\\x27]\\s*\\+"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "String\\.format\\(\\s*[\"\\x27][^\"\\x27\\n]*\\b(?:SELECT|INSERT|UPDATE|DELETE)\\b"
     }
   ],
   "attack_scenario": "attacker submits input that closes the string literal and appends its own SQL clause, turning a single-row lookup into an arbitrary read, write, or auth bypass",
@@ -101,6 +111,6 @@
   "exemplar": {
     "noncompliant": "cur.execute(f\"SELECT * FROM users WHERE email = '{email}'\")",
     "compliant": "cur.execute(\"SELECT * FROM users WHERE email = %s\", (email,))",
-    "explanation": "parameterized query — the driver escapes the value, the SQL text is fixed"
+    "explanation": "parameterized query \u2014 the driver escapes the value, the SQL text is fixed"
   }
 }

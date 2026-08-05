@@ -105,6 +105,11 @@
       "lang": "python",
       "confidence": "high",
       "re": "\\bshelve\\.open\\("
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\bjsonpickle\\.decode\\("
     }
   ],
   "attack_scenario": "attacker crafts a serialized blob containing a gadget (pickle __reduce__, a YAML python/object tag, a node-serialize IIFE) so the act of deserializing executes attacker code",

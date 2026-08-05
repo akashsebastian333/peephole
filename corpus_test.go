@@ -177,6 +177,21 @@ func TestRuleCorpus(t *testing.T) {
 		{"CWE-347", "a.py", "opts = {\"verify_signature\": False}\njwt.decode(tok, options=opts)", true}, // split across lines
 		{"CWE-347", "a.py", "jwt.decode(tok, options={\"verify_signature\": False})", true},              // inline still caught
 		{"CWE-347", "a.py", "jwt.decode(tok, key, algorithms=[\"RS256\"])", false},                       // verified, safe
+		// Round-14: false-negative language-parity fixes (crypto/random/sqli/cmdi/jwt/deser/path/iac)
+		{"CWE-327", "a.java", `Cipher c = Cipher.getInstance("DES");`, true},                            // broken cipher
+		{"CWE-327", "a.java", `Cipher c = Cipher.getInstance("AES");`, true},                            // implicit ECB
+		{"CWE-327", "a.java", `Cipher c = Cipher.getInstance("AES/GCM/NoPadding");`, false},             // safe AEAD
+		{"CWE-327", "a.go", `d, _ := des.NewCipher(key)`, true},                                         // go broken cipher
+		{"CWE-327", "a.go", `sum := sha256.Sum256(data)`, false},                                        // go strong hash
+		{"CWE-327", "a.php", `$h = md5($password);`, true},                                              // php md5 password
+		{"CWE-330", "a.java", `String otp = "" + new Random().nextInt(999999);`, true},                  // java predictable OTP
+		{"CWE-330", "a.java", `int idx = new Random().nextInt(list.size());`, false},                    // non-security random
+		{"CWE-89", "a.java", `ResultSet rs = st.executeQuery("SELECT * FROM u WHERE id=" + id);`, true}, // java JDBC SQLi
+		{"CWE-78", "a.rb", `system("ping #{host}")`, true},                                              // ruby interpolation cmdi
+		{"CWE-347", "a.js", `const claims = jwt.decode(token);`, true},                                  // js bare decode (no verify)
+		{"CWE-502", "a.py", `obj = jsonpickle.decode(request.data)`, true},                              // jsonpickle RCE
+		{"CWE-22", "a.go", `http.ServeFile(w, r, r.URL.Query().Get("f"))`, true},                        // go path traversal
+		{"CWE-732", "main.tf", `actions   = ["*"]`, true},                                               // terraform IAM wildcard
 		// CWE-327 crypto
 		{"CWE-327", "a.py", `pw = hashlib.md5(password.encode()).hexdigest()`, true},
 		{"CWE-327", "a.py", `h = hashlib.sha256(file_bytes).hexdigest()`, false}, // non-password sha256
