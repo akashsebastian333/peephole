@@ -2077,6 +2077,12 @@ var generatedRules = []Rule{
 				prefilter:  []string{"decode"},
 			},
 			{
+				Lang:       "python",
+				Re:         "verify_signature[\"']?\\s*[:=]\\s*[Ff]alse",
+				Confidence: "high",
+				prefilter:  []string{"verify_signature"},
+			},
+			{
 				Lang:       "",
 				Re:         "algorithms\\s*[=:]\\s*\\[[^\\]]*[\"']none[\"']",
 				Confidence: "high",

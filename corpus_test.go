@@ -172,6 +172,11 @@ func TestRuleCorpus(t *testing.T) {
 		{"CWE-400", "a.py", "r = requests.get('http://api.x/data')", true},                  // real call, no timeout
 		{"CWE-1333", "a.ts", "const globs = 'src/**/(*.)+(spec|test).ts'", false},           // glob string, not a regex
 		{"CWE-1333", "a.js", "const re = /(a+)+/g", true},                                   // real nested-quantifier regex
+		// Round-13: JWT verify-disable across lines (false-negative fix; flag the
+		// disable-signal at its declaration, not only inline at jwt.decode)
+		{"CWE-347", "a.py", "opts = {\"verify_signature\": False}\njwt.decode(tok, options=opts)", true}, // split across lines
+		{"CWE-347", "a.py", "jwt.decode(tok, options={\"verify_signature\": False})", true},              // inline still caught
+		{"CWE-347", "a.py", "jwt.decode(tok, key, algorithms=[\"RS256\"])", false},                       // verified, safe
 		// CWE-327 crypto
 		{"CWE-327", "a.py", `pw = hashlib.md5(password.encode()).hexdigest()`, true},
 		{"CWE-327", "a.py", `h = hashlib.sha256(file_bytes).hexdigest()`, false}, // non-password sha256

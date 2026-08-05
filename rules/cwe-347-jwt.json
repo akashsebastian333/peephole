@@ -9,6 +9,7 @@
   "patterns": [
     {"lang": "python", "confidence": "high", "re": "jwt\\.decode\\([^)]*verify_signature[\"']?\\s*:\\s*False"},
     {"lang": "python", "confidence": "high", "re": "jwt\\.decode\\([^)]*verify\\s*=\\s*False"},
+    {"lang": "python", "confidence": "high", "re": "verify_signature[\"']?\\s*[:=]\\s*[Ff]alse"},
     {"lang": "", "confidence": "high", "re": "algorithms\\s*[=:]\\s*\\[[^\\]]*[\"']none[\"']"},
     {"lang": "javascript", "confidence": "high", "re": "jwt\\.verify\\([^)]*algorithms\\s*:\\s*\\[[^\\]]*[\"']none[\"']"}
   ],

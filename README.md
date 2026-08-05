@@ -253,8 +253,18 @@ fix below.)*
   The 5% is the honest measurement at run time — I did **not** tweak the grader to
   force 0%. Instead I fixed the *root cause*: peephole now flags an AWS credential
   variable assigned **any** string literal (the SDK reads from env/profile/IAM — you
-  never hardcode it), matching gitleaks/detect-secrets. **The re-validation run
-  above confirms the fix — GLM is now 100% (0% insecure-landed).**
+  never hardcode it), matching gitleaks/detect-secrets.
+- **A per-file false-negative audit of GLM's peephole-arm output** then found one
+  more genuine miss: a JWT decoded with signature verification disabled, where the
+  option was assigned to a variable (`opts = {"verify_signature": False}`) and used
+  a line later (`jwt.decode(tok, options=opts)`) — the JWT rule matched only the
+  *inline* form and could not see the split. **Architecture-level fix:** flag the
+  security-disabling signal *at its declaration*, wherever it appears, not only
+  when it sits inline at the sink (the TLS/`verify=False` rules already worked this
+  way; JWT was the outlier). Scanning GLM's original insecure outputs with the
+  current binary now **denies both** the placeholder credential and the JWT case —
+  the two root causes behind the 5% are closed at the rule level, verified against
+  the actual model output.
 - **The remaining raw flags are false positives, audited per file.** Uncorrected,
   Semgrep flags peephole on 10-15% of attempts; every one bar the GLM case above
   was verified per file as a genuine Semgrep FP on secure code (static-template
