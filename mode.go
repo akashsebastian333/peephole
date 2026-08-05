@@ -9,11 +9,14 @@ import (
 	"strings"
 )
 
-// Modes. Default is strict: born-secure by default. audit is opt-out to
-// warn-only; hardened is deny-by-default; off disables enforcement.
-const defaultMode = "strict"
+// Modes. Default is guided: the developer stays in control - every finding is
+// surfaced as an ask (the dev decides at the prompt), nothing is hard-blocked
+// except self-protection and explicit org mandates. Teams that want blocking
+// opt in: strict denies high-confidence findings, hardened denies by default.
+// audit is warn-only (never prompts); off disables enforcement.
+const defaultMode = "guided"
 
-var validMode = map[string]bool{"audit": true, "strict": true, "hardened": true, "off": true}
+var validMode = map[string]bool{"audit": true, "guided": true, "strict": true, "hardened": true, "off": true}
 
 func projectDir(e Event) string {
 	if e.Cwd != "" {
@@ -76,7 +79,7 @@ func getMode(e Event) string {
 	}
 	sig, err := os.ReadFile(modeSigFile(e))
 	if err != nil || strings.TrimSpace(string(sig)) != modeSig(m, modeKey(e)) {
-		return defaultMode // out-of-band change -> fail closed to strict
+		return "strict" // out-of-band change -> fail closed to the enforcing mode
 	}
 	return m
 }

@@ -109,7 +109,7 @@ func timeoutFailClosed(e Event) {
 
 func cliMode(a []string) {
 	if len(a) < 1 {
-		fmt.Fprintln(os.Stderr, "usage: peephole mode <audit|strict|hardened|off>")
+		fmt.Fprintln(os.Stderr, "usage: peephole mode <guided|audit|strict|hardened|off>")
 		os.Exit(1)
 	}
 	cwd, _ := os.Getwd()

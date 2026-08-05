@@ -507,6 +507,11 @@ func baseDecision(mode string, f Finding, marked bool) (string, bool) {
 			return "deny", false
 		}
 		return "ask", false
+	case "guided":
+		// Developer-first default: surface every finding as an ask (the dev decides
+		// at the prompt) and never hard-deny. Org mandates (decisionFor) and
+		// self-protection still deny; those are governance/tamper, not code issues.
+		return "ask", false
 	default: // audit
 		return "allow", false
 	}
@@ -537,7 +542,7 @@ func unreachableDecision(mode string) string {
 	switch mode {
 	case "hardened":
 		return "deny"
-	case "strict":
+	case "strict", "guided":
 		return "ask"
 	default:
 		return "allow"

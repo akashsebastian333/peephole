@@ -111,6 +111,20 @@ func TestSQLiDeniedInStrict(t *testing.T) {
 	}
 }
 
+// Guided is the developer-first default: a finding that hard-denies in strict
+// must only ASK here (the developer decides at the prompt), never deny.
+func TestGuidedAsksNeverDenies(t *testing.T) {
+	p := newProject(t, "guided")
+	ho, exit, raw := runHookJSON(t, write(p, "Write", "app.py", `cur.execute(f"SELECT * FROM users WHERE id={uid}")`))
+	assertNotExit1(t, exit)
+	if ho.HookSpecificOutput.PermissionDecision != "ask" {
+		t.Fatalf("guided: expected ask (developer decides), got %q (%s)", ho.HookSpecificOutput.PermissionDecision, raw)
+	}
+	if !strings.Contains(ho.HookSpecificOutput.Reason, "CWE-89") {
+		t.Fatalf("guided ask should still cite the finding: %s", ho.HookSpecificOutput.Reason)
+	}
+}
+
 func TestNonClaudeHostsGate(t *testing.T) {
 	// The same gate must fire regardless of host event/tool taxonomy - the product
 	// advertises hard pre-write blocking for Gemini/Codex/Cursor/OpenCode/etc.,

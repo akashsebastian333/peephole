@@ -32,7 +32,7 @@ const (
 
 var reCWEid = regexp.MustCompile(`^CWE-\d{1,4}$`)
 
-var modeRank = map[string]int{"off": 0, "audit": 1, "strict": 2, "hardened": 3}
+var modeRank = map[string]int{"off": 0, "audit": 1, "guided": 2, "strict": 3, "hardened": 4}
 
 // mustDeny reports whether the org policy mandates a hard deny for this CWE,
 // regardless of the built-in confidence (an escalation, always safe).

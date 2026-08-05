@@ -66,7 +66,8 @@ Wiring for Gemini CLI, Codex, Cursor, MCP/LSP editors, and a universal
 `git pre-commit` hook is in [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
 
 **As a Claude Code plugin** (local CLI, desktop, or the web/cloud IDE). Add the
-marketplace and install — hooks auto-register, default mode is **strict**:
+marketplace and install — hooks auto-register, default mode is **guided**
+(surfaces issues as prompts, never hard-blocks; `/peephole strict` to enforce):
 
 ```
 /plugin marketplace add akashsebastian333/peephole
@@ -107,13 +108,15 @@ Claude Code surfaces it as an approval prompt. See
 
 | Mode | Behavior |
 |---|---|
-| `audit` | warn + log only; never blocks. Measure before you enforce. |
-| `strict` | **deny** high-confidence CWE patterns, **ask** on lower-confidence ones. *(default)* |
+| `guided` | **developer-first default.** Every finding is surfaced as an **ask** — you decide at the prompt; nothing is hard-blocked. Self-protection and explicit org mandates still deny. *(default)* |
+| `audit` | warn + log only; never prompts or blocks. Measure before you enforce. |
+| `strict` | **deny** high-confidence CWE patterns, **ask** on lower-confidence ones. Opt in for blocking. |
 | `hardened` | deny-by-default; deny unverified installs and uninspectable writes. |
 | `off` | enforcement disabled. |
 
-Switch with `/peephole strict` (or `audit`/`hardened`/`off`), or
-`sh "$CLAUDE_PLUGIN_ROOT/hooks/peephole.sh" mode strict`.
+Switch with `/peephole strict` (or `guided`/`audit`/`hardened`/`off`), or
+`sh "$CLAUDE_PLUGIN_ROOT/hooks/peephole.sh" mode strict`. On a detected mode-file
+tamper, enforcement fail-closes to `strict`.
 
 ## What it catches
 
