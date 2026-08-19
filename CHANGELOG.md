@@ -125,6 +125,27 @@ Found by driving the real hook in a project-local install plus live sessions.
 - Competing arm named as itself (`security-guidance`); completion chart replaced
   with a per-attempt outcome view now that all arms complete (0 timeouts).
 
+### Latency claims corrected, and made falsifiable
+- The published figures had no benchmark behind them, so they could drift silently.
+  `latency_bench_test.go` and `hotpath_bench_test.go` now measure each component:
+  `go test -run '^$' -bench 'LoadKB|Scan|Hot' -benchmem`.
+- Two claims were accurate: `loadKB` is **~6µs** (documented ~7µs) and a typical
+  write scans in **~0.33ms** (documented sub-2ms).
+- One was wrong: a full 256KB hot-path window is **~109ms**, not ~40ms. Scan cost
+  is linear at ~0.4µs/byte.
+- The `~4ms end-to-end` figure holds only on a machine with no endpoint agent in
+  the file path. **Scanning is not the hot-path cost; state I/O is.** A clean
+  6-line Write measures ~49ms on a laptop with AV active vs ~14ms for the same
+  write at `mode=off` (which short-circuits before the state writes), against a
+  ~7.3ms floor for a do-nothing Go binary with identical build flags.
+  `appendLog` alone is **~16ms** and `bumpDecisionCount` **~6.7ms**, because a
+  single file open/write/close costs ~3–5ms here instead of ~0.05ms — the endpoint
+  agent inspects every file operation, and a gated event performs ~5–7 of them.
+  Docs now state the managed-endpoint figure (~15–50ms) alongside the unencumbered
+  one, and name the effective fix: exclude the state directory from the endpoint
+  agent, rather than tuning the regex engine. The writes are the tamper-evidence
+  property, so batching them would trade integrity for latency.
+
 ### Versioning
 - One source of truth (`version.go`). The MCP handshake, the LSP handshake and the
   SARIF tool driver each carried their own literal and had drifted to `0.3.0`,
