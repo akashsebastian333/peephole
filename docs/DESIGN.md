@@ -55,19 +55,50 @@ a visible notice — peephole never blocks the workflow because it cannot run.
 This is distinct from fail-**closed**, which applies only when the binary ran and
 hit an internal error mid-decision.
 
-**Hot-path performance (~4ms for a typical write).** PreToolUse fires on every
+**Hot-path performance (~0.33ms of scanning; ~4ms end-to-end unencumbered, ~15–50ms
+on an AV-managed endpoint).** PreToolUse fires on every
 Write/Edit/Bash, so the whole path is tuned: the launcher execs the cached binary
 directly; the CWE knowledge base ships as build-time-generated Go literals with
 precomputed literal-set prefilters, so `loadKB` is ~7µs rather than ~2ms of JSON
 parsing, and there is no file I/O to load rules on the hot path (compiled-in
 literals also mean a local attacker can't quietly edit rule files the binary would
 ignore); a detached SessionStart `warmcache` pre-warms the slopsquat cache so the
-first install verdict skips a cold ~500ms registry round-trip. Measured: a small
-write is ~4ms end-to-end, of which ~2.7ms is the Go process floor and the scan is
-sub-2ms. The scan cost is linear in file size (a full 256KB hot-path window is
-~40ms); the taint pass now skips files with no sink literal (prefilter recovery
-via the regex AST), so scan allocations on clean files dropped to zero. The rest
-of any observed latency is model generation.
+first install verdict skips a cold ~500ms registry round-trip.
+
+**Measured components** (reproduce with `go test -run '^$' -bench 'LoadKB|Scan|Hot' -benchmem`):
+
+| stage | cost | note |
+|---|---|---|
+| `loadKB` | ~6µs | generated Go literals, 1 alloc |
+| scan, typical write (~400B, taint source present) | ~0.33ms | 103 allocs |
+| scan, clean file with no sink literal | ~0.4µs/byte | 0 allocs — prefilter skips both passes |
+| scan, full 256KB hot-path window | **~109ms** | linear at ~0.4µs/byte |
+| `appendLog` (hash-chained audit entry) | **~16ms** | ~5 file ops: lock, read head, append, write head, unlock |
+| `bumpDecisionCount` | **~6.7ms** | read + overwrite |
+
+**Scanning is not the hot-path cost; state I/O is.** A clean 6-line Write measures
+~49ms end-to-end on a developer laptop with endpoint AV active, against ~14ms for
+the same write with `mode=off` (which short-circuits before the state writes) and a
+~7.3ms floor for a do-nothing Go binary built with the same flags. The scan
+accounts for 0.33ms of that. The remainder is the audit chain: on this machine a
+single file open/write/close costs **~3–5ms** instead of the ~0.05ms an
+unencumbered APFS write takes, because the endpoint agent inspects every file
+operation. Peephole performs ~5–7 file operations per gated event.
+
+Consequences worth stating plainly:
+
+- On a machine with no endpoint agent in the file path, ~4ms end-to-end is
+  achievable (~2.7ms Go process floor + ~0.33ms scan + state I/O at ~0.05ms/op).
+- On a **managed corporate endpoint the realistic figure is ~15–50ms**, and it is
+  dominated by AV-inspected writes to `.peephole/`, not by rule evaluation. Adding
+  the state directory to the endpoint agent's exclusion list is the effective
+  optimization; tuning the regex engine is not.
+- This cost is close to irreducible for an append-only hash chain — the writes are
+  the integrity property. Batching them would trade tamper-evidence for latency.
+
+The taint pass skips files with no sink literal (prefilter recovery via the regex
+AST), so scan allocations on clean files are zero. The rest of any observed
+session latency is model generation.
 
 ## Scope (what this build includes vs defers)
 

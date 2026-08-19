@@ -29,10 +29,13 @@ as a prompt and the call is yours — you stay in control, nothing is hard-block
 **`hardened`** and it *denies before* the write (PreToolUse) where the incumbent
 plugin only warns *after* one lands (PostToolUse, detect-then-regenerate): the
 insecure hunk never touches disk, so code is *born* secure, not repaired. It's a
-single **static Go binary** — no Node, no Python,
-no runtime — with a ~4ms hook path for a typical write (larger writes scale with
-size; the 256KB hot-path window is retro-scanned beyond that). See
-[docs/DESIGN.md](docs/DESIGN.md) for the architecture and platform contract.
+single **static Go binary** — no Node, no Python, no runtime. Rule evaluation for a
+typical write is **~0.33ms**; end-to-end the hook is ~4ms on an unencumbered
+machine and **~15–50ms on a managed endpoint**, where the cost is dominated by the
+endpoint agent inspecting the audit-log writes rather than by scanning (measured
+breakdown and the AV-exclusion fix in [docs/DESIGN.md](docs/DESIGN.md); reproduce
+with `go test -run '^$' -bench 'LoadKB|Scan|Hot' -benchmem`). Larger writes scale
+linearly at ~0.4µs/byte; beyond the 256KB hot-path window content is retro-scanned.
 
 **Docs:** [Design](docs/DESIGN.md) · [Benchmark](docs/BENCHMARK.md) · [Integrations](docs/INTEGRATIONS.md) · [Review history](docs/REVIEW.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
 
@@ -95,6 +98,17 @@ git clone https://github.com/akashsebastian333/peephole && cd peephole
 
 `./build.sh` is reproducible (`-trimpath -buildvcs=false`), so a from-source build
 byte-matches the committed artifact that `bin/manifest.sha256` pins.
+
+**Fleet tuning: exclude the state directory from your endpoint agent.** Peephole
+performs ~5–7 file operations per gated event to append its hash-chained audit
+entry. On a laptop whose EDR/AV inspects every file operation those writes cost
+~3–5ms each instead of ~0.05ms, which is what takes the hook from ~4ms to
+~15–50ms — rule evaluation itself is ~0.33ms. Excluding `**/.peephole/` from
+on-access scanning recovers most of it. Verify on your own image with:
+
+```sh
+go test -run '^$' -bench 'LoadKB|Scan|Hot' -benchmem   # component costs
+```
 
 Wiring for Gemini CLI, Codex, Cursor, MCP/LSP editors, and a universal
 `git pre-commit` hook is in [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).

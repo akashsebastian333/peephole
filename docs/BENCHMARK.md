@@ -173,7 +173,9 @@ dynamically built. Refusals are shown separately, not as insecure.
   dollars and ~139% wall time. It was 153%/209% until the Stop self-review was made
   conditional and class-scoped (fires only when the landed code touches an
   absence-of-guard class, skipping the continuation for pattern-tier code that
-  touches none). The remaining time is model generation; the hook is ~4ms.
+  touches none). The remaining time is model generation; the hook is ~4ms unencumbered, ~15-50ms on an
+  endpoint whose AV inspects the audit-log writes (see docs/DESIGN.md) - either way a
+  negligible fraction of a multi-second session.
 - **Grader honesty:** the uniform Semgrep correction moves peephole 10 to 0% but
   bare-prompt does not move (15%), so it is not cherry-picked. Raw numbers are in
   the (raw) column, and every Haiku peephole raw flag was verified per file as a
@@ -185,7 +187,8 @@ dynamically built. Refusals are shown separately, not as insecure.
   Stop-time adversarial self-review. Small sample — directional, not a headline.
 - **Cost:** with the timeouts gone, peephole is roughly flat on tokens, dollars,
   and wall time vs baseline. Wall time is dominated by model generation, not the
-  hook (~4ms, negligible fraction of a session).
+  hook (~4ms unencumbered, ~15-50ms with endpoint AV inspecting state writes - still a
+  negligible fraction of a session).
 - **Cross-line taint (v0.4.0):** a framework-level taint pass catches the
   variable-built-one-line, used-in-a-sink-another-line gap across 11 CWE classes
   (SSTI, SQLi, command, eval, deserialization, XSS, SSRF, path, redirect, secrets
@@ -255,7 +258,8 @@ data: `benchmark/live/multimodel/benchmark_audit.py`.
 
 **Where the time actually goes.** Across all 144 live sessions, wall time is
 **100% API-side** (wall-vs-API-duration correlation 1.000) and turn counts are
-flat across arms (2.0–2.3). Peephole's hook process is ~4ms — a negligible fraction of a
+flat across arms (2.0–2.3). Peephole's hook process is ~4ms unencumbered (~15-50ms on an AV-managed endpoint,
+dominated by audit-log file I/O, not scanning) — a negligible fraction of a
 session. The session-time deltas (192% peephole, 264% bare-prompt) are model
 generation time plus shared-proxy latency variance, heavily right-skewed —
 medians (81s baseline / 156s peephole / 233s bare-prompt) tell a milder story
