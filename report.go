@@ -204,7 +204,7 @@ func cliSarif(paths []string) {
 		"version": "2.1.0",
 		"runs": []map[string]interface{}{{
 			"tool": map[string]interface{}{"driver": map[string]interface{}{
-				"name": "peephole", "version": "0.2.0",
+				"name": "peephole", "version": version,
 				"rules": rules,
 			}},
 			"results": results,

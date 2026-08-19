@@ -54,7 +54,7 @@ func cliMCP() {
 			reply(req.ID, map[string]any{
 				"protocolVersion": "2024-11-05",
 				"capabilities":    map[string]any{"tools": map[string]any{}},
-				"serverInfo":      map[string]any{"name": "peephole", "version": "0.3.0"},
+				"serverInfo":      map[string]any{"name": "peephole", "version": version},
 			})
 		case "ping":
 			reply(req.ID, map[string]any{})

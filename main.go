@@ -14,6 +14,7 @@ import (
 
 // Peephole hook binary. Invoked as:
 // peephole hook read a hook event on stdin, decide, emit (default)
+// peephole version print version, build target, and rule counts
 // peephole mode <m> set enforcement mode for the project (skills use this)
 // peephole selfcheck verify binary integrity (tests + /sec-audit)
 // peephole audit print the /sec-audit report for the project
@@ -52,6 +53,9 @@ func main() {
 			return
 		case "statusline":
 			cliStatusline()
+			return
+		case "version", "--version", "-v":
+			cliVersion()
 			return
 		case "genmanifest":
 			if err := genManifest(); err != nil {

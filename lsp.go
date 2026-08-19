@@ -55,7 +55,7 @@ func cliLSP() {
 				"capabilities": map[string]any{
 					"textDocumentSync": 1, // full document sync
 				},
-				"serverInfo": map[string]any{"name": "peephole", "version": "0.3.0"},
+				"serverInfo": map[string]any{"name": "peephole", "version": version},
 			})
 		case "shutdown":
 			reply(req.ID, nil)
