@@ -829,8 +829,6 @@ func logDecisionFull(e Event, decision, cwe, ruleID, tool, digest string, marker
 	sd := stateDir(e)
 	appendLog(sd, logEntry{Decision: decision, CWE: cwe, RuleID: ruleID, Tool: tool, FileHash: digest, Marker: marker, Rel: rel})
 	bumpDecisionCount(sd, e.SessionID)
-	if cwe != "" {
-	}
 }
 
 // selfProtectViolation reports whether this tool call writes to / tampers with
