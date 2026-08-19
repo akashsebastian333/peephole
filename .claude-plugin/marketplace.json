@@ -11,7 +11,7 @@
       "name": "peephole",
       "source": "./",
       "description": "Gates insecure code at PreToolUse before it lands on disk, with a CWE-mapped, tamper-evident audit log. Single static Go binary, no runtime.",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "license": "MIT",
       "keywords": ["security", "cwe", "sast", "enforcement", "secure-coding"]
     }

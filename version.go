@@ -12,7 +12,7 @@ import (
 // the plugin manifest said 0.4.0, so a consumer could not tell what it was
 // running. Bump this, .claude-plugin/plugin.json and
 // .claude-plugin/marketplace.json together, then tag.
-const version = "0.5.0"
+const version = "0.5.1"
 
 // cliVersion prints the version, the target it was built for, and the rule
 // counts, so an operator can confirm what a deployed binary actually is.

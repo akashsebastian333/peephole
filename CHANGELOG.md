@@ -3,6 +3,32 @@
 All notable changes to Peephole are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.5.1] - 2026-08
+
+Security and deployment release. No behaviour change to the engine; the detection
+corpus is unchanged at 148/151 TP and 0/50 FP.
+
+- **Rebuilt on go1.26.6.** The v0.5.0 artifacts were built by a toolchain six patch
+  releases stale and were reachable-affected by one standard-library vulnerability
+  (`GO-2026-4602`, Root escape via `os.ReadDir`, fixed in go1.26.1). Verified 0
+  reachable vulnerabilities on all five targets, confirmed against an unstripped
+  scan build.
+- **Release is now gated.** A tag cannot ship what CI would reject: KB freshness,
+  `go test`, a version-consistency check across `version.go` and both manifests,
+  govulncheck against an unstripped build of the same source, and an assertion that
+  every artifact's embedded toolchain equals the `go.mod` pin. All six steps were
+  simulated locally against this commit before tagging.
+- **Fleet deployment tooling** in `deploy/`: idempotent, checksum-verifying
+  installers for macOS, Windows and Linux, plus a JumpCloud runbook covering the
+  `managed-settings.d` drop-in wiring, endpoint-agent exclusions, a staged rollout,
+  and the code-signing constraints that matter under Santa/WDAC/Jamf allowlisting.
+- **Supply-chain and threat documentation**: `NOTICE` (Go BSD-3-Clause attribution
+  for the statically-linked binaries), `sbom/` (CycloneDX 1.6 plus its generator),
+  `docs/THREAT_MODEL.md`, `docs/ARCHITECTURE.md`, `docs/SECURITY_ASSESSMENT.md`.
+- Latency claims corrected and benchmarked; the 256KB figure was ~40ms, measured
+  ~109ms. Scanning is ~0.33ms — hook cost on an AV-managed endpoint is dominated by
+  audit-log file I/O, not rule evaluation.
+
 ## [0.5.0] - 2026-08
 
 Default mode is now **`guided`**: findings surface as prompts, never as a hard

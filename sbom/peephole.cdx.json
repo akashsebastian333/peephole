@@ -5,9 +5,9 @@
   "metadata": {
     "component": {
       "type": "application",
-      "bom-ref": "pkg:golang/peephole@0.5.0",
+      "bom-ref": "pkg:golang/peephole@0.5.1",
       "name": "peephole",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "description": "Write-time CWE gate for AI coding agents",
       "licenses": [
         {

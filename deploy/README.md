@@ -9,7 +9,50 @@ lists the conditions this runbook implements and why.
 
 ---
 
-## 0. Decide the artifact source first
+## 0a. If you forked this into your own org
+
+Deploying from your own fork removes the private-repo download problem in §0b
+entirely — you control visibility and the release. Change these, then cut a release:
+
+| What | Where |
+|---|---|
+| Installer default repo | `install-unix.sh` `REPO=`, `install-windows.ps1` `$Repo =` — or just set `PEEPHOLE_REPO` / `PEEPHOLE_BASE_URL` per Command and leave the defaults alone |
+| Install URLs | `../README.md` — 6 occurrences of the upstream `owner/peephole` |
+| Plugin marketplace | `../README.md` `/plugin marketplace add <owner>/peephole` |
+
+```sh
+git grep -l 'akashsebastian333/peephole'    # every reference to retarget
+```
+
+Then, in your fork:
+
+```sh
+./build.sh                       # rebuild bin/ + manifest with your toolchain
+go test ./... && ./bin/peephole-$(uname -s|tr '[:upper:]' '[:lower:]')-$(uname -m|sed 's/x86_64/amd64/;s/aarch64/arm64/') selfcheck
+git tag -a v0.5.1 -m v0.5.1 && git push origin v0.5.1
+```
+
+The tag triggers `.github/workflows/release.yml`, which **gates** the release on: KB
+freshness, `go test`, version consistency across `version.go` and both manifests,
+govulncheck against an unstripped build, and every artifact's toolchain matching the
+`go.mod` pin. If any fails, no release is published — so a broken or stale build
+cannot reach your fleet. Confirm the run is green before pointing MDM at it.
+
+**No phone-home, and only two outbound endpoints.** The hardcoded owner strings above
+are install documentation only — the binary contains no runtime reference to the
+upstream repo. The single outbound call site is `slopsquat.go:291`, one `curl`
+subprocess with `--max-time`, reaching exactly:
+
+- `https://pypi.org/pypi/<pkg>/json`
+- `https://registry.npmjs.org/<pkg>`
+
+That fires only on the dependency-install path, to check whether a package the agent
+wants to install actually exists (typosquat/hallucination detection). If your egress
+policy blocks it the verdict degrades to `ask` rather than failing. Every other URL
+you will find with `strings` on the binary is rule-exemplar text
+(`https://evil.example/...` and similar), not a destination.
+
+## 0b. Decide the artifact source first
 
 **The upstream repo is private.** An unauthenticated download returns HTTP 404, and
 a JumpCloud Command has no GitHub credential:
