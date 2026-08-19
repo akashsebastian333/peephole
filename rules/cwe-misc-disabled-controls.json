@@ -7,7 +7,7 @@
   "severity": "high",
   "task_triggers": ["tls", "ssl", "cors", "csrf", "debug", "verify", "certificate", "https"],
   "patterns": [
-    {"lang": "", "confidence": "high", "re": "\\bverify\\s*=\\s*False\\b|rejectUnauthorized\\s*:\\s*false|InsecureSkipVerify\\s*:\\s*true|NODE_TLS_REJECT_UNAUTHORIZED\\s*=\\s*[\"']?0|ssl\\._create_unverified_context|check_hostname\\s*=\\s*False"},
+    {"lang": "", "confidence": "high", "re": "\\bverify\\s*=\\s*False\\b|rejectUnauthorized\\s*:\\s*false|InsecureSkipVerify\\s*:\\s*true|NODE_TLS_REJECT_UNAUTHORIZED\\s*=\\s*[\"']?0|ssl\\._create_unverified_context|check_hostname\\s*=\\s*False", "reject_re": "(?m:^\\s*(?://|#|\\*|<!--|;))|(?i:^\\s*(?:const|var|let|final|static)\\s+\\w*(?:msg|message|err|error|warn|text|hint|desc|label|note|reason|advice)\\w*\\s)"},
     {"lang": "python", "confidence": "high", "re": "@csrf_exempt\\b|permission_classes\\s*=\\s*\\[\\s*AllowAny|CORS_ALLOW_ALL_ORIGINS\\s*=\\s*True|CORS_ORIGIN_ALLOW_ALL\\s*=\\s*True|ALLOWED_HOSTS\\s*=\\s*\\[\\s*[\"']\\*[\"']\\s*\\]"},
     {"lang": "python", "confidence": "medium", "re": "\\bapp\\.run\\([^)]*debug\\s*=\\s*True|\\bDEBUG\\s*=\\s*True\\b|allow_origins\\s*=\\s*\\[\\s*[\"']\\*[\"']\\s*\\]"},
     {"lang": "javascript", "confidence": "high", "re": "cors\\(\\s*\\{[^}]*origin\\s*:\\s*[\"']\\*[\"'][^}]*credentials\\s*:\\s*true"},

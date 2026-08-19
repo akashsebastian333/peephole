@@ -84,6 +84,18 @@
       "re": "[\"'][^\"']*(?:SELECT|INSERT|UPDATE|DELETE)[^\"']*[\"']\\s*\\.\\s*\\$_"
     },
     {
+      "lang": "php",
+      "confidence": "high",
+      "re": "[\"'][^\"']*(?i:SELECT|INSERT|UPDATE|DELETE)[^\"']*[\"']\\s*\\.\\s*\\$[A-Za-z]\\w*",
+      "reject_re": "(?i)->prepare\\(|\\?\\s*[\"']|:[A-Za-z_]\\w*\\s*[\"']|\\bbindParam\\b|\\bbindValue\\b"
+    },
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "\"[^\"]*(?i:SELECT|INSERT|UPDATE|DELETE)[^\"]*\\{?\\$(?:_(?:GET|POST|REQUEST|COOKIE)\\s*\\[|[A-Za-z_]\\w*)[^\"]*\"",
+      "reject_re": "(?i)->prepare\\(|\\bbindParam\\b|\\bbindValue\\b"
+    },
+    {
       "lang": "csharp",
       "confidence": "high",
       "re": "(?i)\"[^\"]*\\b(?:select|insert|update|delete)\\b[^\"]*\\b(?:from|into|where|set|values)\\b[^\"]*['=]\\s*\"\\s*\\+"

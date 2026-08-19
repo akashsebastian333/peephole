@@ -242,10 +242,14 @@ func (kb *KB) scanBound(path, content string, bound int) []Finding {
 		content = content[:bound]
 	}
 	lang := langOf(path)
+	prose := proseFile(path)
 	lc := strings.ToLower(content)
 	var out []Finding
 	for i := range kb.Rules {
 		r := &kb.Rules[i]
+		if prose && !proseKeepCWE[r.CWE] {
+			continue // documentation: code shown is an example, not a shipped defect
+		}
 		for j := range r.Patterns {
 			pat := &r.Patterns[j]
 			if pat.Lang != "" && lang != "" && pat.Lang != lang {
@@ -262,7 +266,9 @@ func (kb *KB) scanBound(path, content string, bound int) []Finding {
 	}
 	// Framework-level cross-line taint: a variable built from user input or a
 	// dynamic string that reaches a sink on another line (additive, dedup by CWE).
-	out = append(out, kb.taintScan(lang, content, lc, tlHave(out))...)
+	if !prose {
+		out = append(out, kb.taintScan(lang, content, lc, tlHave(out))...)
+	}
 	// Test/fixture/example/vendor code: a security pattern there is far more often
 	// a test fixture or a demonstrated anti-pattern than a shipped vuln, so a hard
 	// deny would mostly block legitimate writes. Downgrade high->medium (deny->ask
@@ -287,6 +293,43 @@ func (kb *KB) scanBound(path, content string, bound int) []Finding {
 var reLowAssurance = regexp.MustCompile(`(?i)(?:^|/)(?:tests?|__tests__|testdata|spec|specs?|__mocks__|fixtures?|examples?|sample|samples|demos?|benchmarks?|bench|perf|vendor|third_party|3rdparty|node_modules|\.storybook)(?:/|$)|(?:^|/)docs?/|[._-](?:test|spec|stories|fixture|bench)\.[a-z0-9]+$|[._/]min\.[a-z]+$`)
 
 func lowAssurancePath(path string) bool { return reLowAssurance.MatchString(path) }
+
+// Prose/documentation files carry code as *illustration*, and a hardening guide
+// illustrates the insecure form on purpose. Behavioural and configuration rules
+// therefore misfire on them by construction: a README line reading "never run
+// chmod 777" trips the permissions rule, and a security guide's BAD example trips
+// the very rule it is teaching. Since langOf() has no entry for these extensions,
+// every language-agnostic pattern in the KB runs against them, so this is the
+// single largest source of documentation false positives.
+//
+// Only classes that remain a real defect when written in prose are kept: a
+// committed credential is a leak wherever it lives, including in a README.
+// NOTE: .txt is deliberately NOT here. requirements.txt / constraints.txt are
+// dependency manifests, and the KB's own exemplar test uses x.txt as its
+// "unknown extension, run every language-agnostic pattern" probe.
+var proseExts = map[string]bool{
+	".md": true, ".markdown": true, ".mdx": true, ".rst": true,
+	".adoc": true, ".asciidoc": true, ".textile": true, ".pod": true,
+}
+
+func proseFile(path string) bool {
+	p := strings.ToLower(path)
+	if i := strings.LastIndexByte(p, '/'); i >= 0 {
+		p = p[i+1:]
+	}
+	if i := strings.LastIndexByte(p, '.'); i >= 0 {
+		return proseExts[p[i:]]
+	}
+	return false
+}
+
+// proseKeepCWE: finding classes still meaningful inside documentation.
+var proseKeepCWE = map[string]bool{
+	"CWE-798": true, // hard-coded credential
+	"CWE-321": true, // hard-coded cryptographic key
+	"CWE-259": true, // hard-coded password
+	"CWE-540": true, // secrets in source/comments
+}
 
 // sinkTokens: the relevance heuristic behind N2. A clean hunk counts as
 // security-relevant (born-secure numerator) only if it plausibly touches a

@@ -23,7 +23,8 @@
     {
       "lang": "python",
       "confidence": "high",
-      "re": "os\\.chmod\\([^,]+,\\s*0o?[0-7]{0,2}[2367]\\b"
+      "re": "os\\.chmod\\([^,]+,\\s*0o?[0-7]{0,2}[2367]\\b",
+      "reject_re": "(?m:^\\s*(?://|#|\\*|<!--|;))"
     },
     {
       "lang": "python",
@@ -33,7 +34,8 @@
     {
       "lang": "",
       "confidence": "high",
-      "re": "\\bchmod\\s+(?:-[RvfcH]+\\s+)*[0-7]{0,2}[2367]\\b"
+      "re": "\\bchmod\\s+(?:-[RvfcH]+\\s+)*[0-7]{0,2}[2367]\\b",
+      "reject_re": "(?m:^\\s*(?://|#|\\*|<!--|;))"
     },
     {
       "lang": "",
