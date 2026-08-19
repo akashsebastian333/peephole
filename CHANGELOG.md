@@ -125,6 +125,57 @@ Found by driving the real hook in a project-local install plus live sessions.
 - Competing arm named as itself (`security-guidance`); completion chart replaced
   with a per-attempt outcome view now that all arms complete (0 timeouts).
 
+### Security assessment: 32 reachable stdlib CVEs in the shipped binaries
+- `govulncheck -mode=binary` found **32 reachable Go standard-library
+  vulnerabilities** in the committed `bin/` artifacts (built on go1.26.0) and 7 in
+  the published v0.5.0 release assets (go1.26.5). All are fixed in **go1.26.6**;
+  rebuilding there takes every target to **0**.
+- The daily `security-scan` workflow reported "0 vulnerabilities" the same day,
+  and was not wrong: `govulncheck ./...` in *source* mode resolves the standard
+  library from whatever toolchain `setup-go` just installed (a floating `'1.26'`,
+  i.e. the newest patch). **Source mode structurally cannot detect a stale build
+  toolchain**, and `bin/` is committed and is what the plugin install path runs.
+  `govulncheck -mode=binary` now gates the artifacts in both `release.yml`
+  (`dist/*`) and `security-scan.yml` (committed `bin/*`), so a stale toolchain
+  fails the release instead of shipping.
+- `toolchain go1.26.6` pinned in `go.mod` so a local `./build.sh` cannot silently
+  go stale, and `release.yml` corrected from `1.26.5` to `1.26.6`.
+- The generalisable point, now stated in the docs: **zero dependencies does not
+  mean zero supply chain.** It concentrates the supply chain into one input, the
+  compiler, which is exactly the input source-mode scanning cannot see.
+- The daily scan had also been **failing for ≥4 consecutive days** on three
+  trivial staticcheck issues, so nobody was reading its govulncheck output. Fixed:
+  two dead functions removed and one `S1011`. The dead functions were the only
+  readers of the `secrel` and `n3sec` session files, which were still being
+  *written* on the decision path — so that removed dead hot-path I/O too. (No
+  latency win is claimed: run-to-run variance on the test machine exceeded the
+  expected effect.)
+
+### Supply-chain, licence and threat-model documentation
+- `NOTICE`: the distributed binaries are statically linked, so they carry Go
+  standard-library object code, and BSD-3-Clause clause 2 requires binary
+  redistributions to reproduce its copyright notice. That notice was missing and is
+  now included. No other third-party material is redistributed.
+- `sbom/peephole.cdx.json` (CycloneDX 1.6) plus `sbom/generate.py` to regenerate
+  it. Off-the-shelf Go SBOM tooling describes the module graph, which here is
+  empty, so it emits two components and says nothing useful; the generator records
+  the Go standard library as a component with its licence and the toolchain version
+  read out of the compiled binary. Verified: 120 packages linked, 3 own, 117
+  stdlib, **0 third-party**.
+- `docs/THREAT_MODEL.md`: assets, actors, trust boundaries, decision-flow diagram,
+  and a verified attack inventory with MITIGATED/OPEN status per vector, plus a
+  residual-risk register. States plainly that the state directory is not a trust
+  boundary and that the audit log is evidence of record, not evidence against an
+  adversary.
+- `docs/ARCHITECTURE.md`: hook-lifecycle sequence, scan pipeline, state model,
+  integration topology, fleet-deployment view, and where peephole sits in a
+  security program.
+- `docs/SECURITY_ASSESSMENT.md`: the findings above with severities and
+  remediation status, dependency/SBOM analysis, licence compliance (no copyleft
+  contamination; no evidence the rule corpus derives from Semgrep/CodeQL/Bandit or
+  any other corpus), secret-hygiene triage (18 trivy matches, all synthetic
+  fixtures, no live credential committed), and the deployment conditions.
+
 ### Latency claims corrected, and made falsifiable
 - The published figures had no benchmark behind them, so they could drift silently.
   `latency_bench_test.go` and `hotpath_bench_test.go` now measure each component:

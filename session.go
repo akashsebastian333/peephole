@@ -35,34 +35,6 @@ func sessionSawWrite(sd, sid string) bool {
 	return err == nil
 }
 
-// sec-relevant: security-relevant code was involved this session (a gate
-// decision on a finding, or a finding that landed). Gates the Stop self-review.
-func markSecRelevant(sd, sid string) {
-	_ = os.WriteFile(sidFile(sd, sid, "secrel"), []byte("1"), 0o600)
-}
-
-func sessionSecRelevant(sd, sid string) bool {
-	_, err := os.Stat(sidFile(sd, sid, "secrel"))
-	return err == nil
-}
-
-// n3sec: the UserPromptSubmit classifier matched this task to CWE candidates -
-// the blueprint's N6 trigger ("writes touched trust-boundary paths, per N3").
-// Fires the Stop self-review even when no presence finding ever landed, which
-// is exactly the semantic-class (IDOR/race/business-logic) coverage gap. The
-// file stores the top classes so the review is TARGETED, not generic.
-func markN3Sec(sd, sid string, cwes []string) {
-	_ = os.WriteFile(sidFile(sd, sid, "n3sec"), []byte(strings.Join(cwes, ",")), 0o600)
-}
-
-func sessionN3Sec(sd, sid string) (string, bool) {
-	b, err := os.ReadFile(sidFile(sd, sid, "n3sec"))
-	if err != nil {
-		return "", false
-	}
-	return strings.TrimSpace(string(b)), true
-}
-
 // semreview: the union of absence-of-guard classes (idor/race/csrf/bizlogic/
 // ratelimit) the LANDED code touched this session, accumulated at PostToolUse.
 // The Stop self-review fires only when this is non-empty, scoped to these classes

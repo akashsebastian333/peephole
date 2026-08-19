@@ -21,10 +21,26 @@ jobs:
           go-version: '1.26'
           cache: false
 
-      - name: govulncheck (known CVEs in our code + dependencies)
+      - name: govulncheck (source mode - CVEs reachable from our code)
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+          go install golang.org/x/vuln/cmd/govulncheck@latest
           "$(go env GOPATH)/bin/govulncheck" ./...
+
+      # Source mode resolves the stdlib from the toolchain setup-go just installed,
+      # so it reports clean even when the COMMITTED binaries were built with a stale
+      # one. That is not hypothetical: this step was added after source mode reported
+      # "0 vulnerabilities" while bin/ (built on go1.26.0) carried 32 reachable
+      # stdlib CVEs, all fixed in go1.26.6. bin/ is committed and is what the plugin
+      # install path executes, so it has to be scanned as an artifact.
+      - name: govulncheck (binary mode - the committed bin/ artifacts)
+        run: |
+          gv="$(go env GOPATH)/bin/govulncheck"
+          rc=0
+          for b in bin/peephole-*; do
+            echo "--- $b"
+            "$gv" -mode=binary "$b" || rc=1
+          done
+          exit $rc
 
       - name: staticcheck (bug + code-quality analysis)
         run: |

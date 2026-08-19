@@ -18,7 +18,7 @@ jobs:
           # build, so a floating minor makes two releases of the same source
           # produce different binaries and defeats the reproducibility the
           # -trimpath -buildvcs=false flags exist to provide. Bump deliberately.
-          go-version: '1.26.5'
+          go-version: '1.26.6'
           cache: false
 
       # A tag must not be able to ship what CI would have rejected. Without these
@@ -50,6 +50,25 @@ jobs:
               -ldflags="-s -w" -o "$out" .
           done
           cd dist && sha256sum peephole-* > SHA256SUMS
+
+      # Scan the ARTIFACTS, not the source. The daily security-scan workflow runs
+      # `govulncheck ./...` in source mode, which resolves the stdlib from whatever
+      # toolchain setup-go just installed — so it reported "0 vulnerabilities" while
+      # the committed binaries, built with go1.26.0, carried 32 reachable stdlib
+      # CVEs. Source mode structurally cannot detect a stale BUILD toolchain.
+      # Binary mode reads the version baked into each artifact, which is what
+      # operators actually install, so a stale toolchain now fails the release.
+      - name: govulncheck the built artifacts
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          gv="$(go env GOPATH)/bin/govulncheck"
+          rc=0
+          for b in dist/peephole-*; do
+            case "$b" in *SHA256SUMS) continue;; esac
+            echo "--- $b"
+            "$gv" -mode=binary "$b" || rc=1
+          done
+          exit $rc
 
       - name: publish release
         env:

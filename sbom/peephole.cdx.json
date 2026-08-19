@@ -1,0 +1,73 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "application",
+      "bom-ref": "pkg:golang/peephole@0.5.0",
+      "name": "peephole",
+      "version": "0.5.0",
+      "description": "Write-time CWE gate for AI coding agents",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    "properties": [
+      {
+        "name": "peephole:build:toolchain",
+        "value": "go1.26.6"
+      },
+      {
+        "name": "peephole:build:flags",
+        "value": "-trimpath -buildvcs=false -ldflags=-s -w CGO_ENABLED=0"
+      },
+      {
+        "name": "peephole:deps:module_requires",
+        "value": "0"
+      },
+      {
+        "name": "peephole:deps:packages_linked",
+        "value": "120"
+      },
+      {
+        "name": "peephole:deps:packages_own",
+        "value": "3"
+      },
+      {
+        "name": "peephole:deps:packages_stdlib",
+        "value": "117"
+      },
+      {
+        "name": "peephole:deps:packages_third_party",
+        "value": "0"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:generic/go-stdlib@go1.26.6",
+      "name": "go-stdlib",
+      "version": "go1.26.6",
+      "description": "Go standard library, statically linked into the artifact. 117 packages. This is the project's entire external attack surface, so the toolchain patch level is a security-relevant input: scan artifacts with `govulncheck -mode=binary`, not just source.",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://go.dev/"
+        }
+      ]
+    }
+  ]
+}

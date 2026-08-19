@@ -64,9 +64,7 @@ func genMatches(re *syntax.Regexp, cap int) []string {
 		return genMatches(re.Sub[0], cap)
 	case syntax.OpStar, syntax.OpQuest:
 		out := []string{""} // zero repetitions: the literal-dropping case
-		for _, s := range genMatches(re.Sub[0], cap) {
-			out = append(out, s)
-		}
+		out = append(out, genMatches(re.Sub[0], cap)...)
 		return out
 	case syntax.OpPlus:
 		return genMatches(re.Sub[0], cap)

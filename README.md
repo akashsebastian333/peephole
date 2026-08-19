@@ -37,7 +37,14 @@ breakdown and the AV-exclusion fix in [docs/DESIGN.md](docs/DESIGN.md); reproduc
 with `go test -run '^$' -bench 'LoadKB|Scan|Hot' -benchmem`). Larger writes scale
 linearly at ~0.4µs/byte; beyond the 256KB hot-path window content is retro-scanned.
 
-**Docs:** [Design](docs/DESIGN.md) · [Benchmark](docs/BENCHMARK.md) · [Integrations](docs/INTEGRATIONS.md) · [Review history](docs/REVIEW.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
+**Docs:** [Design](docs/DESIGN.md) · [Architecture](docs/ARCHITECTURE.md) · [Threat model](docs/THREAT_MODEL.md) · [Security assessment](docs/SECURITY_ASSESSMENT.md) · [Benchmark](docs/BENCHMARK.md) · [Integrations](docs/INTEGRATIONS.md) · [Review history](docs/REVIEW.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
+
+**Supply chain:** zero third-party dependencies — `go.mod` has no `require`, there
+is no `go.sum`, and 0 of the 120 linked packages are third-party. SBOM (CycloneDX
+1.6) in [`sbom/`](sbom/), regenerable with `python3 sbom/generate.py`; third-party
+notices in [`NOTICE`](NOTICE). Artifacts are CVE-scanned with
+`govulncheck -mode=binary` in CI, because with no dependencies the Go toolchain
+*is* the supply chain and source-mode scanning cannot see a stale build.
 
 > **Not just Claude Code.** The same binary hard-blocks writes in Gemini CLI,
 > OpenAI Codex CLI, Qwen Code, Charm Crush, and Cursor (plus OpenCode via its
