@@ -125,31 +125,42 @@ Found by driving the real hook in a project-local install plus live sessions.
 - Competing arm named as itself (`security-guidance`); completion chart replaced
   with a per-attempt outcome view now that all arms complete (0 timeouts).
 
-### Security assessment: 32 reachable stdlib CVEs in the shipped binaries
-- `govulncheck -mode=binary` found **32 reachable Go standard-library
-  vulnerabilities** in the committed `bin/` artifacts (built on go1.26.0) and 7 in
-  the published v0.5.0 release assets (go1.26.5). All are fixed in **go1.26.6**;
-  rebuilding there takes every target to **0**.
-- The daily `security-scan` workflow reported "0 vulnerabilities" the same day,
-  and was not wrong: `govulncheck ./...` in *source* mode resolves the standard
-  library from whatever toolchain `setup-go` just installed (a floating `'1.26'`,
-  i.e. the newest patch). **Source mode structurally cannot detect a stale build
-  toolchain**, and `bin/` is committed and is what the plugin install path runs.
-  `govulncheck -mode=binary` now gates the artifacts in both `release.yml`
-  (`dist/*`) and `security-scan.yml` (committed `bin/*`), so a stale toolchain
-  fails the release instead of shipping.
-- `toolchain go1.26.6` pinned in `go.mod` so a local `./build.sh` cannot silently
-  go stale, and `release.yml` corrected from `1.26.5` to `1.26.6`.
-- The generalisable point, now stated in the docs: **zero dependencies does not
-  mean zero supply chain.** It concentrates the supply chain into one input, the
-  compiler, which is exactly the input source-mode scanning cannot see.
-- The daily scan had also been **failing for ≥4 consecutive days** on three
-  trivial staticcheck issues, so nobody was reading its govulncheck output. Fixed:
-  two dead functions removed and one `S1011`. The dead functions were the only
-  readers of the `secrel` and `n3sec` session files, which were still being
-  *written* on the decision path — so that removed dead hot-path I/O too. (No
-  latency win is claimed: run-to-run variance on the test machine exceeded the
-  expected effect.)
+### Security assessment: stale build toolchain, and a scanner that over-reports
+- The shipped binaries were built by a toolchain **6 patch releases stale**
+  (go1.26.0) and were reachable-affected by **one** standard-library
+  vulnerability: `GO-2026-4602` (FileInfo can escape from a Root in `os`, via
+  `os.ReadDir`, fixed in go1.26.1). Peephole calls `os.ReadDir` on its own `bin/`
+  directory, i.e. program-controlled paths, so impact is Low. Rebuilding on
+  go1.26.6 takes it to 0.
+- **A first pass of this assessment reported 32 reachable CVEs. That was wrong**,
+  and the cause is worth recording: `govulncheck -mode=binary` needs a symbol table
+  to establish reachability, and the shipped binaries are built with
+  `-ldflags="-s -w"`. Stripped, it degrades to listing every stdlib advisory for
+  the detected Go version. Controlled test on identical source and toolchain:
+  stripped reports 32, unstripped reports 1. Its own output says so in a line
+  that is easy to skip: "your code doesn't appear to call these". Corroboration
+  that the other 31 were never reachable: `go list -deps .` does not link
+  net/http, crypto/tls, html/template, encoding/xml, net/url, archive/tar,
+  encoding/asn1, crypto/x509 or net, and the binary holds 0 string references to
+  any of them — by design, since `slopsquat.go:267` shells to `curl` precisely to
+  keep net/http and crypto/tls out.
+- The release gate first written against that inflated number **would have failed
+  every release** on any toolchain but the newest patch. Replaced before merge with
+  two accurate checks: govulncheck against a throwaway **unstripped** build of the
+  same source (never published), and an assertion that every artifact's embedded
+  toolchain equals the `go.mod` pin. Both validated, including a negative control
+  confirming a go1.26.0 artifact is caught.
+- `toolchain go1.26.6` pinned in `go.mod` so a local `./build.sh` cannot silently go
+  stale; `release.yml` corrected from `1.26.5` to `1.26.6`.
+- Two lessons, both now in the docs: **zero dependencies does not mean zero supply
+  chain** (it concentrates it into the compiler, the one input source-mode scanning
+  cannot see), and **read a scanner's caveats before acting on its headline**.
+- The daily scan had also been **failing for >=4 consecutive days** on three trivial
+  staticcheck issues, so nobody was reading its govulncheck output. Fixed: two dead
+  functions removed and one `S1011`. The dead functions were the only readers of the
+  `secrel` and `n3sec` session files, which were still being *written* on the
+  decision path, so that removed dead hot-path I/O too. (No latency win is claimed:
+  run-to-run variance on the test machine exceeded the expected effect.)
 
 ### Supply-chain, licence and threat-model documentation
 - `NOTICE`: the distributed binaries are statically linked, so they carry Go

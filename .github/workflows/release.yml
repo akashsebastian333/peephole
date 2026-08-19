@@ -51,22 +51,34 @@ jobs:
           done
           cd dist && sha256sum peephole-* > SHA256SUMS
 
-      # Scan the ARTIFACTS, not the source. The daily security-scan workflow runs
-      # `govulncheck ./...` in source mode, which resolves the stdlib from whatever
-      # toolchain setup-go just installed — so it reported "0 vulnerabilities" while
-      # the committed binaries, built with go1.26.0, carried 32 reachable stdlib
-      # CVEs. Source mode structurally cannot detect a stale BUILD toolchain.
-      # Binary mode reads the version baked into each artifact, which is what
-      # operators actually install, so a stale toolchain now fails the release.
-      - name: govulncheck the built artifacts
+      # Confirm the toolchain that built the artifacts is the pinned one, then scan
+      # for CVEs reachable from the shipped code.
+      #
+      # Why not `govulncheck -mode=binary dist/*`: the shipped binaries are built
+      # with -ldflags="-s -w", and binary mode needs a symbol table to establish
+      # reachability. On a stripped binary it degrades to reporting every stdlib
+      # advisory for the detected Go version as though it were called. Measured on
+      # identical source and toolchain: stripped reports 32 vulnerabilities,
+      # unstripped reports 1 (the true figure). A gate built on the stripped number
+      # would fail every release on any toolchain that is not the newest patch.
+      #
+      # So: build one throwaway UNSTRIPPED binary purely to scan. Same source, same
+      # toolchain, real symbol table, accurate reachability. It is never published.
+      - name: govulncheck the shipped code (unstripped scan build)
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
           gv="$(go env GOPATH)/bin/govulncheck"
+          CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /tmp/scan-target .
+          "$gv" -mode=binary /tmp/scan-target
+
+      - name: artifacts were built by the pinned toolchain
+        run: |
+          want="$(grep -oE '^toolchain go[0-9.]+' go.mod | sed 's/toolchain //')"
           rc=0
           for b in dist/peephole-*; do
             case "$b" in *SHA256SUMS) continue;; esac
-            echo "--- $b"
-            "$gv" -mode=binary "$b" || rc=1
+            got="$(go version -m "$b" | head -1 | grep -oE 'go1[0-9.]+')"
+            [ "$got" = "$want" ] && echo "ok   $b ($got)" || { echo "FAIL $b: built by $got, expected $want"; rc=1; }
           done
           exit $rc
 

@@ -211,7 +211,7 @@ ran.
 |---|---|
 | Third-party module dependencies | **Zero.** No `require`, no `go.sum`, no vendor tree, 0 non-stdlib packages linked (`sbom/peephole.cdx.json`) |
 | Entire external attack surface | The Go standard library, statically linked |
-| Toolchain currency | **Security-relevant.** Binaries built on go1.26.0 carried **32 reachable stdlib CVEs**; all fixed in go1.26.6. Now pinned in `go.mod` and `release.yml`, and gated by `govulncheck -mode=binary` on the artifacts in both the release and daily-scan workflows |
+| Toolchain currency | **Security-relevant.** Binaries built on go1.26.0 were reachable-affected by **1** stdlib vulnerability (GO-2026-4602, Root escape via `os.ReadDir`, fixed in go1.26.1) and were 6 patches stale. Now pinned in `go.mod` and `release.yml`, gated by an artifact toolchain assertion plus govulncheck against an unstripped scan build. NB `govulncheck -mode=binary` over-reports ~32x on stripped binaries — see docs/SECURITY_ASSESSMENT.md SA-0 |
 | Release integrity | SHA256SUMS published per release; builds reproducible **for a fixed toolchain version** |
 | Release authenticity | **None.** No signing, no provenance attestation, no SLSA. A self-consistent poisoned build passes `selfcheck` |
 | Licence | MIT. Go stdlib BSD-3-Clause attribution in `NOTICE` |
@@ -255,7 +255,9 @@ Peephole does **not** claim, and must not be deployed as if it claims:
 ```sh
 go test ./... -count=1                                     # behaviour
 go test -run '^$' -bench 'LoadKB|Scan|Hot' -benchmem        # latency components
-govulncheck -mode=binary bin/peephole-darwin-arm64          # artifact CVEs (expect 0)
+go build -o /tmp/scan-target . && govulncheck -mode=binary /tmp/scan-target   # expect 0
+                                                            # (UNSTRIPPED: binary mode
+                                                            # over-reports on -s -w)
 python3 sbom/generate.py bin/peephole-darwin-arm64          # dependency claims
 trivy fs --scanners vuln,secret,license .                   # secrets are synthetic fixtures only
 ```
