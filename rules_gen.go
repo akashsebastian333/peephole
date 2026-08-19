@@ -4201,15 +4201,17 @@ var generatedRules = []Rule{
 		Patterns: []Pattern{
 			{
 				Lang:       "go",
-				Re:         "os\\.(?:OpenFile|WriteFile|Mkdir|MkdirAll|Chmod)\\([^)\\n]*,\\s*0o?[0-7]{0,2}[2367]\\b",
+				Re:         "os\\.Chmod\\([^)\\n]*,\\s*0o?[0-7]{0,2}[2367]\\b",
 				Confidence: "high",
-				prefilter:  []string{"openfile", "writefile", "mkdir", "mkdirall", "chmod"},
+				RejectRe:   "(?m:^\\s*(?://|#|\\*|<!--|;))",
+				prefilter:  []string{"chmod"},
 			},
 			{
 				Lang:       "go",
-				Re:         "ioutil\\.WriteFile\\([^)\\n]*,\\s*0o?[0-7]{0,2}[2367]\\b",
-				Confidence: "high",
-				prefilter:  []string{"writefile"},
+				Re:         "(?:os\\.(?:OpenFile|WriteFile|Mkdir|MkdirAll)|ioutil\\.WriteFile)\\([^)\\n]*,\\s*0o?[0-7]{0,2}[2367]\\b",
+				Confidence: "medium",
+				RejectRe:   "(?m:^\\s*(?://|#|\\*|<!--|;))",
+				prefilter:  []string{"openfile", "writefile", "mkdir", "ioutil.writefile"},
 			},
 		},
 		Absence:        nil,
@@ -4238,6 +4240,7 @@ var generatedRules = []Rule{
 				Lang:       "python",
 				Re:         "os\\.chmod\\([^,]+,\\s*0o?[0-7]{0,2}[2367]\\b",
 				Confidence: "high",
+				RejectRe:   "(?m:^\\s*(?://|#|\\*|<!--|;))",
 				prefilter:  []string{"chmod"},
 			},
 			{
@@ -4250,6 +4253,7 @@ var generatedRules = []Rule{
 				Lang:       "",
 				Re:         "\\bchmod\\s+(?:-[RvfcH]+\\s+)*[0-7]{0,2}[2367]\\b",
 				Confidence: "high",
+				RejectRe:   "(?m:^\\s*(?://|#|\\*|<!--|;))",
 				prefilter:  []string{"chmod"},
 			},
 			{
@@ -5706,14 +5710,14 @@ var generatedRules = []Rule{
 				Lang:       "",
 				Re:         "(?i)\\b(?:postgres(?:ql)?|mysql|mongodb(?:\\+srv)?|redis|amqp)://[^:@/\\s\"']+:[^@/\\s\"']+@",
 				Confidence: "high",
-				RejectRe:   "(?i)example|placeholder|changeme|your[-_]|dummy|user:password|:password@|:pass@|:secret@|%[sdw]|\\$\\{|(?-i:\\$[A-Z][A-Z0-9_]{2,})|\\{\\{|<[^>]*>",
+				RejectRe:   "(?i)example|placeholder|changeme|your[-_]|dummy|user:password|:password@|:pass@|:secret@|%[sdw]|\\$\\{|(?-i:\\$[A-Z][A-Z0-9_]{2,})|\\{\\{|<[^>]*>|@(?:127\\.0\\.0\\.1|localhost|0\\.0\\.0\\.0|\\[?::1\\]?|host\\.docker\\.internal|\\w+\\.local|db|database|postgres|mysql|redis|mongo)[:/]|(?m:^\\s*(?://|#|\\*|<!--))",
 				prefilter:  []string{"postgres", "ysql", "ongodb", "redis", "amqp"},
 			},
 			{
 				Lang:       "",
-				Re:         "(?i)(?:password|passwd|pwd|secret|api_?key|access_?token|auth_?token|client_?secret|private_?key)\\s*[:=]\\s*[\"'][^\"'\\s$<{]{8,}[\"']",
+				Re:         "(?i)(?:[\\w.]*\\[\\s*[\"'])?[\\w.]*(?:password|passwd|pwd|secret|api_?key|access_?token|auth_?token|client_?secret|private_?key|secret_?key|signing_?key|signing_?secret|encryption_?key|session_?key|master_?key)[\\w.]*(?:[\"']\\s*\\])?\\s*[:=]\\s*[\"'][^\"'\\s$<{]{8,}[\"']",
 				Confidence: "medium",
-				RejectRe:   "process\\.env|os\\.environ|getenv|changeme|xxx+|placeholder|example|your[-_]|dummy|redacted",
+				RejectRe:   "(?i)process\\.env|os\\.environ|getenv|vault|secretmanager|current_app|changeme|xxx+|placeholder|example|your[-_]|dummy|redacted|(?:secret|key|token|password|credential)s?_(?:name|id|arn|url|uri|path|file|field|header|prefix|column|env|var|ref|alias|label|type|kind|index|param|source|store|provider)\\b",
 				prefilter:  nil,
 			},
 			{
@@ -6427,6 +6431,20 @@ var generatedRules = []Rule{
 				Lang:       "php",
 				Re:         "[\"'][^\"']*(?:SELECT|INSERT|UPDATE|DELETE)[^\"']*[\"']\\s*\\.\\s*\\$_",
 				Confidence: "high",
+				prefilter:  []string{"select", "insert", "update", "delete"},
+			},
+			{
+				Lang:       "php",
+				Re:         "[\"'][^\"']*(?i:SELECT|INSERT|UPDATE|DELETE)[^\"']*[\"']\\s*\\.\\s*\\$[A-Za-z]\\w*",
+				Confidence: "high",
+				RejectRe:   "(?i)->prepare\\(|\\?\\s*[\"']|:[A-Za-z_]\\w*\\s*[\"']|\\bbindParam\\b|\\bbindValue\\b",
+				prefilter:  []string{"select", "insert", "update", "delete"},
+			},
+			{
+				Lang:       "php",
+				Re:         "\"[^\"]*(?i:SELECT|INSERT|UPDATE|DELETE)[^\"]*\\{?\\$(?:_(?:GET|POST|REQUEST|COOKIE)\\s*\\[|[A-Za-z_]\\w*)[^\"]*\"",
+				Confidence: "high",
+				RejectRe:   "(?i)->prepare\\(|\\bbindParam\\b|\\bbindValue\\b",
 				prefilter:  []string{"select", "insert", "update", "delete"},
 			},
 			{
@@ -7689,6 +7707,7 @@ var generatedRules = []Rule{
 				Lang:       "",
 				Re:         "\\bverify\\s*=\\s*False\\b|rejectUnauthorized\\s*:\\s*false|InsecureSkipVerify\\s*:\\s*true|NODE_TLS_REJECT_UNAUTHORIZED\\s*=\\s*[\"']?0|ssl\\._create_unverified_context|check_hostname\\s*=\\s*False",
 				Confidence: "high",
+				RejectRe:   "(?m:^\\s*(?://|#|\\*|<!--|;))|(?i:^\\s*(?:const|var|let|final|static)\\s+\\w*(?:msg|message|err|error|warn|text|hint|desc|label|note|reason|advice)\\w*\\s)",
 				prefilter:  []string{"verify", "rejectunauthorized", "insecureskipverify", "node_tls_reject_unauthorized", "_create_unverified_context", "check_hostname"},
 			},
 			{

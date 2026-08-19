@@ -19,12 +19,14 @@
     {
       "lang": "go",
       "confidence": "high",
-      "re": "os\\.(?:OpenFile|WriteFile|Mkdir|MkdirAll|Chmod)\\([^)\\n]*,\\s*0o?[0-7]{0,2}[2367]\\b"
+      "re": "os\\.Chmod\\([^)\\n]*,\\s*0o?[0-7]{0,2}[2367]\\b",
+      "reject_re": "(?m:^\\s*(?://|#|\\*|<!--|;))"
     },
     {
       "lang": "go",
-      "confidence": "high",
-      "re": "ioutil\\.WriteFile\\([^)\\n]*,\\s*0o?[0-7]{0,2}[2367]\\b"
+      "confidence": "medium",
+      "re": "(?:os\\.(?:OpenFile|WriteFile|Mkdir|MkdirAll)|ioutil\\.WriteFile)\\([^)\\n]*,\\s*0o?[0-7]{0,2}[2367]\\b",
+      "reject_re": "(?m:^\\s*(?://|#|\\*|<!--|;))"
     }
   ],
   "attack_scenario": "A log or config file created 0666 is rewritten by another tenant on the host to inject a malicious payload; a 0777 upload directory lets a co-located process drop a script the app later executes.",
