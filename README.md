@@ -96,8 +96,13 @@ git clone https://github.com/akashsebastian333/peephole && cd peephole
 ./bin/peephole-$(uname -s|tr '[:upper:]' '[:lower:]')-$(uname -m|sed 's/x86_64/amd64/;s/aarch64/arm64/') version
 ```
 
-`./build.sh` is reproducible (`-trimpath -buildvcs=false`), so a from-source build
-byte-matches the committed artifact that `bin/manifest.sha256` pins.
+`./build.sh` is reproducible (`-trimpath -buildvcs=false`): a from-source build
+byte-matches the committed artifact that `bin/manifest.sha256` pins, **provided you
+use the same Go toolchain version**. The compiler is part of the input, so a build
+with a different Go patch release produces a different (equally valid) binary — the
+published `v0.5.0` darwin-arm64 asset was built by CI on go1.26.5 and does not
+match a local go1.26.0 build. Verify a release against `SHA256SUMS`, and verify a
+local build with `peephole selfcheck`; don't compare the two to each other.
 
 **Fleet tuning: exclude the state directory from your endpoint agent.** Peephole
 performs ~5–7 file operations per gated event to append its hash-chained audit

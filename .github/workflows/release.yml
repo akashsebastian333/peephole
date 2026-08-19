@@ -14,7 +14,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.26'
+          # Pinned to an exact patch, not '1.26'. The compiler is an input to the
+          # build, so a floating minor makes two releases of the same source
+          # produce different binaries and defeats the reproducibility the
+          # -trimpath -buildvcs=false flags exist to provide. Bump deliberately.
+          go-version: '1.26.5'
           cache: false
 
       # A tag must not be able to ship what CI would have rejected. Without these
