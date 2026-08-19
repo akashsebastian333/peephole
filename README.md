@@ -111,6 +111,12 @@ published `v0.5.0` darwin-arm64 asset was built by CI on go1.26.5 and does not
 match a local go1.26.0 build. Verify a release against `SHA256SUMS`, and verify a
 local build with `peephole selfcheck`; don't compare the two to each other.
 
+**Deploying to a fleet?** [`deploy/`](deploy/) has idempotent, checksum-verifying
+installers for macOS, Windows and Linux plus a JumpCloud runbook — including the
+`managed-settings.d` drop-in wiring (admin-owned, no per-user file merging), the
+endpoint-agent exclusion below, a staged rollout plan, and the code-signing
+constraints that matter if you run Santa/WDAC/Jamf allowlisting.
+
 **Fleet tuning: exclude the state directory from your endpoint agent.** Peephole
 performs ~5–7 file operations per gated event to append its hash-chained audit
 entry. On a laptop whose EDR/AV inspects every file operation those writes cost
