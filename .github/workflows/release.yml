@@ -14,7 +14,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.26'
+          # Pinned to an exact patch, not '1.26'. The compiler is an input to the
+          # build, so a floating minor makes two releases of the same source
+          # produce different binaries and defeats the reproducibility the
+          # -trimpath -buildvcs=false flags exist to provide. Bump deliberately.
+          go-version: '1.26.6'
           cache: false
 
       # A tag must not be able to ship what CI would have rejected. Without these
@@ -46,6 +50,37 @@ jobs:
               -ldflags="-s -w" -o "$out" .
           done
           cd dist && sha256sum peephole-* > SHA256SUMS
+
+      # Confirm the toolchain that built the artifacts is the pinned one, then scan
+      # for CVEs reachable from the shipped code.
+      #
+      # Why not `govulncheck -mode=binary dist/*`: the shipped binaries are built
+      # with -ldflags="-s -w", and binary mode needs a symbol table to establish
+      # reachability. On a stripped binary it degrades to reporting every stdlib
+      # advisory for the detected Go version as though it were called. Measured on
+      # identical source and toolchain: stripped reports 32 vulnerabilities,
+      # unstripped reports 1 (the true figure). A gate built on the stripped number
+      # would fail every release on any toolchain that is not the newest patch.
+      #
+      # So: build one throwaway UNSTRIPPED binary purely to scan. Same source, same
+      # toolchain, real symbol table, accurate reachability. It is never published.
+      - name: govulncheck the shipped code (unstripped scan build)
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          gv="$(go env GOPATH)/bin/govulncheck"
+          CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /tmp/scan-target .
+          "$gv" -mode=binary /tmp/scan-target
+
+      - name: artifacts were built by the pinned toolchain
+        run: |
+          want="$(grep -oE '^toolchain go[0-9.]+' go.mod | sed 's/toolchain //')"
+          rc=0
+          for b in dist/peephole-*; do
+            case "$b" in *SHA256SUMS) continue;; esac
+            got="$(go version -m "$b" | head -1 | grep -oE 'go1[0-9.]+')"
+            [ "$got" = "$want" ] && echo "ok   $b ($got)" || { echo "FAIL $b: built by $got, expected $want"; rc=1; }
+          done
+          exit $rc
 
       - name: publish release
         env:

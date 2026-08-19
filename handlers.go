@@ -111,16 +111,9 @@ func handleUserPrompt(e Event, kb *KB) {
 	if len(candidates) == 0 {
 		passthrough("")
 	}
-	// N6 trigger: task is security-relevant; store the top classes for a
-	// targeted Stop review (structured beats generic).
-	var top []string
-	for i, r := range candidates {
-		if i >= 3 {
-			break
-		}
-		top = append(top, r.CWE)
-	}
-	markN3Sec(stateDir(e), e.SessionID, top)
+	// The Stop review is triggered from the classes the LANDED CODE touches
+	// (markSemReview at PostToolUse), not from the prompt classification, so no
+	// per-prompt state is written here.
 	injectContext("UserPromptSubmit", compileContext(kb, e, candidates))
 }
 
@@ -604,7 +597,6 @@ func handlePostToolUse(e Event, kb *KB) {
 	findings := kb.scan(ti.targetPath(), content)
 	if len(findings) > 0 {
 		armNegTest(sd, e.SessionID, firstHint(findings[0].Rule))
-		markSecRelevant(sd, e.SessionID)
 		if getMode(e) == "audit" {
 			appendLog(sd, logEntry{Decision: "retro-flag", CWE: findings[0].Rule.CWE, RuleID: findings[0].Rule.Name, Tool: e.ToolName, FileHash: fileDigest(content)})
 		}
@@ -837,9 +829,6 @@ func logDecisionFull(e Event, decision, cwe, ruleID, tool, digest string, marker
 	sd := stateDir(e)
 	appendLog(sd, logEntry{Decision: decision, CWE: cwe, RuleID: ruleID, Tool: tool, FileHash: digest, Marker: marker, Rel: rel})
 	bumpDecisionCount(sd, e.SessionID)
-	if cwe != "" {
-		markSecRelevant(sd, e.SessionID) // a security-relevant decision -> Stop self-review
-	}
 }
 
 // selfProtectViolation reports whether this tool call writes to / tampers with

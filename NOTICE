@@ -1,0 +1,53 @@
+# Third-party notices
+
+Peephole itself is MIT-licensed (see LICENSE). It declares **no third-party module
+dependencies**: `go.mod` has no `require` directives and there is no `go.sum`
+(`go list -deps ./...` reports 120 packages — 3 our own, 117 Go standard library,
+0 third-party). There is no vendored source tree and no file in this repository
+carries a foreign copyright header.
+
+The distributed artifacts in `bin/` and on the GitHub releases page are
+statically-linked Go binaries, so they contain object code from the Go standard
+library. The Go licence is BSD-3-Clause, whose clause 2 requires that
+redistributions in binary form reproduce its copyright notice. That notice is
+reproduced in full below to satisfy that condition.
+
+No other third-party material is redistributed. The wordmark and logo in `assets/`
+are original SVG path artwork with no embedded fonts and no external references.
+
+---
+
+## The Go Programming Language
+
+Go standard library, linked into every `peephole` binary.
+Upstream: https://go.dev/  ·  SPDX-License-Identifier: BSD-3-Clause
+
+```
+Copyright 2009 The Go Authors.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+   * Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+   * Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following disclaimer
+in the documentation and/or other materials provided with the
+distribution.
+   * Neither the name of Google LLC nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```

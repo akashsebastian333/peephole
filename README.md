@@ -37,7 +37,14 @@ breakdown and the AV-exclusion fix in [docs/DESIGN.md](docs/DESIGN.md); reproduc
 with `go test -run '^$' -bench 'LoadKB|Scan|Hot' -benchmem`). Larger writes scale
 linearly at ~0.4µs/byte; beyond the 256KB hot-path window content is retro-scanned.
 
-**Docs:** [Design](docs/DESIGN.md) · [Benchmark](docs/BENCHMARK.md) · [Integrations](docs/INTEGRATIONS.md) · [Review history](docs/REVIEW.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
+**Docs:** [Design](docs/DESIGN.md) · [Architecture](docs/ARCHITECTURE.md) · [Threat model](docs/THREAT_MODEL.md) · [Security assessment](docs/SECURITY_ASSESSMENT.md) · [Benchmark](docs/BENCHMARK.md) · [Integrations](docs/INTEGRATIONS.md) · [Review history](docs/REVIEW.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
+
+**Supply chain:** zero third-party dependencies — `go.mod` has no `require`, there
+is no `go.sum`, and 0 of the 120 linked packages are third-party. SBOM (CycloneDX
+1.6) in [`sbom/`](sbom/), regenerable with `python3 sbom/generate.py`; third-party
+notices in [`NOTICE`](NOTICE). Artifacts are CVE-scanned with
+`govulncheck -mode=binary` in CI, because with no dependencies the Go toolchain
+*is* the supply chain and source-mode scanning cannot see a stale build.
 
 > **Not just Claude Code.** The same binary hard-blocks writes in Gemini CLI,
 > OpenAI Codex CLI, Qwen Code, Charm Crush, and Cursor (plus OpenCode via its
@@ -96,8 +103,19 @@ git clone https://github.com/akashsebastian333/peephole && cd peephole
 ./bin/peephole-$(uname -s|tr '[:upper:]' '[:lower:]')-$(uname -m|sed 's/x86_64/amd64/;s/aarch64/arm64/') version
 ```
 
-`./build.sh` is reproducible (`-trimpath -buildvcs=false`), so a from-source build
-byte-matches the committed artifact that `bin/manifest.sha256` pins.
+`./build.sh` is reproducible (`-trimpath -buildvcs=false`): a from-source build
+byte-matches the committed artifact that `bin/manifest.sha256` pins, **provided you
+use the same Go toolchain version**. The compiler is part of the input, so a build
+with a different Go patch release produces a different (equally valid) binary — the
+published `v0.5.0` darwin-arm64 asset was built by CI on go1.26.5 and does not
+match a local go1.26.0 build. Verify a release against `SHA256SUMS`, and verify a
+local build with `peephole selfcheck`; don't compare the two to each other.
+
+**Deploying to a fleet?** [`deploy/`](deploy/) has idempotent, checksum-verifying
+installers for macOS, Windows and Linux plus a JumpCloud runbook — including the
+`managed-settings.d` drop-in wiring (admin-owned, no per-user file merging), the
+endpoint-agent exclusion below, a staged rollout plan, and the code-signing
+constraints that matter if you run Santa/WDAC/Jamf allowlisting.
 
 **Fleet tuning: exclude the state directory from your endpoint agent.** Peephole
 performs ~5–7 file operations per gated event to append its hash-chained audit

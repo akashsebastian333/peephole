@@ -21,10 +21,34 @@ jobs:
           go-version: '1.26'
           cache: false
 
-      - name: govulncheck (known CVEs in our code + dependencies)
+      - name: govulncheck (source mode - CVEs reachable from our code)
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+          go install golang.org/x/vuln/cmd/govulncheck@latest
           "$(go env GOPATH)/bin/govulncheck" ./...
+
+      # Source mode above resolves the stdlib from the toolchain setup-go just
+      # installed, so it reports clean even when the COMMITTED bin/ artifacts were
+      # built by a stale one. That is not hypothetical: source mode said "0
+      # vulnerabilities" while bin/, built on go1.26.0, was reachable-affected by
+      # GO-2026-4602 (Root escape via os.ReadDir, fixed in go1.26.1). bin/ is
+      # committed and is what the plugin install path executes, so the toolchain
+      # that produced it has to be checked directly.
+      #
+      # This is a version assertion, not a binary-mode scan, deliberately:
+      # `govulncheck -mode=binary` needs a symbol table, and bin/* ships stripped
+      # (-ldflags="-s -w"). On a stripped binary it degrades to listing every stdlib
+      # advisory for the detected version — measured 32 vs the true 1 on identical
+      # source. Asserting the toolchain is exact and cheap; reachability is source
+      # mode's job.
+      - name: committed bin/ was built by the pinned toolchain
+        run: |
+          want="$(grep -oE '^toolchain go[0-9.]+' go.mod | sed 's/toolchain //')"
+          rc=0
+          for b in bin/peephole-*; do
+            got="$(go version -m "$b" | head -1 | grep -oE 'go1[0-9.]+')"
+            [ "$got" = "$want" ] && echo "ok   $b ($got)" || { echo "FAIL $b: built by $got, expected $want"; rc=1; }
+          done
+          exit $rc
 
       - name: staticcheck (bug + code-quality analysis)
         run: |
