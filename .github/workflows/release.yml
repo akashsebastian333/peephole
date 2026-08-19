@@ -17,6 +17,25 @@ jobs:
           go-version: '1.26'
           cache: false
 
+      # A tag must not be able to ship what CI would have rejected. Without these
+      # two gates a release can carry a stale embedded KB (rules/*.json edited but
+      # rules_gen.go not regenerated) or a failing test suite, and the published
+      # artifact is what operators actually install.
+      - name: generated KB is fresh
+        run: go run ./cmd/kbgen --check
+
+      - name: go test
+        run: go test ./...
+
+      - name: version matches the tag
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          for f in .claude-plugin/plugin.json .claude-plugin/marketplace.json; do
+            grep -q "\"version\": \"$v\"" "$f" || { echo "$f does not declare version $v"; exit 1; }
+          done
+          grep -q "^const version = \"$v\"\$" version.go || { echo "version.go does not declare $v"; exit 1; }
+          echo "version $v consistent across version.go and both manifests"
+
       - name: build all targets
         run: |
           mkdir -p dist

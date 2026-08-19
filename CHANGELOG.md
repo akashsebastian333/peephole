@@ -3,27 +3,75 @@
 All notable changes to Peephole are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [0.4.0] - 2026-08
+## [0.5.0] - 2026-08
 
-### New capability: intra-file cross-line taint (framework-level)
-- The single-line presence patterns missed the shape where a dangerous value is
-  built into a variable on one line and reaches a sink on another (`tmpl = f"..{req}.."`
-  then `render_template_string(tmpl)`). A new additive taint pass tracks
-  user-derived and dynamically-built variables (propagating through interpolation
-  and concatenation, cleared by `int()`/`shlex.quote()`/`escape()`/... sanitizers)
-  and flags them at **every** sink class: SSTI, SQLi, OS-command, code-eval,
-  deserialization, and XSS. It checks the actual variable in the sink, not
-  proximity, so an unrelated dynamic string near a static-const sink does not
-  misfire. Strictly additive: it never changes existing rule behavior.
-- The sink catalog is **declarative data** (`taint/*.json`, compiled into Go
-  literals by `cmd/kbgen`) over one generic engine, so adding a class is a spec
-  file plus exemplars, verified by `TestTaintSpecExemplars`, not new engine code.
-  Findings whose exploitability depends on a validation guard a pattern engine
-  cannot see (SSRF, redirect, path) `ask` rather than hard-deny.
-- Measured on the live-benchmark corpus, this raises the gate's catch rate on
-  insecure code that landed from 45/64 to **57/64** across all arms, and takes
-  peephole's own cross-line SSTI misses to zero. `TestTaintCrossLineCatches` /
-  `TestTaintNoFalsePositives` lock the behavior.
+Default mode is now **`guided`**: findings surface as prompts, never as a hard
+block, unless an operator opts into `strict`/`hardened`. Everything below landed
+after the `v0.4.0` tag was cut; see the note under 0.4.0.
+
+### Developer-first default: `guided` mode
+- A gate whose default hard-denies is only as good as its precision, and a wrong
+  block is the single most reliable way to get a security tool switched off. The
+  new default surfaces every finding as an `ask` and reserves hard denies for
+  operators who choose `strict`/`hardened`, or for an org policy that mandates a
+  CWE. Measured on live sessions: `deny=0 ask=0` on ordinary work, and an
+  interruption rate of 0.0 per 20 write-gate decisions.
+
+### Org enforcement policy (escalation-only)
+- `.peephole-policy.json` / `.claude/peephole-policy.json` can raise a repo's
+  floor (`min_mode`) and mandate hard denies for named CWEs (`enforce`). It can
+  only ever escalate, never weaken a repo's own mode, and the floor is applied at
+  every write surface (Write family, Bash write-path, MCP) rather than the Write
+  tool alone. An org-mandated deny is not downgradable by the terminating-guardrail
+  budget.
+
+### Cross-host gating
+- The exit-code dialect gated only Claude Code in practice; every other hook host
+  was a silent no-op. All hook-based hosts are now gated, and eight further
+  normalizer bypasses (Codex, Cline, Goose, Cursor spellings of the same event)
+  are closed. Coverage claims in `docs/INTEGRATIONS.md` were corrected to stop
+  overstating hosts with no working pre-tool hook.
+
+### Deployability: precision, false negatives, and review cost
+Found by driving the real hook in a project-local install plus live sessions.
+- **Hard-coded secrets with compound names were invisible.** The generic
+  credential pattern matched `secret` and then required `[:=]` immediately, so
+  `SECRET_KEY`, `app.secret_key`, `JWT_SECRET_KEY`,
+  `app.config["SECRET_KEY"]`, `signing_key`, `encryption_key` and the JS
+  `secretKey` spelling all scanned clean — including Django's and Flask's
+  session-signing secret.
+- **PHP SQL injection via an intermediate variable** (`$q = "SELECT …" . $id;`
+  then `$pdo->query($q)`) and the interpolated-string form are now caught; only
+  the concat-directly-from-`$_GET` shape was covered before.
+- **Prose files ran every language-agnostic pattern**, because `langOf()` has no
+  entry for `.md`/`.rst`/`.adoc`. A README line reading "never run chmod 777" was
+  denied, and a hardening guide's BAD example tripped the rule it was teaching.
+  Documentation now keeps only the classes still real in prose (a committed
+  credential is a leak in a README too) and skips the taint pass. `.txt` is
+  deliberately excluded: `requirements.txt` is a dependency manifest.
+- **Go's canonical file-creation idiom no longer hard-denies.**
+  `os.WriteFile/OpenFile/Mkdir(…, 0666|0777)` requests a umask-masked mode, and
+  `0666` is what `os.Create` itself uses, so it drops to `medium` (ask). Only
+  `os.Chmod`, which sets the mode absolutely, stays `high`.
+- A disabled control named inside a **comment or a message constant** is
+  documentation, not a disabled control. A credential whose host is **loopback, a
+  docker service name, or `*.local`** is a dev fixture; real RDS / `mongodb+srv` /
+  prod-host DSNs still flag `high`.
+- **`secureRewrite` no longer offers to corrupt working code.** Its argument
+  pattern terminated at the inner `)` of a nested call, so
+  `yaml.load(open(p), Loader=yaml.SafeLoader)` was rewritten to
+  `yaml.safe_load(open(p), Loader=…)` — a runtime `TypeError` one keystroke from
+  approval, because the post-rewrite scan passes. And `verify=False` in a function
+  *signature* is a declared default, not a call argument; flipping it changed the
+  contract for every caller. Substitution is now line-aware and skips declaration
+  lines including multi-line signature continuations.
+- **Stop self-review cost 274s vs 27s on a plain GET read endpoint**, because
+  three classes fired spuriously: `ratelimit` on the word "authenticated" inside
+  an error *string*, `csrf` on a bare session *read*, `race` on any `+=`. Each
+  spurious class adds a block the model must answer. Detectors now require
+  evidence the class applies, and the output contract is one line per class
+  instead of a report. Same task after: 47s / 17s / 55s, still landing clean code
+  with the IDOR guard added unprompted.
 
 ### Born-secure completion (productivity)
 - The guidance plane used to make the model **refuse** insecure-inducing tasks
@@ -76,6 +124,75 @@ All notable changes to Peephole are documented here. This project adheres to
   (200 main sessions) for a stable ranking.
 - Competing arm named as itself (`security-guidance`); completion chart replaced
   with a per-attempt outcome view now that all arms complete (0 timeouts).
+
+### Versioning
+- One source of truth (`version.go`). The MCP handshake, the LSP handshake and the
+  SARIF tool driver each carried their own literal and had drifted to `0.3.0`,
+  `0.3.0` and `0.2.0` while the plugin manifest said `0.4.0`.
+- `peephole version` now exists. It previously fell through to the hook handler
+  and printed `{}`, so an operator could not tell what build was deployed. It
+  reports the version, build target, Go version, and rule/pattern/taint-spec
+  counts.
+
+### Rules and language parity
+- Cross-language injection gaps closed for Java, Go, Terraform and Solidity;
+  C#/.NET, Android SQLite `rawQuery`, PHP `eval`, Ruby SSTI and Swift SQL string
+  interpolation added; GitHub Actions pwn-request, C format-string and
+  CloudFormation rules added; cookie-flag disabling in the bracket-subscript
+  config form; hard-coded cloud credential variables regardless of placeholder
+  value; `verify_signature=False` when the option is assigned across lines.
+- False positives that blocked safe, idiomatic code removed, plus a real-world
+  false-positive audit pass with path scoping. Taint no longer treats
+  environment/file reads as user input.
+
+### Hardening
+- Closed manifest/slopsquat robustness bugs (a panic, an Edit bypass, a freshness
+  spoof), the Stop-gate org floor, exact sec-debt approval matching, a
+  language-scoped hunk memo, four red-team evasions (augmented-assignment taint
+  and three Bash write paths), and a heredoc parser `O(n²)` bomb that was both a
+  CPU-DoS and an audit fail-open. Fixed an unsound `litset` prefilter on nested
+  alternations that caused silent false negatives. Per-session set files are now
+  serialized and written atomically. SARIF/scan output correctness (OWASP-2025
+  tags, unreadable paths, severity).
+
+### Performance
+- Prefilters recovered via regex AST (6.8× on clean scans) after the taint pass
+  had defeated them; char-class prefilter recovery; one `ToLower` per scan shared
+  across the presence and taint prefilters; fast-path pattern match for the ~90%
+  of patterns with no refinements.
+
+### Benchmarks
+- Fresh 4-model live re-runs (Haiku 4.5, Sonnet 4.5, GLM-5.2, Kimi-K3) after the
+  hardening rounds, with the GLM peephole cell reported at 5% for its own run
+  rather than carried over from a different build.
+
+## [0.4.0] - 2026-08
+
+> **Note on this tag.** `v0.4.0` was cut before several items previously listed
+> here had landed. The tag contains the cross-line taint engine and the release
+> workflow below; born-secure completion, the adversarial self-review, the
+> latency work, the taint-performance pass and the benchmark-honesty changes all
+> post-date it and are listed under 0.5.0 where they belong.
+
+### New capability: intra-file cross-line taint (framework-level)
+- The single-line presence patterns missed the shape where a dangerous value is
+  built into a variable on one line and reaches a sink on another (`tmpl = f"..{req}.."`
+  then `render_template_string(tmpl)`). A new additive taint pass tracks
+  user-derived and dynamically-built variables (propagating through interpolation
+  and concatenation, cleared by `int()`/`shlex.quote()`/`escape()`/... sanitizers)
+  and flags them at **every** sink class: SSTI, SQLi, OS-command, code-eval,
+  deserialization, and XSS. It checks the actual variable in the sink, not
+  proximity, so an unrelated dynamic string near a static-const sink does not
+  misfire. Strictly additive: it never changes existing rule behavior.
+- The sink catalog is **declarative data** (`taint/*.json`, compiled into Go
+  literals by `cmd/kbgen`) over one generic engine, so adding a class is a spec
+  file plus exemplars, verified by `TestTaintSpecExemplars`, not new engine code.
+  Findings whose exploitability depends on a validation guard a pattern engine
+  cannot see (SSRF, redirect, path) `ask` rather than hard-deny.
+- Measured on the live-benchmark corpus, this raises the gate's catch rate on
+  insecure code that landed from 45/64 to **57/64** across all arms, and takes
+  peephole's own cross-line SSTI misses to zero. `TestTaintCrossLineCatches` /
+  `TestTaintNoFalsePositives` lock the behavior.
 
 ### Distribution
 - Tag-triggered release workflow ships signed binaries (5 platforms + SHA256SUMS).

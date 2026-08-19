@@ -10,6 +10,7 @@
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/version-0.5.0-C79A3B" alt="version 0.5.0">
   <img src="https://img.shields.io/badge/license-MIT-C79A3B" alt="MIT license">
   <img src="https://img.shields.io/badge/go-1.26-00ADD8" alt="Go 1.26">
   <img src="https://img.shields.io/badge/rules-181%20CWE-0F1420" alt="181 CWE rules">
@@ -52,7 +53,13 @@ os=$(uname -s|tr '[:upper:]' '[:lower:]'); arch=$(uname -m|sed 's/x86_64/amd64/;
 chmod +x peephole && sudo mv peephole /usr/local/bin/peephole
 ```
 
-Then `peephole scan yourfile.py` to smoke-test.
+Then smoke-test with `peephole version` — it prints the version, the build target,
+and the loaded rule counts, so you can confirm what is actually deployed:
+
+```
+peephole 0.5.0 (darwin/arm64, go1.26.0)
+181 rules, 584 patterns, 12 cross-line taint specs
+```
 
 Windows: download `peephole-windows-amd64.exe` from the
 [latest release](https://github.com/akashsebastian333/peephole/releases/latest)
@@ -64,6 +71,30 @@ To verify the download against the release checksums before installing:
 curl -fsSLO "https://github.com/akashsebastian333/peephole/releases/latest/download/SHA256SUMS"
 shasum -a 256 -c SHA256SUMS --ignore-missing   # 'sha256sum -c' on Linux
 ```
+
+**Pin a version for a fleet.** `releases/latest` moves; a managed rollout should
+pin an exact tag so every laptop runs a known ruleset, and re-verify integrity
+after install:
+
+```sh
+VER=v0.5.0
+os=$(uname -s|tr '[:upper:]' '[:lower:]'); arch=$(uname -m|sed 's/x86_64/amd64/;s/aarch64/arm64/')
+curl -fsSL "https://github.com/akashsebastian333/peephole/releases/download/${VER}/peephole-${os}-${arch}" -o peephole
+chmod +x peephole && sudo mv peephole /usr/local/bin/peephole
+peephole version && peephole selfcheck   # selfcheck must print "integrity: OK"
+```
+
+**Or build from source** (zero dependencies, Go stdlib only — no `go.sum`, nothing
+to fetch). Use this if your policy is to pin a commit rather than a release:
+
+```sh
+git clone https://github.com/akashsebastian333/peephole && cd peephole
+./build.sh          # regenerates the embedded KB, cross-compiles all 5 targets
+./bin/peephole-$(uname -s|tr '[:upper:]' '[:lower:]')-$(uname -m|sed 's/x86_64/amd64/;s/aarch64/arm64/') version
+```
+
+`./build.sh` is reproducible (`-trimpath -buildvcs=false`), so a from-source build
+byte-matches the committed artifact that `bin/manifest.sha256` pins.
 
 Wiring for Gemini CLI, Codex, Cursor, MCP/LSP editors, and a universal
 `git pre-commit` hook is in [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
