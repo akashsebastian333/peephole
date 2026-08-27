@@ -33,37 +33,64 @@ func sessionSemReview(sd, sid string) []string    { return readSessionSet(sd, si
 func markReviewedClasses(sd, sid string, keys []string) { addSessionSet(sd, sid, "reviewed", keys) }
 func sessionReviewedClasses(sd, sid string) []string    { return readSessionSet(sd, sid, "reviewed") }
 
+// addSessionSet appends keys to a per-session set file. Concurrent tool calls
+// spawn concurrent PostToolUse hooks that all write the same set, and a dropped
+// key means the Stop self-review silently skips that class.
+//
+// This is APPEND-ONLY on purpose. The previous version did a read-modify-write
+// inside withLock, but withLock deliberately gives up after ~200ms of contention
+// and runs the callback anyway ("logging must never block enforcement") — correct
+// for the append-only audit chain, fatal here: two unlocked read-modify-writes
+// each write a union that omits the other's keys, and last-rename-wins drops one.
+// TestAddSessionSetConcurrent failed roughly 1 run in 5 for exactly that reason,
+// more often under load, which is precisely when concurrent hooks are likely.
+//
+// A single O_APPEND write of a short record is atomic on POSIX, so concurrent
+// writers interleave records but cannot lose one. Correctness no longer depends
+// on the lock, so the lock is gone from this path — one less contended file
+// operation per gated event, which also matters on endpoints where every file
+// operation is AV-inspected. readSessionSet unions and dedupes on read.
 func addSessionSet(sd, sid, name string, keys []string) {
 	if len(keys) == 0 {
 		return
 	}
-	withLock(sd, func() {
-		m := map[string]bool{}
-		for _, k := range readSessionSet(sd, sid, name) {
-			m[k] = true
-		}
-		for _, k := range keys {
-			m[k] = true
-		}
-		all := make([]string, 0, len(m))
-		for k := range m {
-			all = append(all, k)
-		}
-		sort.Strings(all)
-		f := sidFile(sd, sid, name)
-		tmp := f + ".tmp"
-		if os.WriteFile(tmp, []byte(strings.Join(all, ",")), 0o600) == nil {
-			_ = os.Rename(tmp, f)
-		}
-	})
+	if err := os.MkdirAll(sd, 0o700); err != nil {
+		return
+	}
+	f, err := os.OpenFile(sidFile(sd, sid, name), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	// One Write call, one record, newline-terminated: never torn across appends.
+	_, _ = f.WriteString(strings.Join(keys, ",") + "\n")
 }
 
+// readSessionSet unions every appended record. Tolerates the previous
+// single-line comma-joined format, so a set file written by an older binary
+// mid-session still reads correctly.
 func readSessionSet(sd, sid, name string) []string {
 	b, err := os.ReadFile(sidFile(sd, sid, name))
-	if err != nil || len(strings.TrimSpace(string(b))) == 0 {
+	if err != nil {
 		return nil
 	}
-	return strings.Split(strings.TrimSpace(string(b)), ",")
+	m := map[string]bool{}
+	for _, line := range strings.Split(string(b), "\n") {
+		for _, k := range strings.Split(strings.TrimSpace(line), ",") {
+			if k = strings.TrimSpace(k); k != "" {
+				m[k] = true
+			}
+		}
+	}
+	if len(m) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func armNegTest(sd, sid, hint string) {
