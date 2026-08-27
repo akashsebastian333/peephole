@@ -24,6 +24,23 @@ jobs:
       - name: generated KB is fresh
         run: go run ./cmd/kbgen --check
 
+      # bin/manifest.sha256 pins every shipped artifact plus hooks/, skills/ and
+      # .claude-plugin/plugin.json. If it drifts, `peephole selfcheck` fails and
+      # every SessionStart prints an INTEGRITY ALARM about possible tampering — on
+      # every install. Editing a pinned file without re-running ./build.sh is an
+      # easy and silent way to do that; nothing else in CI catches it, because the
+      # committed manifest is self-consistent with the committed manifest.
+      - name: integrity manifest is fresh
+        run: |
+          cp bin/manifest.sha256 /tmp/manifest.before
+          ./build.sh >/dev/null
+          if ! diff -q /tmp/manifest.before bin/manifest.sha256 >/dev/null; then
+            echo "::error::bin/manifest.sha256 is stale - run ./build.sh and commit the result"
+            diff -u /tmp/manifest.before bin/manifest.sha256 || true
+            exit 1
+          fi
+          echo "integrity manifest matches a fresh build"
+
       - name: go vet
         run: go vet ./...
 
