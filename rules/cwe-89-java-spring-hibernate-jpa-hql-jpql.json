@@ -1,0 +1,38 @@
+{
+  "cwe_id": "CWE-89",
+  "name": "Hibernate/JPA HQL-JPQL injection via concatenation",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "hql",
+    "jpql",
+    "createQuery",
+    "createNativeQuery",
+    "hibernate",
+    "jpa",
+    "entitymanager",
+    "dynamic query",
+    "search filter"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.(?:createQuery|createNativeQuery|createSQLQuery)\\s*\\(\\s*\"[^\"]*\"\\s*\\+"
+    },
+    {
+      "lang": "java",
+      "confidence": "medium",
+      "re": "\\.(?:createQuery|createNativeQuery|createSQLQuery)\\s*\\(\\s*[A-Za-z_]\\w*\\s*\\+"
+    }
+  ],
+  "attack_scenario": "Attacker supplies name = ' OR '1'='1 (or a native-query UNION SELECT) to bypass filters or exfiltrate other users' rows / arbitrary tables.",
+  "negative_test_hint": [
+    "submit name = \"' OR '1'='1\" and assert the query returns zero rows or an error, never other users' rows"
+  ],
+  "exemplar": {
+    "noncompliant": "List<User> u = session.createQuery(\"FROM User u WHERE u.name = '\" + name + \"'\").list();",
+    "compliant": "List<User> u = session.createQuery(\"FROM User u WHERE u.name = :name\")\n        .setParameter(\"name\", name).list();",
+    "explanation": "Building an HQL/JPQL/native query string by concatenating user input lets an attacker alter the query structure. Named bind parameters (setParameter) make the ORM bind values out-of-band, so input can never change the statement."
+  }
+}

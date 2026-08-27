@@ -1,0 +1,41 @@
+{
+  "cwe_id": "CWE-89",
+  "name": "SQL Injection (user-derived query variable)",
+  "severity": "critical",
+  "owasp": [
+    "A03"
+  ],
+  "kev": false,
+  "mode": "arg",
+  "triggers": [
+    "user"
+  ],
+  "confidence": "high",
+  "sinks": [
+    {
+      "lang": "python",
+      "re": "\\.execute(?:many|script)?\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
+    },
+    {
+      "lang": "javascript",
+      "re": "\\.(?:query|execute)\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"
+    },
+    {
+      "lang": "go",
+      "re": "(?:\\bdb|\\btx|\\bconn|\\bstmt|\\.DB)\\.(?:QueryContext|QueryRowContext|ExecContext)\\s*\\(\\s*[A-Za-z_]\\w*\\s*,\\s*([A-Za-z_]\\w*)\\s*[,)]"
+    },
+    {
+      "lang": "go",
+      "re": "(?:\\bdb|\\btx|\\bconn|\\bstmt|\\.DB)\\.(?:Query|QueryRow|Exec)\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
+    },
+    {
+      "lang": "rust",
+      "re": "(?:sqlx::(?:query|query_as)|sql_query)\\s*\\(\\s*&?([A-Za-z_]\\w*)\\s*[,)]"
+    }
+  ],
+  "exemplar": {
+    "noncompliant": "uid = request.args.get('id')\nq = f\"SELECT * FROM users WHERE id={uid}\"\ncur.execute(q)",
+    "compliant": "q = \"SELECT * FROM users WHERE id = ?\"\ncur.execute(q, (request.args.get('id'),))",
+    "explanation": "use a parameterized query; pass the value as a bound parameter, never string-built into the SQL"
+  }
+}

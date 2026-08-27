@@ -1,0 +1,35 @@
+{
+  "cwe_id": "CWE-323",
+  "name": "AEAD nonce reuse: static/constant nonce for AES-GCM/ChaCha20-Poly1305",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "encrypt",
+    "aes gcm",
+    "AESGCM",
+    "ChaCha20Poly1305",
+    "nonce",
+    "authenticated encryption",
+    "aead",
+    "cryptography"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "(?i)(?:AESGCM|ChaCha20Poly1305|AESCCM|AESSIV|AESOCB3)\\s*\\([^)]*\\)\\.encrypt\\(\\s*(?:b[\"']|bytes\\(\\s*\\d+\\s*\\))"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "AES\\.MODE_GCM[^)\\n]*nonce\\s*=\\s*(?:b[\"']|bytes\\(\\s*\\d+\\s*\\))"
+    }
+  ],
+  "attack_scenario": "Two messages encrypted under the same key and nonce let an attacker XOR the ciphertexts to cancel the keystream and recover plaintext, and for GCM specifically a single nonce reuse leaks the polynomial authentication key H, enabling forgery of arbitrary authenticated ciphertexts (full loss of both confidentiality and integrity).",
+  "negative_test_hint": ["encrypt two different messages under one key with the static nonce \"bytes(12)\" and assert the code is rejected, since every message needs a fresh random nonce"],
+  "exemplar": {
+    "noncompliant": "ct = AESGCM(key).encrypt(bytes(12), data, None)",
+    "compliant": "nonce = os.urandom(12)\nct = AESGCM(key).encrypt(nonce, data, None)",
+    "explanation": "NIST SP 800-38D mandates a unique nonce per key for GCM. Encrypting two messages under the same key and nonce lets an attacker XOR the ciphertexts to recover plaintext, and for GCM leaks the authentication key, enabling forgery of arbitrary ciphertexts. Generating a fresh random nonce per message (os.urandom) preserves both confidentiality and integrity."
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "cwe_id": "CWE-117",
+  "name": "Log Injection / Forging",
+  "owasp": [
+    "A09"
+  ],
+  "rank": 0,
+  "kev": false,
+  "severity": "medium",
+  "task_triggers": [
+    "log",
+    "logger",
+    "logging",
+    "audit",
+    "trace"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "\\b(?:log|logger|logging)\\.(?:info|debug|warning|warn|error|critical)\\(\\s*f[\"'][^\"']*\\{(?:request|req|user|username|input|param|name|email)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "medium",
+      "re": "\\bconsole\\.(?:log|info|warn|error)\\(\\s*`[^`]*\\$\\{(?:req|request|user|input|username)"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\b(?:log|logger|logging)\\.(?:info|debug|warning|warn|error|critical)\\(\\s*[\"'][^\"']*[\"']\\s*\\+\\s*(?:request\\.|req\\.)"
+    }
+  ],
+  "attack_scenario": "an attacker puts CR/LF plus a forged line into a logged field (e.g. username), injecting fake entries that mislead responders or poison log-driven dashboards",
+  "negative_test_hint": [
+    "set username to a value containing \\r\\n and a forged 'admin logged in' line; assert the log has no injected newline"
+  ],
+  "exemplar": {
+    "noncompliant": "logger.warning(f\"failed login for {username}\")",
+    "compliant": "safe = username.replace(\"\\r\", \" \").replace(\"\\n\", \" \")\nlogger.warning(\"failed login for %s\", safe)",
+    "explanation": "strip CR/LF from user-controlled values before logging (or pass them as structured params, not into the format string)"
+  }
+}

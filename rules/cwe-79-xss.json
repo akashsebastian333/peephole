@@ -1,0 +1,110 @@
+{
+  "cwe_id": "CWE-79",
+  "name": "Cross-Site Scripting",
+  "owasp": [
+    "A03"
+  ],
+  "rank": 1,
+  "kev": true,
+  "severity": "high",
+  "task_triggers": [
+    "render",
+    "template",
+    "html",
+    "comment",
+    "profile",
+    "bio",
+    "markdown",
+    "rich text",
+    "dashboard",
+    "innerhtml",
+    "tooltip",
+    "preview",
+    "react",
+    "vue"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\{\\{[^}]*\\|\\s*safe\\s*\\}\\}"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "autoescape\\s*=\\s*False|\\{%\\s*autoescape\\s+off\\s*%\\}"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\b(?:mark_safe|Markup)\\(\\s*(?:f[\"']|[^)]*(?:\\+|%|\\.format\\())"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "render_template_string\\(\\s*(?:f[\"']|[^)]*(?:\\+|%|\\.format\\())"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\.(?:inner|outer)HTML\\s*\\+?=\\s*[^;\\n]*(?:\\$\\{|\\+)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\.html\\(\\s*(?:[\"'][^\"']*[\"']\\s*\\+|`[^`]*\\$\\{)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\.(?:inner|outer)HTML\\s*\\+?=\\s*[A-Za-z_$][\\w$.\\[\\]]*",
+      "reject_re": "DOMPurify|sanitize|escapeHtml|textContent|__html"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "dangerouslySetInnerHTML\\s*=\\s*\\{\\{\\s*__html",
+      "reject_re": "DOMPurify|sanitize|__html:\\s*['\"`]"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\bv-html\\s*=|bypassSecurityTrust(?:Html|Script|Url|ResourceUrl)\\("
+    },
+    {
+      "lang": "javascript",
+      "confidence": "medium",
+      "re": "\\bdocument\\.write(?:ln)?\\("
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\binsertAdjacentHTML\\(\\s*[\"'](?:beforebegin|afterbegin|beforeend|afterend)[\"']\\s*,\\s*[^)\"']"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\b(?:out|writer|pw|respWriter|responseWriter)\\.(?:print|println|write)\\(\\s*[^)]*request\\.getParameter"
+    },
+    {
+      "lang": "rust",
+      "confidence": "high",
+      "re": "\\b(?:Html|PreEscaped)\\s*::\\s*(?:from|new)?\\s*\\(\\s*[A-Za-z_]",
+      "reject_re": "(?i)ammonia|sanitize|escape"
+    },
+    {
+      "lang": "haskell",
+      "confidence": "high",
+      "re": "\\bpreEscaped(?:ToHtml|Text|Raw)\\b"
+    }
+  ],
+  "attack_scenario": "attacker stores markup with an event handler in a user-controlled field; it executes in every viewer's browser under the site origin and exfiltrates session tokens",
+  "negative_test_hint": [
+    "submit bio = \"<img src=x onerror=alert(1)>\" and assert the rendered output is escaped, not live markup"
+  ],
+  "exemplar": {
+    "noncompliant": "<div dangerouslySetInnerHTML={{ __html: comment.body }} />",
+    "compliant": "<div>{comment.body}</div>   // or __html: DOMPurify.sanitize(comment.body) if real HTML is required",
+    "explanation": "JSX text interpolation escapes by default; only sanitized HTML should ever reach dangerouslySetInnerHTML"
+  }
+}

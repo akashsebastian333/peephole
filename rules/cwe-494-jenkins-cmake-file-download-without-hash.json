@@ -1,0 +1,42 @@
+{
+  "cwe_id": "CWE-494",
+  "name": "CMake file(DOWNLOAD) without hash verification or with TLS verification disabled",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "cmake",
+    "cmakelists",
+    "file download",
+    "fetchcontent",
+    "externalproject",
+    "dependency download",
+    "tls_verify"
+  ],
+  "patterns": [
+    {
+      "lang": "",
+      "confidence": "medium",
+      "re": "(?is)\\bfile\\s*\\(\\s*DOWNLOAD\\b.*?\\)",
+      "reject_re": "EXPECTED_HASH|EXPECTED_MD5"
+    },
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "(?im)\\bset\\s*\\(\\s*CMAKE_TLS_VERIFY\\s+(?:OFF|0|FALSE|NO)\\b"
+    },
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "(?im)\\bTLS_VERIFY\\s+(?:OFF|0|FALSE|NO)\\b"
+    }
+  ],
+  "attack_scenario": "a compromised release host or on-path attacker serves a malicious archive for an unpinned download; CMake extracts and builds it into the project, running attacker-controlled code on every build machine that configures the project",
+  "negative_test_hint": [
+    "point the download at \"https://evil.example.com/dep.tar.gz\" without EXPECTED_HASH and assert the configure step is rejected instead of fetching and building the archive"
+  ],
+  "exemplar": {
+    "noncompliant": "file(DOWNLOAD https://example.com/dep.tar.gz ${CMAKE_BINARY_DIR}/dep.tar.gz)",
+    "compliant": "file(DOWNLOAD https://example.com/dep.tar.gz ${CMAKE_BINARY_DIR}/dep.tar.gz EXPECTED_HASH SHA256=abc123...)",
+    "explanation": "file(DOWNLOAD ...) without EXPECTED_HASH accepts whatever bytes the server (or a MITM) returns, and CMAKE_TLS_VERIFY OFF / TLS_VERIFY OFF disables certificate checking outright. CMake recommends always pinning EXPECTED_HASH so a tampered or corrupted download is rejected before it is built."
+  }
+}

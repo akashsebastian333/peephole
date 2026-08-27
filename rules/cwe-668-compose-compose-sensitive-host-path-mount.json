@@ -1,0 +1,37 @@
+{
+  "cwe_id": "CWE-668",
+  "name": "compose-sensitive-host-path-mount",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "editing docker-compose.yml",
+    "adding a bind mount to a service",
+    "mounting a host directory into a container"
+  ],
+  "patterns": [
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*-\\s*[\"']?/\\s*:\\s*/"
+    },
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*-\\s*[\"']?(/etc|/proc|/sys|/root|/boot|/dev|/var/lib/docker)\\s*:"
+    },
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*source\\s*:\\s*[\"']?(/|/etc|/proc|/sys|/root|/boot|/dev|/var/lib/docker)\\s*$"
+    }
+  ],
+  "attack_scenario": "Mounting /etc:/host-etc lets the container overwrite /etc/shadow or /etc/sudoers to add a backdoor account; mounting /var/lib/docker exposes all other containers' layers and secrets.",
+  "negative_test_hint": [
+    "add a volume mount of \"/:/host\" to the compose service and assert it is rejected, mounting only an app-scoped subdirectory"
+  ],
+  "exemplar": {
+    "noncompliant": "services:\n  app:\n    volumes:\n      - /:/host",
+    "compliant": "services:\n  app:\n    volumes:\n      - ./data:/var/lib/postgresql/data",
+    "explanation": "Bind-mounting the host root or a whole sensitive directory (/etc, /proc, /sys, /root, /boot, /dev, /var/lib/docker) gives the container read/write access to host credentials, kernel interfaces, and every other container's data — a straight container-escape path. Mounting only an app-scoped host subdirectory confines what a compromised container can reach."
+  }
+}

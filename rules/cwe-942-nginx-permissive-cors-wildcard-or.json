@@ -1,0 +1,44 @@
+{
+  "cwe_id": "CWE-942",
+  "name": "Permissive CORS: wildcard or reflected Access-Control-Allow-Origin",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "cors config",
+    "Access-Control-Allow-Origin",
+    "add_header cors",
+    "Header set cors",
+    "cross origin"
+  ],
+  "patterns": [
+    {
+      "lang": "webserver",
+      "confidence": "high",
+      "re": "(?im)^\\s*add_header\\s+['\"]?Access-Control-Allow-Origin['\"]?\\s+['\"]?\\*"
+    },
+    {
+      "lang": "webserver",
+      "confidence": "high",
+      "re": "(?im)^\\s*add_header\\s+['\"]?Access-Control-Allow-Origin['\"]?\\s+[^;#\\n]*\\$http_origin"
+    },
+    {
+      "lang": "webserver",
+      "confidence": "high",
+      "re": "(?im)^\\s*Header\\s+(set|append|add|always\\s+set)\\s+['\"]?Access-Control-Allow-Origin['\"]?\\s+['\"]?\\*"
+    },
+    {
+      "lang": "webserver",
+      "confidence": "high",
+      "re": "(?im)^\\s*Header\\s+[^#\\n]*Access-Control-Allow-Origin[^#\\n]*%\\{HTTP_ORIGIN\\}"
+    }
+  ],
+  "attack_scenario": "A malicious page makes a credentialed fetch() to the victim API; because the origin is reflected and credentials allowed, the attacker's JavaScript reads the authenticated response (account data, tokens) cross-origin.",
+  "negative_test_hint": [
+    "send a credentialed cross-origin request with Origin \"https://evil.example.com\" and assert the response carries no matching Access-Control-Allow-Origin header"
+  ],
+  "exemplar": {
+    "noncompliant": "add_header Access-Control-Allow-Origin *;",
+    "compliant": "add_header Access-Control-Allow-Origin \"https://app.example.com\" always;",
+    "explanation": "Setting Access-Control-Allow-Origin to '*' or blindly reflecting the request Origin ($http_origin / %{HTTP_ORIGIN}) lets any website read cross-origin responses, and reflection typically pairs with Allow-Credentials: true, defeating the same-origin policy for authenticated endpoints. Pinning the header to an explicit allowlisted origin keeps credentialed responses same-origin-only."
+  }
+}

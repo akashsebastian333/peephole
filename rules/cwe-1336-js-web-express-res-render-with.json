@@ -1,0 +1,34 @@
+{
+  "cwe_id": "CWE-1336",
+  "name": "Express res.render with user-controlled template name",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "express",
+    "render",
+    "view",
+    "template",
+    "handlebars",
+    "ejs",
+    "pug"
+  ],
+  "patterns": [
+    {
+      "lang": "javascript",
+      "confidence": "medium",
+      "re": "res\\.render\\(\\s*req\\."
+    },
+    {
+      "lang": "javascript",
+      "confidence": "medium",
+      "re": "res\\.render\\(\\s*`[^`]*\\$\\{req\\."
+    }
+  ],
+  "attack_scenario": "attacker sets view=../../../../etc/passwd or points at an attacker-influenced template file, causing the engine to disclose files or evaluate injected template directives",
+  "negative_test_hint": ["request the page with view = \"../../../../etc/passwd\" and assert the response does not contain file contents or evaluate the path as a template"],
+  "exemplar": {
+    "noncompliant": "res.render(req.query.view, { user });",
+    "compliant": "res.render('profile', { user });",
+    "explanation": "The first argument to res.render is a template path resolved from the views directory. Letting the request pick it enables local file inclusion and, with a writable template store or a permissive engine, server-side template injection / RCE. Rendering only fixed, developer-chosen template names keeps untrusted input out of path resolution."
+  }
+}

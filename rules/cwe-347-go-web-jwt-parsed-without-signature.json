@@ -1,0 +1,38 @@
+{
+  "cwe_id": "CWE-347",
+  "name": "JWT parsed without signature verification (none-alg / ParseUnverified)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "jwt",
+    "token",
+    "auth",
+    "claims",
+    "bearer",
+    "session",
+    "verify",
+    "login",
+    "middleware"
+  ],
+  "patterns": [
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "\\bParseUnverified\\("
+    },
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "\\b(?:SigningMethodNone|UnsafeAllowNoneSignatureType)\\b", "reject_re": "(?i)(?:==|!=)\\s*(?:jwt\\.)?signingmethodnone|(?:jwt\\.)?signingmethodnone\\s*(?:==|!=)|case\\s+(?:jwt\\.)?signingmethodnone"
+    }
+  ],
+  "attack_scenario": "Attacker base64-encodes {\"alg\":\"none\"} plus {\"sub\":\"admin\",\"role\":\"admin\"} with an empty signature; the server accepts it and grants admin access with no secret required.",
+  "negative_test_hint": [
+    "submit a JWT with header \"eyJhbGciOiJub25lIn0\" (alg none), admin claims, and an empty signature, and assert the server rejects it"
+  ],
+  "exemplar": {
+    "noncompliant": "token, _, _ := jwt.ParseUnverified(tokenString, claims)   // signature never checked",
+    "compliant": "token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {\n    if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {\n        return nil, fmt.Errorf(\"unexpected alg: %v\", t.Header[\"alg\"])\n    }\n    return secret, nil\n})",
+    "explanation": "jwt.ParseUnverified decodes the claims but deliberately skips signature checking, and SigningMethodNone / UnsafeAllowNoneSignatureType treat an alg:none token with an empty signature as valid, so any attacker-forged token is trusted. Always use jwt.Parse with a keyfunc that pins the expected signing method, so only tokens signed with the real secret are accepted."
+  }
+}

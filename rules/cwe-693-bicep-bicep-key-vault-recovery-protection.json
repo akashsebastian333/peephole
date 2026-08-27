@@ -1,0 +1,37 @@
+{
+  "cwe_id": "CWE-693",
+  "name": "Bicep: Key Vault recovery protection disabled",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "azure",
+    "bicep",
+    "key vault",
+    "soft delete",
+    "purge protection",
+    "recovery",
+    "enableSoftDelete",
+    "enablePurgeProtection"
+  ],
+  "patterns": [
+    {
+      "lang": "bicep",
+      "confidence": "high",
+      "re": "(?im)^\\s*enableSoftDelete\\s*:\\s*false\\b"
+    },
+    {
+      "lang": "bicep",
+      "confidence": "medium",
+      "re": "(?im)^\\s*enablePurgeProtection\\s*:\\s*false\\b"
+    }
+  ],
+  "attack_scenario": "an attacker who gains vault-management rights purges the vault to destroy keys protecting encrypted data and wipe audit-relevant secrets, causing unrecoverable data loss and covering their tracks",
+  "negative_test_hint": [
+    "attempt \"az keyvault secret purge --name topsecret\" against the vault and assert it fails because soft delete and purge protection are enabled"
+  ],
+  "exemplar": {
+    "noncompliant": "  enableSoftDelete: false",
+    "compliant": "  enableSoftDelete: true",
+    "explanation": "enableSoftDelete:false lets a deleted vault/secret be gone permanently with no recovery window, and enablePurgeProtection:false lets an attacker (or accident) hard-purge soft-deleted secrets and keys before retention expires. CIS Azure Key Vault requires both soft delete and purge protection enabled so a compromised admin cannot irrecoverably destroy secrets."
+  }
+}

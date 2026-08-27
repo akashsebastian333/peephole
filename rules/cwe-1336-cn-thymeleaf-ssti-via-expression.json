@@ -1,0 +1,37 @@
+{
+  "cwe_id": "CWE-1336",
+  "name": "Thymeleaf SSTI via expression preprocessing or user-controlled fragment",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "thymeleaf",
+    "template",
+    "fragment",
+    "th:text",
+    "view name",
+    "return template",
+    "spring mvc",
+    "th:fragment"
+  ],
+  "patterns": [
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "__\\$\\{[^}\\n]*\\}__"
+    },
+    {
+      "lang": "",
+      "confidence": "medium",
+      "re": "return\\s+\"[^\"]*\\s::[^\"]*\"\\s*\\+"
+    }
+  ],
+  "attack_scenario": "Attacker sets section=__${T(java.lang.Runtime).getRuntime().exec('id')}__ (or the fragment renders a __${...}__ payload); Thymeleaf preprocesses and evaluates the SpEL, executing arbitrary code on the server.",
+  "negative_test_hint": [
+    "submit section = \"__${T(java.lang.Runtime).getRuntime().exec('id')}__\" and assert it is treated as a plain fragment name or rejected, never evaluated as a SpEL expression"
+  ],
+  "exemplar": {
+    "noncompliant": "return \"welcome :: \" + section;",
+    "compliant": "return \"welcome :: content\";",
+    "explanation": "Thymeleaf's __${...}__ preprocessing double-evaluates the inner expression, and a controller that returns a fragment selector ('view :: fragment') concatenated with user input lets Thymeleaf evaluate that input as a SpEL expression; both are direct SSTI-to-RCE vectors. Returning a fixed, developer-chosen fragment keeps user data out of template selection, so no attacker string is ever parsed as an expression."
+  }
+}

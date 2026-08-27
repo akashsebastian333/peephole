@@ -1,0 +1,32 @@
+{
+  "cwe_id": "CWE-598",
+  "name": "Aadhaar / PAN / OTP passed in URL query string",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "url",
+    "query",
+    "aadhaar",
+    "pan",
+    "otp",
+    "kyc",
+    "fetch",
+    "request",
+    "link",
+    "redirect"
+  ],
+  "patterns": [
+    {
+      "lang": "",
+      "confidence": "medium",
+      "re": "(?i)(?:https?://|\\.get\\(|\\.post\\(|fetch\\(|axios|requests\\.(?:get|post)|urlopen\\(|redirect\\()[^;\\n]{0,80}[?&](?:aadha?ar[_a-z]*|pan_?(?:no|number|card)|otp|uidai)\\s*="
+    }
+  ],
+  "attack_scenario": "The Aadhaar/PAN/OTP appears in access logs, proxy caches, analytics, and the Referer sent to third-party scripts on the next page; anyone reading those logs or the referring host harvests the identifiers and one-time codes, enabling KYC fraud and OTP replay before expiry.",
+  "negative_test_hint": ["request the KYC status URL with query string \"aadhaar=123456789012&otp=482913\" and assert the identifiers travel in the POST body instead and never appear in access logs or the Referer header"],
+  "exemplar": {
+    "noncompliant": "axios.get(\"/api/kyc/status?aadhaar=\" + aadhaarNo + \"&otp=\" + otp);",
+    "compliant": "axios.post(\"/api/kyc/status\", { aadhaar: aadhaarNo, otp: otp });",
+    "explanation": "Query strings are recorded by web servers, proxies, CDNs, and browser history and leak to third parties via the Referer header, so carrying Aadhaar, PAN, or OTP values in a URL exposes them to anyone reading those logs and enables OTP replay before expiry. Sending the same values in a POST request body keeps them out of URLs and logs."
+  }
+}

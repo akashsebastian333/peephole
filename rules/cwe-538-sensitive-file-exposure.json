@@ -1,0 +1,21 @@
+{
+  "cwe_id": "CWE-538",
+  "name": "Sensitive File Exposure",
+  "owasp": ["A01"],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": ["static", "assets", "serve", "public", "download", "sendfile"],
+  "patterns": [
+    {"lang": "javascript", "confidence": "high", "re": "express\\.static\\(\\s*(?:__dirname|process\\.cwd\\(\\)|[\"']\\.{1,2}/?[\"'])\\s*[),]"},
+    {"lang": "javascript", "confidence": "high", "re": "express\\.static\\([^)]*dotfiles\\s*:\\s*[\"']allow[\"']"},
+    {"lang": "", "confidence": "high", "re": "(?:sendFile|send_file|readFileSync|readFile|open)\\(\\s*[^)]*[\"']\\.(?:env|git|aws|htpasswd|ssh|pem)\\b"}
+  ],
+  "attack_scenario": "serving the repo root (or allowing dotfiles) exposes .env, .git, keys, and credentials to anyone who requests them",
+  "negative_test_hint": ["request \"/.env\" and \"/.git/config\" against the static route and assert both are refused"],
+  "exemplar": {
+    "noncompliant": "app.use(express.static(__dirname));",
+    "compliant": "app.use(express.static(path.join(__dirname, \"public\"), { dotfiles: \"deny\" }));",
+    "explanation": "serve a dedicated public directory with dotfiles denied; never serve the project root"
+  }
+}

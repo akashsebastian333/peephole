@@ -1,0 +1,34 @@
+{
+  "cwe_id": "CWE-502",
+  "name": "numpy.load with allow_pickle=True",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "numpy",
+    "np.load",
+    "npy",
+    "allow_pickle",
+    "load array"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "np\\.load\\s*\\([^)]*allow_pickle\\s*=\\s*True"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "numpy\\.load\\s*\\([^)]*allow_pickle\\s*=\\s*True"
+    }
+  ],
+  "attack_scenario": "A .npy shared as a dataset artifact is replaced with a pickled object array; np.load(..., allow_pickle=True) executes the embedded reducer on load.",
+  "negative_test_hint": [
+    "load a crafted \"evil.npy\" containing a pickled object array whose __reduce__ executes a command, and assert it is rejected because allow_pickle stays False"
+  ],
+  "exemplar": {
+    "noncompliant": "data = np.load(\"features.npy\", allow_pickle=True)",
+    "compliant": "data = np.load(\"features.npy\")",
+    "explanation": "allow_pickle=True makes np.load unpickle object arrays, re-opening the pickle RCE path that numpy disables by default. Only pass it for arrays you serialized yourself."
+  }
+}

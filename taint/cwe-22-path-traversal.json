@@ -1,0 +1,49 @@
+{
+  "cwe_id": "CWE-22",
+  "name": "Path Traversal (user-controlled path into a file op)",
+  "severity": "high",
+  "owasp": [
+    "A01"
+  ],
+  "kev": false,
+  "mode": "arg",
+  "triggers": [
+    "user"
+  ],
+  "confidence": "medium",
+  "sinks": [
+    {
+      "lang": "python",
+      "re": "(?:open|send_file)\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
+    },
+    {
+      "lang": "python",
+      "re": "(?:open|send_file)\\s*\\(\\s*[frbu]*[\"'][^\"'\\n]*[\"']\\s*\\+\\s*([A-Za-z_]\\w*)"
+    },
+    {
+      "lang": "python",
+      "re": "(?:open|send_file)\\s*\\(\\s*([A-Za-z_]\\w*)\\s*\\+"
+    },
+    {
+      "lang": "python",
+      "re": "(?:open|send_file)\\s*\\(\\s*os\\.path\\.join\\([^\\)]*,\\s*([A-Za-z_]\\w*)\\s*\\)"
+    },
+    {
+      "lang": "javascript",
+      "re": "fs(?:\\.promises)?\\.(?:readFile|readFileSync|createReadStream|writeFile|writeFileSync|unlink)\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"
+    },
+    {
+      "lang": "go",
+      "re": "os\\.(?:Open|ReadFile|WriteFile)\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
+    },
+    {
+      "lang": "rust",
+      "re": "(?:File::open|fs::(?:read|read_to_string|write))\\s*\\(\\s*&?([A-Za-z_]\\w*)\\s*[,)]"
+    }
+  ],
+  "exemplar": {
+    "noncompliant": "fn = request.args.get('file')\ndata = open(fn).read()",
+    "compliant": "fn = secure_filename(request.args.get('file'))\ndata = open(fn).read()",
+    "explanation": "constrain user paths (secure_filename / basename + allowlisted root), never open a raw user path"
+  }
+}

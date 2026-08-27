@@ -1,0 +1,30 @@
+{
+  "cwe_id": "CWE-330",
+  "name": "php-predictable-random-security-token",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "password reset token",
+    "session id",
+    "csrf token",
+    "generate api key",
+    "one-time password",
+    "nonce",
+    "salt generation"
+  ],
+  "patterns": [
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "(?i)\\b(token|salt|nonce|otp|passwd|password|secret|reset|csrf|session|api_?key)\\w*\\s*=\\s*[^;\\n]*\\b(uniqid|mt_rand|rand|mt_srand|srand)\\s*\\(",
+      "reject_re": "(?i)random_bytes|random_int"
+    }
+  ],
+  "attack_scenario": "Attacker requests a password reset, observes or predicts the microsecond-seeded uniqid/mt_rand token (or reconstructs the MT state from prior tokens), and forges a valid reset link to hijack any account.",
+  "negative_test_hint": ["request a password reset and submit a token forged from a predicted PRNG value such as \"1804289383\" and assert it is rejected and that issued tokens are not reproducible from mt_rand or uniqid outputs"],
+  "exemplar": {
+    "noncompliant": "$token = md5(mt_rand());",
+    "compliant": "$token = bin2hex(random_bytes(32));",
+    "explanation": "uniqid() derives from the microsecond clock and mt_rand()/rand() are non-cryptographic Mersenne Twister PRNGs whose internal state is recoverable from a handful of outputs, so reset or session tokens minted from them can be predicted or brute-forced inside their validity window. random_bytes()/random_int() draw from the operating system CSPRNG, making tokens unguessable."
+  }
+}

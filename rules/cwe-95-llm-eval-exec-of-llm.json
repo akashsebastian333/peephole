@@ -1,0 +1,43 @@
+{
+  "cwe_id": "CWE-95",
+  "name": "eval-exec-of-llm-output",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "llm",
+    "completion",
+    "eval",
+    "exec",
+    "new Function",
+    "LLMMathChain",
+    "calculator",
+    "codegen",
+    "structured output"
+  ],
+  "patterns": [
+    {
+      "lang": "",
+      "confidence": "medium",
+      "re": "\\bLLMMathChain\\b"
+    },
+    {
+      "lang": "",
+      "confidence": "medium",
+      "re": "\\b(?:eval|exec)\\s*\\([^)\\n]*(?:completion|llm_output|model_output|generated_code|\\.content\\b)"
+    },
+    {
+      "lang": "",
+      "confidence": "medium",
+      "re": "new\\s+Function\\s*\\([^)\\n]*(?:completion|llm_output|model_output|generated_code|\\.content\\b)"
+    }
+  ],
+  "attack_scenario": "A user asks the 'calculator' to compute __import__('os').system('id'); the model returns that expression and eval() runs it, achieving code execution.",
+  "negative_test_hint": [
+    "make the model return \"__import__('os').system('id')\" and assert the harness never feeds it to eval or exec, so no command runs"
+  ],
+  "exemplar": {
+    "noncompliant": "exec(resp.choices[0].message.content)",
+    "compliant": "import ast\nvalue = ast.literal_eval(resp.content)  # literals only; no code path for model output",
+    "explanation": "Feeding a model completion (.content, llm_output, or LLMMathChain's expression) into eval / exec / new Function evaluates attacker-influencable text as code. LLMMathChain historically eval()'d its expression (CVE-2023-29374, RCE); ast.literal_eval accepts only literal values, so generated text can never become a code path."
+  }
+}

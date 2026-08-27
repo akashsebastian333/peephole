@@ -1,0 +1,37 @@
+{
+  "cwe_id": "CWE-693",
+  "name": "compose-security-opt-disabled",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "editing docker-compose.yml",
+    "setting security_opt on a service",
+    "disabling seccomp/apparmor/SELinux for a container"
+  ],
+  "patterns": [
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*-\\s*[\"']?(seccomp|apparmor)\\s*[:=]\\s*unconfined"
+    },
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*-\\s*[\"']?label\\s*[:=]\\s*disable"
+    },
+    {
+      "lang": "yaml",
+      "confidence": "medium",
+      "re": "(?im)^\\s*-\\s*[\"']?no-new-privileges\\s*[:=]\\s*[\"']?false[\"']?"
+    }
+  ],
+  "attack_scenario": "With seccomp:unconfined a container can call dangerous syscalls (keyctl, ptrace, unshare, bpf) used in known runc/kernel breakout chains that the default seccomp profile blocks.",
+  "negative_test_hint": [
+    "run \"unshare --user --pid --fork\" inside the container and assert the syscall is denied under the default seccomp/AppArmor profile"
+  ],
+  "exemplar": {
+    "noncompliant": "services:\n  app:\n    security_opt:\n      - seccomp:unconfined",
+    "compliant": "services:\n  app:\n    security_opt:\n      - no-new-privileges:true",
+    "explanation": "seccomp:unconfined removes the syscall filter, apparmor:unconfined drops the MAC profile, label:disable turns off SELinux confinement, and no-new-privileges:false re-enables setuid privilege escalation; each strips a layer that blocks known container-breakout chains. Keeping the default profiles and no-new-privileges:true confines a compromised process inside the container."
+  }
+}

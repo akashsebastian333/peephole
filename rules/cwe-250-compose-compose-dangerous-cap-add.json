@@ -1,0 +1,37 @@
+{
+  "cwe_id": "CWE-250",
+  "name": "compose-dangerous-cap-add",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "editing docker-compose.yml",
+    "adding cap_add to a service",
+    "granting Linux capabilities to a container"
+  ],
+  "patterns": [
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*-\\s*[\"']?(SYS_ADMIN|NET_ADMIN|SYS_MODULE|SYS_PTRACE|SYS_RAWIO|DAC_READ_SEARCH|BPF|SYS_BOOT)[\"']?\\s*$"
+    },
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*cap_add\\s*:\\s*\\[[^\\]]*\\b(ALL|SYS_ADMIN|NET_ADMIN|SYS_MODULE|SYS_PTRACE)\\b"
+    },
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?i)cap_add\\s*:\\s*-\\s*[\"']?ALL\\b"
+    }
+  ],
+  "attack_scenario": "CAP_SYS_ADMIN lets a container mount filesystems and manipulate cgroups to break out to the host; CAP_SYS_MODULE loads a malicious kernel module giving full host code execution.",
+  "negative_test_hint": [
+    "add a cap_add entry of \"SYS_ADMIN\" to the compose service and assert the hardening rejects it or the container runs with all capabilities dropped"
+  ],
+  "exemplar": {
+    "noncompliant": "services:\n  app:\n    cap_add:\n      - SYS_ADMIN",
+    "compliant": "services:\n  app:\n    cap_drop:\n      - ALL",
+    "explanation": "cap_add grants Linux capabilities beyond Docker's restricted default set: SYS_ADMIN is near-root, SYS_MODULE loads kernel modules, SYS_PTRACE inspects other processes, and ALL removes the whole capability bound. Dropping all capabilities and adding back only what the workload needs keeps a compromised container confined."
+  }
+}

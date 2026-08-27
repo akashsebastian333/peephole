@@ -1,0 +1,31 @@
+{
+  "cwe_id": "CWE-94",
+  "name": "langchain-allow-dangerous-code-enabled",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "langchain",
+    "pandas agent",
+    "dataframe agent",
+    "csv agent",
+    "experimental",
+    "allow_dangerous_code",
+    "code interpreter"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "allow_dangerous_code\\s*=\\s*True"
+    }
+  ],
+  "attack_scenario": "The dataframe agent is asked a question that makes the LLM emit df.query(\"@__import__('os').system('id')\"); because the dangerous-code guard is off, the payload is exec()'d server-side.",
+  "negative_test_hint": [
+    "prompt the agent so it emits \"@__import__('os').system('id')\" in the generated code and assert it is never exec'd server-side because the dangerous-code guard stays on"
+  ],
+  "exemplar": {
+    "noncompliant": "agent = create_pandas_dataframe_agent(llm, df, allow_dangerous_code=True)",
+    "compliant": "agent = create_pandas_dataframe_agent(llm, df, allow_dangerous_code=False)  # keep the guard on; use a sandboxed executor if code is truly needed",
+    "explanation": "allow_dangerous_code=True is the explicit opt-in LangChain requires before create_pandas_dataframe_agent / create_csv_agent / experimental agents will exec() model-generated Python. Setting it True re-enables the exact RCE path LangChain gated behind the flag."
+  }
+}

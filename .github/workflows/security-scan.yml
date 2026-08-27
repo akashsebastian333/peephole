@@ -1,0 +1,71 @@
+name: security-scan
+
+# A security tool should scan its own code, but the scanners (gosec / staticcheck
+# / govulncheck) are slow and their `@latest` pins move, so they run once daily
+# on a schedule instead of on every push. Trigger manually with the Actions tab.
+on:
+  schedule:
+    - cron: '17 6 * * *' # daily, 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: false
+
+      - name: govulncheck (source mode - CVEs reachable from our code)
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          "$(go env GOPATH)/bin/govulncheck" ./...
+
+      # Source mode above resolves the stdlib from the toolchain setup-go just
+      # installed, so it reports clean even when the COMMITTED bin/ artifacts were
+      # built by a stale one. That is not hypothetical: source mode said "0
+      # vulnerabilities" while bin/, built on go1.26.0, was reachable-affected by
+      # GO-2026-4602 (Root escape via os.ReadDir, fixed in go1.26.1). bin/ is
+      # committed and is what the plugin install path executes, so the toolchain
+      # that produced it has to be checked directly.
+      #
+      # This is a version assertion, not a binary-mode scan, deliberately:
+      # `govulncheck -mode=binary` needs a symbol table, and bin/* ships stripped
+      # (-ldflags="-s -w"). On a stripped binary it degrades to listing every stdlib
+      # advisory for the detected version — measured 32 vs the true 1 on identical
+      # source. Asserting the toolchain is exact and cheap; reachability is source
+      # mode's job.
+      - name: committed bin/ was built by the pinned toolchain
+        run: |
+          want="$(grep -oE '^toolchain go[0-9.]+' go.mod | sed 's/toolchain //')"
+          rc=0
+          for b in bin/peephole-*; do
+            got="$(go version -m "$b" | head -1 | grep -oE 'go1[0-9.]+')"
+            [ "$got" = "$want" ] && echo "ok   $b ($got)" || { echo "FAIL $b: built by $got, expected $want"; rc=1; }
+          done
+          exit $rc
+
+      - name: staticcheck (bug + code-quality analysis)
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
+          "$(go env GOPATH)/bin/staticcheck" ./...
+
+      - name: gosec (security static analysis)
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          # Excluded rules are architectural noise for a tool that manages its own
+          # state files and shells out with fixed argv (never a shell):
+          #   G104 best-effort error ignores on state writes are idiomatic here
+          #   G204 every exec.Command uses a fixed argv list, no shell, no interpolation
+          #   G304/G703 file paths are program-derived state paths, not user traversal
+          #   G306 state files are 0600; the flagged writes are reviewed
+          #   G122 filepath.WalkDir over the project tree
+          # Generated code (rules_gen.go) is skipped. High-value classes (weak
+          # crypto/random, hardcoded secrets, SQL/command injection, SSRF) stay on.
+          "$(go env GOPATH)/bin/gosec" -exclude-generated \
+            -exclude=G104,G204,G304,G703,G306,G122 -severity medium ./...

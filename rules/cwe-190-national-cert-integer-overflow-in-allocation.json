@@ -1,0 +1,35 @@
+{
+  "cwe_id": "CWE-190",
+  "name": "Integer overflow in allocation size (unchecked multiplication into malloc/realloc)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "malloc",
+    "allocate buffer",
+    "array size",
+    "realloc",
+    "parse length",
+    "read count",
+    "c buffer",
+    "memory allocation"
+  ],
+  "patterns": [
+    {
+      "lang": "c",
+      "confidence": "medium",
+      "re": "\\b(?:malloc|alloca)\\s*\\(\\s*[A-Za-z_]\\w*\\s*\\*\\s*[A-Za-z_]\\w*\\s*\\)"
+    },
+    {
+      "lang": "c",
+      "confidence": "medium",
+      "re": "\\brealloc\\s*\\(\\s*[\\w.>()\\[\\]-]+\\s*,\\s*[A-Za-z_]\\w*\\s*\\*\\s*[A-Za-z_]\\w*\\s*\\)"
+    }
+  ],
+  "attack_scenario": "An attacker supplies a large count so count*size wraps past SIZE_MAX to a tiny value; malloc returns a small buffer, then the code writes count elements into it, giving a heap overflow that overwrites adjacent allocator metadata or objects and leads to RCE (classic CVE-2002-0639 / OpenSSH-style integer-overflow-to-heap-overflow).",
+  "negative_test_hint": ["request an allocation of count = \"4611686018427387904\" elements of size 4 and assert the code detects the wrapping product instead of allocating an undersized buffer it then overflows"],
+  "exemplar": {
+    "noncompliant": "int *a = malloc(n * m);",
+    "compliant": "int *a = calloc(n, m);",
+    "explanation": "CERT C MEM07-C ('Ensure that the arguments to calloc(), when multiplied, do not wrap') and INT30-C, plus ANSSI's 'Regles de programmation pour le developpement securise de logiciels en langage C', warn that computing an allocation size as the product of two runtime values can wrap a size_t, allocating far fewer bytes than the later loop writes. Patterns anchor to malloc/alloca/realloc whose size arg is IDENT*IDENT closed by ')' (sizeof is excluded because it is followed by '(' not ')', and digit literals are not [A-Za-z_]), so calloc(n, m), malloc(n * sizeof(int)) and single-operand sizes never match. Medium confidence: the product may be range-checked upstream, so it is a review vector rather than a certain bug."
+  }
+}

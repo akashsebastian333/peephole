@@ -1,0 +1,43 @@
+{
+  "cwe_id": "CWE-200",
+  "name": "Spring Boot Actuator sensitive-endpoint exposure",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "actuator",
+    "management endpoints",
+    "application.properties",
+    "application.yml",
+    "spring boot",
+    "health check",
+    "metrics",
+    "monitoring",
+    "expose endpoints"
+  ],
+  "patterns": [
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "management\\.endpoints\\.web\\.exposure\\.include\\s*[=:]\\s*['\"]?\\*"
+    },
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "management\\.endpoints\\.web\\.exposure\\.include\\s*[=:][^\\n]*\\b(?:env|heapdump|threaddump|jolokia|beans|configprops|mappings)\\b"
+    },
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "management\\.security\\.enabled\\s*[=:]\\s*false"
+    }
+  ],
+  "attack_scenario": "Attacker requests /actuator/heapdump, greps the dump for spring.datasource.password / signing keys, or POSTs to /actuator/env then /actuator/refresh (or hits /actuator/jolokia) to reconfigure the app and gain RCE.",
+  "negative_test_hint": [
+    "request \"GET /actuator/heapdump\" and assert the server returns 404 or 401, not a heap dump or environment data"
+  ],
+  "exemplar": {
+    "noncompliant": "management.endpoints.web.exposure.include=*",
+    "compliant": "management.endpoints.web.exposure.include=health,info",
+    "explanation": "Actuator endpoints such as env, heapdump and jolokia expose in-memory secrets, configuration properties and JMX access unauthenticated, up to remote code execution; the wildcard publishes all of them on the web port. Restricting exposure to health and info keeps monitoring useful without leaking sensitive internals."
+  }
+}

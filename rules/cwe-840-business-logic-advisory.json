@@ -1,0 +1,24 @@
+{
+  "cwe_id": "CWE-840",
+  "name": "Business Logic Errors (advisory)",
+  "owasp": ["A04"],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": ["discount", "coupon", "price", "quantity", "amount", "refund", "cart", "checkout", "order", "role", "approve", "limit", "quota", "upgrade", "downgrade", "cancel", "workflow", "status", "state"],
+  "patterns": [],
+  "absence_requirements": [
+    "Validate quantities and amounts server-side: reject negative or zero quantities, negative prices, and amounts beyond sane bounds — a client can send any value.",
+    "Compute prices, discounts, and totals on the SERVER from trusted data; never trust a client-supplied price, total, or discount amount.",
+    "Enforce the state machine: only allow valid status transitions (e.g. cannot refund an unpaid order, cannot re-use a one-time coupon), and check them server-side.",
+    "Authorize every state-changing action against the acting user — confirm they own the resource and are allowed this transition (ties to CWE-862/639).",
+    "Enforce limits (redemptions, quota, rate) atomically on the server, not by a client flag or a separate read."
+  ],
+  "attack_scenario": "the client controls a value the server should own — a negative quantity credits the account, a client-supplied price undercuts the real one, or a coupon is redeemed twice — turning normal input into free money or privilege",
+  "negative_test_hint": ["submit \"quantity=-1\" (and a client-supplied price of 0, and the same coupon twice) and assert the server rejects each and computes totals itself"],
+  "exemplar": {
+    "noncompliant": "total = request.json[\"price\"] * request.json[\"qty\"]\ncharge(user, total)",
+    "compliant": "qty = int(request.json[\"qty\"])\nif qty <= 0:\n    abort(400)\nprice = Product.objects.get(id=pid).price   # server-owned\ncharge(user, price * qty)",
+    "explanation": "derive money and quantities from trusted server data with explicit bounds checks; never let the client set the price or a negative quantity"
+  }
+}

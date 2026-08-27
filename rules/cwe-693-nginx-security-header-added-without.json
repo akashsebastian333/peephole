@@ -1,0 +1,28 @@
+{
+  "cwe_id": "CWE-693",
+  "name": "Security header added without 'always' (dropped on error responses)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "add_header always",
+    "hsts nginx",
+    "csp header nginx",
+    "security headers",
+    "add_header inheritance"
+  ],
+  "patterns": [
+    {
+      "lang": "webserver",
+      "confidence": "medium",
+      "re": "(?im)^\\s*add_header\\s+['\"]?(Strict-Transport-Security|Content-Security-Policy|X-Frame-Options|X-Content-Type-Options|Referrer-Policy|Permissions-Policy)\\b",
+      "reject_re": "(?i)\\balways\\b"
+    }
+  ],
+  "attack_scenario": "An attacker triggers an error or redirect response that lacks HSTS/CSP/X-Frame-Options, then uses SSL-stripping or clickjacking on that unprotected response path the developer believed was covered.",
+  "negative_test_hint": ["request a missing page such as \"/no-such-page\" and assert the 404 response still includes Strict-Transport-Security and the other security headers"],
+  "exemplar": {
+    "noncompliant": "add_header Strict-Transport-Security \"max-age=63072000; includeSubDomains\";",
+    "compliant": "add_header Strict-Transport-Security \"max-age=63072000; includeSubDomains\" always;",
+    "explanation": "Without the 'always' flag nginx applies add_header only to 2xx/3xx-family responses, so security headers (HSTS, CSP, X-Frame-Options) are silently dropped on 4xx/5xx pages. An attacker can abuse those unprotected error or redirect responses for SSL-stripping or clickjacking; adding 'always' emits the headers on every response."
+  }
+}

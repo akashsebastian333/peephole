@@ -1,0 +1,29 @@
+{
+  "cwe_id": "CWE-78",
+  "name": "Zig child process spawning a shell with -c",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "spawn a process",
+    "run external command",
+    "std.process.Child",
+    "ChildProcess",
+    "shell out"
+  ],
+  "patterns": [
+    {
+      "lang": "zig",
+      "confidence": "medium",
+      "re": "(?i)\"(?:/bin/)?(?:ba)?sh\"\\s*,\\s*\"-c\""
+    }
+  ],
+  "attack_scenario": "user_cmd = \"true; rm -rf /\" executes the injected tail because sh -c parses it.",
+  "negative_test_hint": [
+    "set user_cmd to \"true; rm -rf /\" and assert it is passed as a single opaque argv element, never parsed by sh -c"
+  ],
+  "exemplar": {
+    "noncompliant": "var child = std.process.Child.init(&.{ \"sh\", \"-c\", user_cmd }, alloc);",
+    "compliant": "var child = std.process.Child.init(&.{ \"/bin/rm\", \"-rf\", user_path }, alloc);",
+    "explanation": "Passing \"sh\"/\"bash\" with \"-c\" makes the third argv element a shell script; any runtime-built value placed there is interpreted with full shell semantics rather than as a single opaque argument."
+  }
+}

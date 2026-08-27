@@ -1,0 +1,29 @@
+{
+  "cwe_id": "CWE-538",
+  "name": "Express static serving with dotfiles allowed",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "express",
+    "static",
+    "serve",
+    "dotfiles",
+    "public",
+    "assets",
+    "download"
+  ],
+  "patterns": [
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "dotfiles\\s*:\\s*[\"']allow[\"']"
+    }
+  ],
+  "attack_scenario": "attacker requests /.env or /.git/config directly and the static middleware returns the file, exposing database credentials and API keys",
+  "negative_test_hint": ["request \"/.env\" from the static route and assert the server returns 404 or 403, not the file contents"],
+  "exemplar": {
+    "noncompliant": "app.use(express.static('public', { dotfiles: 'allow' }));",
+    "compliant": "app.use(express.static('public', { dotfiles: 'ignore' }));",
+    "explanation": "express.static defaults to ignoring dotfiles precisely to hide .env, .git, .htpasswd, and .ssh. Setting dotfiles:'allow' serves them, leaking secrets and source history to anyone who can reach the site; keeping the default 'ignore' (or 'deny') blocks these requests."
+  }
+}

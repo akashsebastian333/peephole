@@ -1,0 +1,44 @@
+{
+  "cwe_id": "CWE-798",
+  "name": "Hardcoded Alibaba/Tencent Cloud credentials or public OSS bucket ACL",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "aliyun",
+    "alibaba cloud",
+    "tencent cloud",
+    "oss",
+    "cos",
+    "accesskey",
+    "AccessKeySecret",
+    "SecretId",
+    "bucket",
+    "sdk credentials"
+  ],
+  "patterns": [
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "\\bLTAI[A-Za-z0-9]{12,24}\\b"
+    },
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "\\bAKID[A-Za-z0-9]{32}\\b"
+    },
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "CannedAccessControlList\\.PublicReadWrite|x-oss-object-acl[^\\n]*public-read-write"
+    }
+  ],
+  "attack_scenario": "Attacker harvests the LTAI/AKID key from source or a bundle, calls the Aliyun/Tencent API to read OSS/COS buckets, spin up ECS instances, or pivot across the account; a PublicReadWrite bucket additionally lets anyone list, download, and overwrite (e.g. plant a webshell in) stored objects.",
+  "negative_test_hint": [
+    "stage a file containing \"LTAI5tGdstatic1234567890\" and assert the secret-scanning gate blocks the commit because the key must come from the environment"
+  ],
+  "exemplar": {
+    "noncompliant": "String accessKeyId = \"LTAI5tGdstatic1234567890\";",
+    "compliant": "String accessKeyId = System.getenv(\"ALIYUN_ACCESS_KEY_ID\");",
+    "explanation": "Alibaba Cloud AccessKey IDs (fixed LTAI prefix) and Tencent Cloud SecretIds (AKID plus 32 chars) are high-entropy credential signatures that scanners tuned only to AWS/Google formats miss; committed to source they are harvested to read OSS/COS buckets and pivot across the account, and a PublicReadWrite bucket ACL lets anyone list, download, and overwrite stored objects. Keys belong in environment variables or a secret manager, and buckets stay private."
+  }
+}

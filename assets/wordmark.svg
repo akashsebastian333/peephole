@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="200" viewBox="0 0 760 200" role="img" aria-label="peephole">
+  <rect width="760" height="200" fill="#0F1420"/>
+  <text x="150" y="136" font-family="'Noto Sans',system-ui,sans-serif" font-weight="800" font-size="96" fill="#F4EFE6" letter-spacing="-2">peeph</text>
+  <g transform="translate(462,100)">
+    <circle r="41" fill="none" stroke="#C79A3B" stroke-width="12"/>
+    <circle r="31" fill="#0F1420"/>
+    <path d="M -15 2 Q -5 12 -1 16 Q 8 -3 22 -18" fill="none" stroke="#F4EFE6" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="506" y="136" font-family="'Noto Sans',system-ui,sans-serif" font-weight="800" font-size="96" fill="#F4EFE6" letter-spacing="-2">le</text>
+</svg>

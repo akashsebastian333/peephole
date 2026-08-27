@@ -1,0 +1,46 @@
+{
+  "cwe_id": "CWE-502",
+  "name": "Unpickling downloaded artifacts (pickle/joblib/pandas)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "pickle",
+    "joblib",
+    "sklearn model",
+    "read_pickle",
+    "load artifact",
+    "deserialize"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\bpickle\\.loads?\\s*\\(",
+      "reject_re": "(?:pickle|cPickle)\\.dumps"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\bcPickle\\.loads?\\s*\\("
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\b(?:pandas|pd)\\.read_pickle\\s*\\("
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "\\bjoblib\\.load\\s*\\("
+    }
+  ],
+  "attack_scenario": "A shared sklearn .pkl on an internal S3 bucket is swapped by an attacker; joblib.load runs the crafted __reduce__ and executes os.system during model load.",
+  "negative_test_hint": [
+    "load a crafted pickle stream \"cos\\nsystem\\n(S'id'\\ntR.\" and assert the loader refuses it or sandboxing prevents the embedded os.system call"
+  ],
+  "exemplar": {
+    "noncompliant": "clf = joblib.load(\"model_from_bucket.pkl\")",
+    "compliant": "import json\nconfig = json.load(open(\"config.json\"))",
+    "explanation": "pickle/joblib/pandas.read_pickle reconstruct arbitrary objects via __reduce__, so deserializing any artifact you did not produce is remote code execution. Use JSON/parquet/safetensors for untrusted data."
+  }
+}

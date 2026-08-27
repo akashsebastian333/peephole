@@ -1,0 +1,28 @@
+{
+  "cwe_id": "CWE-78",
+  "name": "Clojure shell/sh invoking a shell with concatenated string",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "run shell command",
+    "clojure.java.shell/sh",
+    "shell out",
+    "build command line from input"
+  ],
+  "patterns": [
+    {
+      "lang": "clojure",
+      "confidence": "high",
+      "re": "(?i)\"-c\"\\s+\\(str\\b"
+    }
+  ],
+  "attack_scenario": "pattern = \"x file.txt; rm -rf ~\" executes the injected command inside bash -c.",
+  "negative_test_hint": [
+    "pass pattern = \"x file.txt; rm -rf ~\" and assert no shell interprets it, so grep runs without the injected rm command executing"
+  ],
+  "exemplar": {
+    "noncompliant": "(sh \"bash\" \"-c\" (str \"grep \" pattern \" file.txt\"))",
+    "compliant": "(sh \"grep\" pattern \"file.txt\")",
+    "explanation": "clojure.java.shell/sh with separate string args is safe (no shell), but passing \"-c\" plus a (str ...)-built command routes user data through a shell where metacharacters are interpreted."
+  }
+}

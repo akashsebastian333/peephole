@@ -1,0 +1,33 @@
+{
+  "cwe_id": "CWE-915",
+  "name": "Django/DRF fields = '__all__' mass assignment",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "serializer",
+    "modelform",
+    "form",
+    "drf",
+    "rest",
+    "model",
+    "create",
+    "update",
+    "register"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "\\bfields\\s*=\\s*[\"']__all__[\"']"
+    }
+  ],
+  "attack_scenario": "A signup or profile-update request includes \"is_superuser\": true (or \"role\":\"admin\"); because the serializer accepts all fields, the value binds and persists, granting the attacker privileges the endpoint never meant to expose.",
+  "negative_test_hint": [
+    "include \"is_superuser\": true in the signup request body and assert the account is created without superuser privileges"
+  ],
+  "exemplar": {
+    "noncompliant": "        fields = '__all__'",
+    "compliant": "        fields = ['title', 'body']",
+    "explanation": "In a ModelForm.Meta or DRF ModelSerializer.Meta, fields = '__all__' auto-binds every model column to client input, so sensitive fields (is_staff, is_superuser, role, balance, owner, is_verified) become writable through the form/API. DRF's own docs warn against '__all__' for this reason; an explicit allowlist of fields is the fix."
+  }
+}

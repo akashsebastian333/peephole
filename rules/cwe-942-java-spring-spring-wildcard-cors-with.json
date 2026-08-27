@@ -1,0 +1,36 @@
+{
+  "cwe_id": "CWE-942",
+  "name": "Spring wildcard CORS with credentials",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "cors",
+    "@CrossOrigin",
+    "allowedOrigins",
+    "cross origin",
+    "CorsConfiguration",
+    "frontend api",
+    "browser access"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "@CrossOrigin\\s*\\(\\s*(?:origins\\s*=\\s*)?(?:\\{\\s*)?\"\\*\""
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.(?:allowedOrigins|setAllowedOrigins|addAllowedOrigin)\\s*\\(\\s*\"\\*\""
+    }
+  ],
+  "attack_scenario": "A malicious site the victim visits issues credentialed XHR/fetch to the API; the wildcard CORS header lets its JavaScript read the authenticated response (account data, CSRF tokens) cross-origin.",
+  "negative_test_hint": [
+    "issue a credentialed cross-origin fetch from origin \"https://evil.example.com\" and assert the response carries no Access-Control-Allow-Origin for it"
+  ],
+  "exemplar": {
+    "noncompliant": "@CrossOrigin(origins = \"*\")\n@GetMapping(\"/account\")\npublic Account account() { ... }",
+    "compliant": "@CrossOrigin(origins = \"https://app.example.com\")\n@GetMapping(\"/account\")\npublic Account account() { ... }",
+    "explanation": "A wildcard origin on Spring MVC/WebFlux endpoints lets any website make cross-origin calls; combined with allowCredentials(true) or cookie/session auth it lets attacker pages read authenticated responses. Origins must be an explicit allowlist of trusted hosts, never the wildcard."
+  }
+}

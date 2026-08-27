@@ -1,0 +1,31 @@
+{
+  "cwe_id": "CWE-489",
+  "name": "Django DEBUG left on in settings",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "settings",
+    "django",
+    "config",
+    "deploy",
+    "production",
+    "environment"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "(?m)^\\s*DEBUG\\s*=\\s*True\\b",
+      "reject_re": "os\\.|getenv|environ|config\\(|env\\(|bool\\("
+    }
+  ],
+  "attack_scenario": "An attacker forces any unhandled exception (malformed input, a missing object) and reads the yellow Django debug page, harvesting SECRET_KEY, database DSN, and internal paths, enough to forge session cookies and pivot deeper.",
+  "negative_test_hint": [
+    "request \"/nonexistent-view-that-raises\" to force an exception and assert the response is a generic error page with no traceback, settings, or SECRET_KEY leaked"
+  ],
+  "exemplar": {
+    "noncompliant": "DEBUG = True",
+    "compliant": "DEBUG = os.environ.get(\"DEBUG\", \"\") == \"1\"",
+    "explanation": "A hardcoded DEBUG = True makes Django render its technical-500 page — full tracebacks, local variables, the whole settings module including SECRET_KEY and DB credentials, and every executed SQL query — to any visitor who triggers an exception. DEBUG must be environment-driven and default to False in production."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "cwe_id": "CWE-321",
+  "name": "Shiro RememberMe hardcoded / default cipher key (Shiro-550)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "shiro",
+    "rememberme",
+    "CookieRememberMeManager",
+    "setCipherKey",
+    "AES key",
+    "remember me",
+    "cookie encryption"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "kPH\\+bIxk5D2deZiIxcaaaA=="
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.setCipherKey\\s*\\(\\s*(?:Base64\\.decode\\s*\\(\\s*)?\""
+    }
+  ],
+  "attack_scenario": "Attacker takes the known/hardcoded key, encrypts a CommonsCollections (or similar) gadget with AES-CBC, sets it as the rememberMe cookie; Shiro decrypts and deserializes it, executing the gadget for remote code execution.",
+  "negative_test_hint": [
+    "set the rememberMe cookie to a blob encrypted with the known default key \"kPH+bIxk5D2deZiIxcaaaA==\" and assert the server rejects it because the key comes from an environment secret"
+  ],
+  "exemplar": {
+    "noncompliant": "cookieRememberMeManager.setCipherKey(Base64.decode(\"kPH+bIxk5D2deZiIxcaaaA==\"));",
+    "compliant": "cookieRememberMeManager.setCipherKey(Base64.decode(System.getenv(\"SHIRO_CIPHER_KEY\")));",
+    "explanation": "Apache Shiro encrypts the RememberMe cookie with an AES key; older versions shipped the constant kPH+bIxk5D2deZiIxcaaaA== and countless tutorials copy it, so any attacker who knows the key can forge a cookie whose decrypted body is a Java deserialization gadget chain (Shiro-550, CVE-2016-4437). Loading the key from an environment secret means a cookie cannot be forged without also compromising the deployment environment."
+  }
+}

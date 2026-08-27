@@ -1,0 +1,29 @@
+{
+  "cwe_id": "CWE-502",
+  "name": "torch.load without weights_only=True",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "torch",
+    "pytorch",
+    "load model",
+    "checkpoint",
+    "deserialize",
+    "ml model loading"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "torch\\.load\\s*\\(",
+      "reject_re": "weights_only\\s*=\\s*True"
+    }
+  ],
+  "attack_scenario": "Attacker publishes a fine-tuned model on a hub; torch.load(\"pytorch_model.bin\") deserializes an embedded __reduce__ that spawns a reverse shell during load, before any inference runs.",
+  "negative_test_hint": ["load a checkpoint carrying a malicious __reduce__ via \"torch.load('evil_model.pt')\" and assert loading refuses it or runs with weights_only=True so no code executes"],
+  "exemplar": {
+    "noncompliant": "model = torch.load(\"downloaded_model.pt\")",
+    "compliant": "from safetensors.torch import load_file\nmodel = load_file(\"model.safetensors\")",
+    "explanation": "A .pt/.pth checkpoint is a pickle; torch.load unpickles it and runs any __reduce__ payload it carries, so a poisoned model file executes code on load. weights_only=True (default flips to True only in torch>=2.6) or safetensors is the safe form."
+  }
+}

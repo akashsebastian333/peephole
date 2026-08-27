@@ -1,0 +1,39 @@
+{
+  "cwe_id": "CWE-601",
+  "name": "Redirect to user-controlled URL (gin / net/http open redirect)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "redirect",
+    "login",
+    "next",
+    "return url",
+    "callback",
+    "sso",
+    "oauth",
+    "handler",
+    "gin",
+    "logout"
+  ],
+  "patterns": [
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "\\.Redirect\\(\\s*[^,)]*,\\s*c\\.(?:Query|Param|PostForm|DefaultQuery|GetHeader|Request\\.URL)"
+    },
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "http\\.Redirect\\(\\s*[^,]+,\\s*[^,]+,\\s*r\\.(?:FormValue|URL|Header\\.Get|PostFormValue|PostForm)"
+    }
+  ],
+  "attack_scenario": "Victim clicks https://trusted.app/login?next=https://evil.example/login, authenticates, and is bounced to the attacker's pixel-perfect clone that harvests the just-entered credentials.",
+  "negative_test_hint": [
+    "request /login?next=\"https://evil.example.com/login\" and assert the redirect target is rejected or rewritten to a same-site relative path"
+  ],
+  "exemplar": {
+    "noncompliant": "c.Redirect(http.StatusFound, c.Query(\"next\"))",
+    "compliant": "next := c.Query(\"next\")\nif !strings.HasPrefix(next, \"/\") || strings.HasPrefix(next, \"//\") {\n    next = \"/dashboard\"\n}\nc.Redirect(http.StatusFound, next)",
+    "explanation": "Passing a request-derived value straight into gin's c.Redirect or net/http's http.Redirect lets an attacker choose the Location header, a classic open redirect that makes phishing links look like they originate from your trusted domain. Redirect targets must be validated to a same-site relative path (leading single '/', never '//') or an explicit allowlist."
+  }
+}

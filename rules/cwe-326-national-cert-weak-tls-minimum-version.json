@@ -1,0 +1,36 @@
+{
+  "cwe_id": "CWE-326",
+  "name": "Weak TLS minimum version pinned in code (tls.Config MinVersion/MaxVersion <= TLS 1.1)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "tls config",
+    "https client",
+    "tls.Config",
+    "MinVersion",
+    "https server",
+    "dial tls",
+    "secure transport"
+  ],
+  "patterns": [
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "MinVersion:\\s*tls\\.Version(?:SSL30|TLS10|TLS11)\\b"
+    },
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "MaxVersion:\\s*tls\\.Version(?:SSL30|TLS10|TLS11)\\b"
+    }
+  ],
+  "attack_scenario": "A network MITM strips or blocks TLS 1.2/1.3 in the handshake and forces negotiation down to TLS 1.0/SSLv3, then applies POODLE/BEAST-style block-by-block decryption to recover session cookies or credentials, or exploits RC4 biases to recover repeated plaintext.",
+  "negative_test_hint": [
+    "attempt a handshake offering only \"TLS 1.0\" and assert the connection is rejected rather than negotiated down to the deprecated protocol"
+  ],
+  "exemplar": {
+    "noncompliant": "cfg := &tls.Config{MinVersion: tls.VersionTLS10}",
+    "compliant": "cfg := &tls.Config{MinVersion: tls.VersionTLS12}",
+    "explanation": "RFC 8996 formally deprecates TLS 1.0/1.1, and BSI TR-02102-2 plus ANSSI 'Recommandations de securite relatives a TLS' require TLS 1.2 as the floor. Setting MinVersion to VersionSSL30/TLS10/TLS11 in a Go tls.Config (or capping MaxVersion there) permits protocol-level weaknesses (BEAST, POODLE, RC4/CBC MAC-then-encrypt) that a peer can be downgraded to, so TLS 1.2 or higher must be the minimum."
+  }
+}

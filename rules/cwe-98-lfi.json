@@ -1,0 +1,21 @@
+{
+  "cwe_id": "CWE-98",
+  "name": "File Inclusion / Sensitive File Exposure",
+  "owasp": ["A01"],
+  "rank": 0,
+  "kev": true,
+  "severity": "high",
+  "task_triggers": ["include", "require", "template", "static", "serve", "download", "file", "plugin", "module"],
+  "patterns": [
+    {"lang": "php", "confidence": "high", "re": "(?i)(?:include|require)(?:_once)?\\s*\\(?\\s*[^;)\\n]*\\$_(?:GET|POST|REQUEST|COOKIE)"},
+    {"lang": "python", "confidence": "medium", "re": "importlib\\.import_module\\(\\s*(?:f[\"']|[^)]*(?:request\\.|input\\())|__import__\\(\\s*(?:f[\"']|request\\.)"},
+    {"lang": "python", "confidence": "high", "re": "send_file\\(\\s*[^)]*\\.(?:env|git|pem|key|htpasswd|aws)[\"'\\)]"}
+  ],
+  "attack_scenario": "a user-controlled value selects which file to include or serve, so an attacker reads sensitive files (.env, keys, /etc/passwd) or includes attacker-controlled code",
+  "negative_test_hint": ["request the file/module as '../../.env' (or a remote URL for PHP) and assert access is refused"],
+  "exemplar": {
+    "noncompliant": "include($_GET[\"page\"] . \".php\");",
+    "compliant": "$page = $_GET[\"page\"];\n$allowed = [\"home\" => \"home.php\", \"about\" => \"about.php\"];\ninclude($allowed[$page] ?? \"home.php\");",
+    "explanation": "map user input through a fixed allowlist to a known file; never build an include/serve path from raw input"
+  }
+}

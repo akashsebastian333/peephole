@@ -1,0 +1,37 @@
+{
+  "cwe_id": "CWE-89",
+  "name": "SQL query built with string formatting (sqlite3)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "building an SQLite query string",
+    "calling sqlite3_exec / sqlite3_prepare",
+    "inserting user input into SQL"
+  ],
+  "patterns": [
+    {
+      "lang": "objc",
+      "confidence": "high",
+      "re": "(?is)\\b(sqlite3_exec|sqlite3_prepare_v2|sqlite3_prepare_v3|sqlite3_prepare)\\b[^;]*\\bstringWithFormat:"
+    },
+    {
+      "lang": "objc",
+      "confidence": "high",
+      "re": "(?si)stringWithFormat:\\s*@\"[^\"]*(select [^\"]*from |insert into |update [^\"]*set |delete from |drop table )[^\"]*%[@sd]"
+    },
+    {
+      "lang": "objc",
+      "confidence": "medium",
+      "re": "(?si)\\bsprintf\\s*\\([^;]*\"[^\"]*(select [^\"]*from |insert into |update [^\"]*set |delete from )"
+    }
+  ],
+  "attack_scenario": "An attacker sets userName to ' OR '1'='1' -- (or a stacked ...; DROP TABLE users; --) so the interpolated query changes meaning, letting them read every row, bypass auth checks, or destroy local data.",
+  "negative_test_hint": [
+    "set userName to \"' OR '1'='1' -- \" and assert the query matches no row or errors instead of returning every user row"
+  ],
+  "exemplar": {
+    "noncompliant": "NSString *q = [NSString stringWithFormat:\n    @\"SELECT * FROM users WHERE name = '%@'\", userName];\nsqlite3_exec(db, [q UTF8String], cb, ctx, &err);\n\nchar buf[256];\nsprintf(buf, \"DELETE FROM notes WHERE id = %s\", noteId);",
+    "compliant": "// Parameterized statement with bound values\nsqlite3_stmt *stmt;\nsqlite3_prepare_v2(db, \"SELECT * FROM users WHERE name = ?\", -1, &stmt, NULL);\nsqlite3_bind_text(stmt, 1, [userName UTF8String], -1, SQLITE_TRANSIENT);\nwhile (sqlite3_step(stmt) == SQLITE_ROW) { /* ... */ }\nsqlite3_finalize(stmt);",
+    "explanation": "Assembling SQL via stringWithFormat/sprintf mixes untrusted input with query syntax \u2014 SQL injection (OWASP MSTG-CODE-8, CWE-89). Binding values with sqlite3_bind_* keeps user data out of the query string so it can never change the statement's meaning."
+  }
+}

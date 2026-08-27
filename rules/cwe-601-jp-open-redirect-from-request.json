@@ -1,0 +1,42 @@
+{
+  "cwe_id": "CWE-601",
+  "name": "Open Redirect from Request Parameter (Servlet/Spring)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "redirect",
+    "sendredirect",
+    "login",
+    "sso",
+    "return url",
+    "next",
+    "callback",
+    "logout"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.sendRedirect\\([^)\\n]*\\.getParameter\\("
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "[\"']redirect:[\"']\\s*\\+[^;\\n]*\\.getParameter\\("
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "new\\s+RedirectView\\([^)\\n]*\\.getParameter\\("
+    }
+  ],
+  "attack_scenario": "A crafted link https://trusted.example/login?url=https://evil.example points at the trusted host, so the victim trusts it; after login the app bounces them to the attacker's phishing/token-harvest page, or a //evil.example value leaks the OAuth code/session to the attacker's origin.",
+  "negative_test_hint": [
+    "request the login flow with url param \"https://evil.example.com\" and assert the redirect falls back to a relative path instead of leaving the origin"
+  ],
+  "exemplar": {
+    "noncompliant": "response.sendRedirect(request.getParameter(\"url\"));",
+    "compliant": "String t = request.getParameter(\"url\");\nif (t == null || !t.startsWith(\"/\") || t.startsWith(\"//\")) {\n    t = \"/\";\n}\nresponse.sendRedirect(t);",
+    "explanation": "Redirecting straight to a request parameter lets an attacker point a trusted-host link at a phishing origin, or leak an OAuth code or session via a scheme-relative //host target. Validating the target into a local variable first — requiring a relative path that does not start with // — keeps every redirect on the application's own origin."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  ".claude-plugin/plugin.json": "3fea0e87bf05a64e77eb04545add89e4db1fb23786726602cba2670221ee0fc0",
+  "hooks/hooks.json": "625e57b2aee47891d07f197951eac5cf1baf96989b6824c30bcce1de2e2d867c",
+  "hooks/peephole.sh": "0a6d59578e6defe6877fff0e2caf709481e69dc1f3f0e6431bb375281311d69b",
+  "peephole-darwin-amd64": "4eca97f89a5488ea6d8270bf9d940f3dcaee0fde9db536b62197663acadaa0f5",
+  "peephole-darwin-arm64": "2c1b6eb05ef89b9280619757eee87d6c0864c901c5fa11c1575e339cf0454e62",
+  "peephole-linux-amd64": "805808f1325940be6fb99ccd30356d64d06b5c6ff38d1d23fd0105bf40310f8d",
+  "peephole-linux-arm64": "b3338201e1f8e28c8e1400d42b7b04a521d71e2bf43e2b46f8d124ad30531fcc",
+  "peephole-windows-amd64.exe": "37ab23e86a1cf499b1c8112e6dca39b34b52c95f356ccedd19d7372aa52984a9",
+  "skills/peephole/SKILL.md": "a41a15f557ff91a011a64b2663714ab24033c1b2df860c276d240268dc3d0d41",
+  "skills/sec-audit/SKILL.md": "0dd8875148cec9efabdb3c46c782f6401442c46ba28e56818bd162d04ed4d727",
+  "skills/sec-debt/SKILL.md": "9d9a6140f815e3acf2e6e2d5ad687be524347a30b61275948cdd3fbd45e101b1",
+  "skills/sec-review/SKILL.md": "f049e636641a04ff20166c052896287545c6c9e1a4b9d344e3d5300dd4f9a9dd"
+}

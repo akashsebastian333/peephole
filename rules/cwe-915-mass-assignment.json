@@ -1,0 +1,57 @@
+{
+  "cwe_id": "CWE-915",
+  "name": "Mass Assignment",
+  "owasp": [
+    "A08"
+  ],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": [
+    "create",
+    "update",
+    "model",
+    "orm",
+    "user",
+    "profile",
+    "register",
+    "settings",
+    "signup"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\w+\\(\\s*\\*\\*(?:request|req)\\.(?:json|data|POST|form|GET)"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\.(?:create|update)\\(\\s*\\*\\*(?:request|req)\\."
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "Object\\.assign\\(\\s*\\w+\\s*,\\s*req\\.(?:body|query)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "(?:new\\s+\\w+|\\.create)\\(\\s*req\\.body\\s*\\)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\{\\s*\\.\\.\\.\\s*(?:req|request)\\.(?:body|query)"
+    }
+  ],
+  "attack_scenario": "the whole request object is splatted into a model constructor or update, so a client can set fields it should never control (is_admin, role, balance, verified)",
+  "negative_test_hint": [
+    "POST a body that includes \"is_admin\": true (or \"role\":\"admin\") and assert the created record does not gain that privilege"
+  ],
+  "exemplar": {
+    "noncompliant": "user = User(**request.json)",
+    "compliant": "user = User(name=request.json[\"name\"], email=request.json[\"email\"])",
+    "explanation": "bind only an explicit allowlist of fields (or a typed DTO/Pydantic model), never the raw request object"
+  }
+}

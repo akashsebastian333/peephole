@@ -1,0 +1,23 @@
+{
+  "cwe_id": "CWE-494",
+  "name": "Download Without Integrity Check",
+  "owasp": ["A08"],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": ["install", "setup", "bootstrap", "provision", "dockerfile", "ci", "supply chain", "postinstall", "requirements", "dependency"],
+  "patterns": [
+    {"lang": "", "confidence": "high", "re": "(?i)\\b(?:curl|wget)\\b[^\\n|]*\\|\\s*(?:sudo\\s+)?(?:ba)?sh\\b"},
+    {"lang": "", "confidence": "high", "re": "(?im)^\\s*ADD\\s+https?://"},
+    {"lang": "", "confidence": "high", "re": "\"(?:pre|post)?install\"\\s*:\\s*\"[^\"]*(?:curl|wget|https?://|node\\s+-e|\\beval\\b|bash\\s+-c|\\|\\s*sh\\b)"},
+    {"lang": "", "confidence": "high", "re": "git\\+http://"},
+    {"lang": "", "confidence": "high", "re": "--(?:extra-)?index-url[=\\s]+http://"}
+  ],
+  "attack_scenario": "code is fetched and executed with no checksum or signature — a MITM, a compromised CDN, or a yanked/re-pointed upstream substitutes attacker code that runs in the build or on every install with the pipeline's privileges (e.g. the tj-actions and shai-hulud npm incidents)",
+  "negative_test_hint": ["serve an archive whose content does not match the published \"SHA-256 checksum\" and assert the install aborts rather than executing it"],
+  "exemplar": {
+    "noncompliant": "RUN curl -fsSL https://example.com/install.sh | sh",
+    "compliant": "RUN curl -fsSL -o install.sh https://example.com/install.sh \\\n && echo \"<pinned-sha256>  install.sh\" | sha256sum -c - \\\n && sh install.sh",
+    "explanation": "download to a file, verify a pinned checksum (or signature), then execute; use https with pinned refs for dependency sources"
+  }
+}

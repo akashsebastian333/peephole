@@ -1,0 +1,31 @@
+{
+  "cwe_id": "CWE-79",
+  "name": "Next.js image optimizer dangerouslyAllowSVG enabled",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "next",
+    "next.config",
+    "images",
+    "svg",
+    "optimizer",
+    "avatar",
+    "upload"
+  ],
+  "patterns": [
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "dangerouslyAllowSVG\\s*:\\s*true"
+    }
+  ],
+  "attack_scenario": "attacker uploads an SVG containing <script>fetch('/api',...)</script>, requests it via /_next/image, and the optimizer serves it same-origin so the script runs in a victim's session",
+  "negative_test_hint": [
+    "upload an SVG containing \"<script>alert(1)</script>\" and request it through the image optimizer, asserting it is refused or served under a script-blocking CSP"
+  ],
+  "exemplar": {
+    "noncompliant": "module.exports = { images: { dangerouslyAllowSVG: true, domains: ['cdn.example.com'] } };",
+    "compliant": "module.exports = { images: { contentDispositionType: 'attachment', contentSecurityPolicy: \"default-src 'none'; script-src 'none'; sandbox;\" } };",
+    "explanation": "Next.js disables SVG through next/image by default because SVGs can embed <script>. dangerouslyAllowSVG:true serves attacker-supplied SVGs from the app origin, and without a strict CSP this is stored XSS."
+  }
+}

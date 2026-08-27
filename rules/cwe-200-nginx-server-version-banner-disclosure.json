@@ -1,0 +1,39 @@
+{
+  "cwe_id": "CWE-200",
+  "name": "Server version banner disclosure",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "server_tokens",
+    "ServerSignature",
+    "ServerTokens",
+    "banner hardening",
+    "version disclosure"
+  ],
+  "patterns": [
+    {
+      "lang": "webserver",
+      "confidence": "high",
+      "re": "(?im)^\\s*server_tokens\\s+on\\b"
+    },
+    {
+      "lang": "webserver",
+      "confidence": "high",
+      "re": "(?im)^\\s*ServerSignature\\s+On\\b"
+    },
+    {
+      "lang": "webserver",
+      "confidence": "medium",
+      "re": "(?im)^\\s*ServerTokens\\s+(Full|OS|Major|Minor|Minimal)\\b"
+    }
+  ],
+  "attack_scenario": "Attacker reads 'Server: nginx/1.18.0' or an Apache version banner, looks up known CVEs for that exact build, and launches a targeted exploit instead of blind probing.",
+  "negative_test_hint": [
+    "request \"/nonexistent-path-probe\" and assert the 404 error page and the Server response header omit the nginx/Apache version number"
+  ],
+  "exemplar": {
+    "noncompliant": "server_tokens on;",
+    "compliant": "server_tokens off;",
+    "explanation": "server_tokens on (nginx) and ServerSignature On / ServerTokens Full (Apache) emit the exact server software and version in Server: headers and error pages, handing attackers a precise fingerprint for matching public CVEs. Turning them off (or ServerTokens Prod) reveals only the product name, forcing blind probing instead of targeted exploits."
+  }
+}

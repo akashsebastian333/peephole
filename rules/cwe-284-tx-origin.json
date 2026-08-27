@@ -1,0 +1,20 @@
+{
+  "cwe_id": "CWE-284",
+  "name": "tx.origin Authorization (Solidity)",
+  "owasp": ["A01"],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": ["auth", "authorization", "owner", "onlyOwner", "access control", "msg.sender", "permission", "wallet", "smart contract", "solidity"],
+  "patterns": [
+    {"lang": "solidity", "confidence": "high", "re": "tx\\.origin\\s*(?:==|!=)"},
+    {"lang": "solidity", "confidence": "high", "re": "(?:==|!=)\\s*tx\\.origin"}
+  ],
+  "attack_scenario": "tx.origin is the account that started the transaction chain, not the immediate caller; the victim owner is phished into calling an attacker contract, which calls the vulnerable contract where tx.origin is still the owner, passing the check and draining funds (SWC-115)",
+  "negative_test_hint": ["call the guarded function through an \"intermediary attacker contract\" as a non-owner and assert it reverts - tx.origin must not authorize it"],
+  "exemplar": {
+    "noncompliant": "require(tx.origin == owner, \"not owner\");",
+    "compliant": "require(msg.sender == owner, \"not owner\");",
+    "explanation": "authorize on msg.sender (the immediate caller), never tx.origin, so an intermediary contract cannot act on the victim's behalf"
+  }
+}

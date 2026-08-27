@@ -1,0 +1,38 @@
+{
+  "cwe_id": "CWE-95",
+  "name": "Clojure runtime code evaluation of dynamic strings",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "evaluate expression",
+    "parse and run code",
+    "eval string",
+    "load-string",
+    "read-string user input",
+    "dynamic dispatch from input"
+  ],
+  "patterns": [
+    {
+      "lang": "clojure",
+      "confidence": "high",
+      "re": "(?i)\\(\\s*load-string\\s"
+    },
+    {
+      "lang": "clojure",
+      "confidence": "medium",
+      "re": "(?i)\\(\\s*eval\\s"
+    },
+    {
+      "lang": "clojure",
+      "confidence": "medium",
+      "re": "(?i)\\(\\s*read-string\\s"
+    }
+  ],
+  "attack_scenario": "user-input = \"#=(clojure.java.shell/sh \\\"sh\\\" \\\"-c\\\" \\\"id\\\")\" runs a command at read time; edn/read-string refuses reader-eval and only returns data.",
+  "negative_test_hint": ["feed the reader the input \"#=(System/exit 0)\" and assert it is parsed as inert data or rejected, never evaluated"],
+  "exemplar": {
+    "noncompliant": "(eval (read-string user-input))",
+    "compliant": "(edn/read-string user-input)",
+    "explanation": "eval and load-string execute Clojure code, and bare read-string (unlike namespaced clojure.edn/read-string) honors *read-eval* reader macros such as #=(...), so reading attacker text is remote code execution. The read-string pattern is anchored to the bare, unqualified call, so edn/read-string is not flagged."
+  }
+}

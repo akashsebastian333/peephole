@@ -1,0 +1,43 @@
+{
+  "cwe_id": "CWE-321",
+  "name": "Hard-coded JWT Signing Key",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "jwt",
+    "token",
+    "signing key",
+    "secret",
+    "jjwt",
+    "hmac",
+    "auth",
+    "bearer"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.setSigningKey\\(\\s*[\"'][^\"']+[\"']",
+      "reject_re": "\\$\\{"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "hmacShaKeyFor\\(\\s*[\"'][^\"']+[\"']"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.signWith\\(\\s*SignatureAlgorithm\\.\\w+\\s*,\\s*[\"']"
+    }
+  ],
+  "attack_scenario": "Anyone with repo read access, a decompiled JAR, or a leaked container layer extracts the literal HMAC secret, then forges tokens with arbitrary claims ({\"sub\":\"admin\",\"role\":\"root\"}) that the server accepts as validly signed, a complete authentication and authorization bypass.",
+  "negative_test_hint": [
+    "forge a JWT signed with \"s3cret-hardcoded-hmac-key\" carrying admin claims and assert the server rejects it because the real signing key comes from the environment, not source"
+  ],
+  "exemplar": {
+    "noncompliant": "Claims c = Jwts.parser()\n    .setSigningKey(\"s3cret-hardcoded-hmac-key\")\n    .parseClaimsJws(token).getBody();",
+    "compliant": "byte[] key = System.getenv(\"JWT_HMAC_KEY\").getBytes(StandardCharsets.UTF_8);\nClaims c = Jwts.parser()\n    .setSigningKey(key)\n    .parseClaimsJws(token).getBody();",
+    "explanation": "A JWT HMAC key baked into source as a literal in setSigningKey(\"...\")/hmacShaKeyFor(\"...\")/signWith(alg, \"...\") is recoverable from the repo, a decompiled JAR, or a leaked container layer, and once known it lets anyone forge arbitrarily-claimed tokens the server accepts. Loading the key from the environment or a secret manager keeps the signing secret out of the artifact."
+  }
+}

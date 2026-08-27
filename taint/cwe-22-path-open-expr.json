@@ -1,0 +1,37 @@
+{
+  "cwe_id": "CWE-22",
+  "name": "Path Traversal (user-controlled expression into a file op)",
+  "severity": "high",
+  "owasp": [
+    "A01"
+  ],
+  "kev": false,
+  "mode": "call",
+  "triggers": [
+    "user"
+  ],
+  "confidence": "medium",
+  "sinks": [
+    {
+      "lang": "python",
+      "re": "(?:open|send_file)\\s*\\(\\s*([^)\\n]+)"
+    },
+    {
+      "lang": "javascript",
+      "re": "fs(?:\\.promises)?\\.(?:readFile|readFileSync|createReadStream|writeFile|writeFileSync|unlink)\\s*\\(\\s*([^)\\n]+)"
+    },
+    {
+      "lang": "go",
+      "re": "os\\.(?:Open|ReadFile|WriteFile)\\s*\\(\\s*([^)\\n]+)"
+    },
+    {
+      "lang": "rust",
+      "re": "(?:File::open|fs::(?:read|read_to_string|write))\\s*\\(\\s*&?([^)\\n]+)"
+    }
+  ],
+  "exemplar": {
+    "noncompliant": "name = request.args.get('n')\nreturn open('/var/data/' + name).read()",
+    "compliant": "return send_from_directory('uploads', name)",
+    "explanation": "never open a path built from user input; send_from_directory (or resolve + is_relative_to) keeps the result under an allowlisted root"
+  }
+}
