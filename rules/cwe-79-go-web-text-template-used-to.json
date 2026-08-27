@@ -1,0 +1,30 @@
+{
+  "cwe_id": "CWE-79",
+  "name": "text/template used to render HTML (no auto-escaping)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "template",
+    "render",
+    "html",
+    "web page",
+    "handler",
+    "responsewriter",
+    "email",
+    "view"
+  ],
+  "patterns": [
+    {
+      "lang": "go",
+      "confidence": "medium",
+      "re": "text/template[\\s\\S]{0,800}\\.Execute(?:Template)?\\(\\s*(?:w|rw|writer|res|resp)\\b"
+    }
+  ],
+  "attack_scenario": "A handler builds its HTML page with text/template; a username of <img src=x onerror=alert(document.domain)> is interpolated unescaped and executes as script in the victim's browser.",
+  "negative_test_hint": ["render the page with username \"<img src=x onerror=alert(document.domain)>\" and assert the output HTML-escapes the value as inert text instead of executing it"],
+  "exemplar": {
+    "noncompliant": "import \"text/template\"   // then t.Execute(w, userData) into an HTML response",
+    "compliant": "import \"html/template\"   // context-aware auto-escaping for HTML output",
+    "explanation": "text/template performs zero contextual escaping; only html/template does. Using text/template to build any HTML that reaches a browser means every interpolated value is a raw injection point. text/template is legitimate for config files, plain-text emails, and code generation, so this is a medium review flag: confirm the output is never served as HTML, otherwise switch the import to html/template."
+  }
+}

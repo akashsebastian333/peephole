@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Peephole logo">
+  <rect x="56" y="56" width="400" height="400" rx="96" fill="#0F1420"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#C79A3B" stroke-width="32"/>
+  <circle cx="256" cy="256" r="127" fill="none" stroke="#8F6A20" stroke-width="4" opacity="0.8"/>
+  <circle cx="256" cy="256" r="117" fill="#070B14"/>
+  <path d="M 196 256 Q 229 289 243 299 Q 267 255 321 203" fill="none" stroke="#F4EFE6" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 190 198 A 90 90 0 0 1 262 166" fill="none" stroke="#E3B959" stroke-width="10" stroke-linecap="round" opacity="0.55"/>
+</svg>

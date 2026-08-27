@@ -1,0 +1,75 @@
+{
+  "cwe_id": "CWE-611",
+  "name": "XML External Entity (XXE)",
+  "owasp": [
+    "A05"
+  ],
+  "rank": 0,
+  "kev": true,
+  "severity": "high",
+  "task_triggers": [
+    "xml",
+    "parse",
+    "soap",
+    "svg",
+    "xsd",
+    "feed",
+    "sitemap",
+    "import"
+  ],
+  "patterns": [
+    {
+      "lang": "",
+      "confidence": "high",
+      "re": "resolve_entities\\s*=\\s*True"
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "\\b(?:etree|lxml\\.etree)\\.(?:parse|fromstring)\\(",
+      "reject_re": "defusedxml"
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "xml\\.dom\\.minidom\\.parse|xml\\.sax\\.make_parser\\(",
+      "reject_re": "defusedxml"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "noent\\s*:\\s*true|noEnt\\s*:\\s*true"
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "\\bxml\\.etree\\.ElementTree\\.(?:parse|fromstring|XML)\\(|\\bminidom\\.parseString\\(|\\bxml\\.sax\\.parse\\(",
+      "reject_re": "defusedxml"
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "(?s)xml\\.etree\\.ElementTree as ET.{0,800}\\bET\\.(?:parse|fromstring|XML)\\("
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "(?s)(?:from xml\\.etree import ElementTree as ET|lxml\\.etree as ET).{0,800}\\bET\\.(?:parse|fromstring|XML)\\("
+    },
+    {
+      "lang": "java",
+      "confidence": "medium",
+      "re": "(?:DocumentBuilderFactory|SAXParserFactory)\\.newInstance\\(\\)[^;\\n]*\\.parse\\(",
+      "reject_re": "setFeature|disallow-doctype|FEATURE_SECURE_PROCESSING|setXIncludeAware"
+    }
+  ],
+  "attack_scenario": "the XML parser resolves external entities, so an attacker submits a document whose DOCTYPE reads a local file (file:///etc/passwd) or reaches an internal URL, exfiltrating data or causing SSRF/DoS",
+  "negative_test_hint": [
+    "submit an XML doc with <!DOCTYPE x [<!ENTITY e SYSTEM \"file:///etc/passwd\">]> and assert the entity is not expanded"
+  ],
+  "exemplar": {
+    "noncompliant": "parser = etree.XMLParser(resolve_entities=True)\ndoc = etree.parse(f, parser)",
+    "compliant": "from defusedxml.ElementTree import parse\ndoc = parse(f)",
+    "explanation": "use defusedxml (or disable DOCTYPE/external entities) so the parser cannot fetch external resources"
+  }
+}

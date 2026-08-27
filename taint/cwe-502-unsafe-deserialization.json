@@ -1,0 +1,33 @@
+{
+  "cwe_id": "CWE-502",
+  "name": "Unsafe Deserialization (user-controlled input)",
+  "severity": "critical",
+  "owasp": [
+    "A08"
+  ],
+  "kev": false,
+  "mode": "arg",
+  "triggers": [
+    "user"
+  ],
+  "confidence": "high",
+  "sinks": [
+    {
+      "lang": "python",
+      "re": "yaml\\.load\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
+    },
+    {
+      "lang": "python",
+      "re": "(?:pickle|cPickle|_pickle)\\.loads?\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
+    },
+    {
+      "lang": "python",
+      "re": "marshal\\.loads?\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
+    }
+  ],
+  "exemplar": {
+    "noncompliant": "data = request.data\ncfg = pickle.loads(data)",
+    "compliant": "data = request.data\ncfg = json.loads(data)",
+    "explanation": "never unpickle/yaml.load untrusted bytes; use a data-only format (json) or yaml.safe_load"
+  }
+}

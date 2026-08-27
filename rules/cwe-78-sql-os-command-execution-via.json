@@ -1,0 +1,41 @@
+{
+  "cwe_id": "CWE-78",
+  "name": "OS command execution via SQL extended procedures",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "xp_cmdshell usage",
+    "SQL Server OLE automation",
+    "sp_configure enabling shell",
+    "registry write from SQL"
+  ],
+  "patterns": [
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)\\bxp_cmdshell\\b"
+    },
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)sp_configure\\s+'?xp_cmdshell'?"
+    },
+    {
+      "lang": "sql",
+      "confidence": "medium",
+      "re": "(?i)\\bsp_oacreate\\b"
+    },
+    {
+      "lang": "sql",
+      "confidence": "medium",
+      "re": "(?i)\\bxp_regwrite\\b"
+    }
+  ],
+  "attack_scenario": "An SQL-injection or a compromised low-priv DB login reaches a script/proc using xp_cmdshell and executes OS commands as the SQL service account, dropping a shell and pivoting into the host.",
+  "negative_test_hint": ["submit the input \"'; EXEC xp_cmdshell 'whoami' --\" through a reachable query and assert xp_cmdshell is disabled and the OS command never runs"],
+  "exemplar": {
+    "noncompliant": "EXEC xp_cmdshell 'powershell -enc <payload>';",
+    "compliant": "EXEC dbo.usp_RebuildIndexes @tableName = 'orders';",
+    "explanation": "xp_cmdshell, sp_OACreate (OLE automation), and xp_regwrite let T-SQL run arbitrary OS commands / touch the registry with the SQL Server service account's privileges. Microsoft ships them disabled for exactly this reason; a script that invokes or re-enables them is a direct RCE primitive (CWE-78)."
+  }
+}

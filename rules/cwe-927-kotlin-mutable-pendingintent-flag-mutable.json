@@ -1,0 +1,30 @@
+{
+  "cwe_id": "CWE-927",
+  "name": "Mutable PendingIntent (FLAG_MUTABLE)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "pendingintent",
+    "notification",
+    "alarm",
+    "FLAG_MUTABLE",
+    "getBroadcast",
+    "getActivity"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "medium",
+      "re": "(?i)FLAG_MUTABLE"
+    }
+  ],
+  "attack_scenario": "A malicious app obtains the mutable PendingIntent from a notification/service, fills the empty component with its own activity, and triggers a privileged action or reads the sender's data under the sender's UID.",
+  "negative_test_hint": [
+    "from another app, try to fill the PendingIntent's empty component with \"com.evil/.HijackActivity\" and assert the overwrite fails because the PendingIntent is immutable"
+  ],
+  "exemplar": {
+    "noncompliant": "val pi = PendingIntent.getBroadcast(context, 0, Intent(ACTION_PAY), PendingIntent.FLAG_MUTABLE)",
+    "compliant": "val pi = PendingIntent.getBroadcast(context, 0, Intent(context, PayReceiver::class.java), PendingIntent.FLAG_IMMUTABLE)",
+    "explanation": "A mutable PendingIntent lets whoever receives it fill in or overwrite unset fields of the wrapped Intent. When the base Intent is implicit or missing a component/data, a malicious app can redirect the PendingIntent to its own component while running with the sender app's identity and permissions. Google requires FLAG_IMMUTABLE unless mutation is truly needed (and the Intent is explicit). CWE-927 / Android 12 PendingIntent guidance."
+  }
+}

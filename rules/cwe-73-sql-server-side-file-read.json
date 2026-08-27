@@ -1,0 +1,37 @@
+{
+  "cwe_id": "CWE-73",
+  "name": "Server-side file read/write from SQL",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "MySQL LOAD_FILE",
+    "INTO OUTFILE / INTO DUMPFILE export",
+    "data import/export scripts"
+  ],
+  "patterns": [
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)\\bload_file\\s*\\("
+    },
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)\\binto\\s+outfile\\b"
+    },
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)\\binto\\s+dumpfile\\b"
+    }
+  ],
+  "attack_scenario": "Via an injectable query the attacker uses INTO OUTFILE to write a PHP web shell under the web root, then browses to it for full RCE; or uses LOAD_FILE to exfiltrate server secrets.",
+  "negative_test_hint": [
+    "issue the query \"SELECT load_file('/etc/passwd')\" and assert the database layer rejects it rather than returning server file contents"
+  ],
+  "exemplar": {
+    "noncompliant": "SELECT payload FROM logs INTO OUTFILE '/var/www/html/shell.php';",
+    "compliant": "SELECT id, email FROM users WHERE active = 1;",
+    "explanation": "LOAD_FILE reads arbitrary files readable by the DB service (e.g. /etc/passwd, key material) and INTO OUTFILE/DUMPFILE writes attacker-controlled bytes to any path the service can write. These are the classic MySQL primitives for local file disclosure and web-shell drop (CWE-73/CWE-538); they should never appear in application scripts."
+  }
+}

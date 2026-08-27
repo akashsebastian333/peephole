@@ -1,0 +1,1605 @@
+[
+ {
+  "path": "app/cmd_os.py",
+  "category": "cmdi",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-78"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/cmd_sub.py",
+  "category": "cmdi",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-78"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/cmd_exec.js",
+  "category": "cmdi",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-78"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/cmd_go.go",
+  "category": "cmdi",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-78"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/eval_py.py",
+  "category": "eval",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-94"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/eval_fn.js",
+  "category": "eval",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-94"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/xss_inner.js",
+  "category": "xss",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-79"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/xss_outer.js",
+  "category": "xss",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-79"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/xss_insert.js",
+  "category": "xss",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-79"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/xss_react.jsx",
+  "category": "xss",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-79"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/xss_write.js",
+  "category": "xss",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-79"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/deser_pickle.py",
+  "category": "deser",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-502",
+   "CWE-502"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/deser_yaml.py",
+  "category": "deser",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-502"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/deser_torch.py",
+  "category": "deser",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-502",
+   "CWE-502"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/deser_shelve.py",
+  "category": "deser",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-502"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/deser_joblib.py",
+  "category": "deser",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-502",
+   "CWE-502"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/crypto_ecb.py",
+  "category": "crypto",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-327",
+   "CWE-327"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/crypto_cipher.js",
+  "category": "crypto",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-327"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/tls_skip.py",
+  "category": "misconfig",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-1188",
+   "CWE-400"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/tls_go.go",
+  "category": "misconfig",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-1188"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/xml_et.py",
+  "category": "xxe",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-611"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/cmd_execsync.js",
+  "category": "cmdi",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-78"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/cmd_popen.py",
+  "category": "cmdi",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-78",
+   "CWE-22"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/deser_marshal.py",
+  "category": "deser",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-502"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/deser_cloudpickle.py",
+  "category": "deser",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-502"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/deser_numpy.py",
+  "category": "deser",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-502",
+   "CWE-502"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/deser_pandas.py",
+  "category": "deser",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-502",
+   "CWE-502"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/deser_yaml_unsafe.py",
+  "category": "deser",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-502"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/xss_inner_concat.js",
+  "category": "xss",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-79"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/tls_node.js",
+  "category": "misconfig",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-1188"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/xml_minidom.py",
+  "category": "xxe",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-611"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/cmd_ospopen.py",
+  "category": "cmdi",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-78",
+   "CWE-22"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/cmd_asyncio.py",
+  "category": "cmdi",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-78"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/cmd_spawn.js",
+  "category": "cmdi",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-78"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/eval_exec.py",
+  "category": "eval",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-94"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/eval_timeout.js",
+  "category": "eval",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-94"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/eval_vm.js",
+  "category": "eval",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-94"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/deser_jsonpickle.py",
+  "category": "deser",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-502"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/deser_dill.py",
+  "category": "deser",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-502"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/deser_pickle_file.py",
+  "category": "deser",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-502",
+   "CWE-502"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/crypto_decipher.js",
+  "category": "crypto",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-327"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/tls_env.js",
+  "category": "misconfig",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-1188"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/xml_fromstring.py",
+  "category": "xxe",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-611"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/xss_template.js",
+  "category": "xss",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-79"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/xss_jquery.js",
+  "category": "xss",
+  "vulnerable": true,
+  "slice": "shared",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-79"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sql_flask.py",
+  "category": "sqli",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-89"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sql_percent.py",
+  "category": "sqli",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-89"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sql_js.js",
+  "category": "sqli",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-89"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sql_go.go",
+  "category": "sqli",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-89"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/jwt_py.py",
+  "category": "jwt",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-347"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/jwt_go.go",
+  "category": "jwt",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-347"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sec_aws.py",
+  "category": "secrets",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-798"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sec_github.py",
+  "category": "secrets",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-798",
+   "CWE-400"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ssti_concat.py",
+  "category": "ssti",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-79",
+   "CWE-1336",
+   "CWE-1336"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ssti_fstring.py",
+  "category": "ssti",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-1336"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/path_open.py",
+  "category": "pathtrav",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-22"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/path_join.py",
+  "category": "pathtrav",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-22"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/crypto_md5.py",
+  "category": "crypto",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-327"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sql_format.py",
+  "category": "sqli",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-89"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sql_js_tpl.js",
+  "category": "sqli",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-89"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/jwt_node.js",
+  "category": "jwt",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-347"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sec_stripe.js",
+  "category": "secrets",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-798"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ssti_from_string.py",
+  "category": "ssti",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-1336"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/path_send.py",
+  "category": "pathtrav",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-22"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/jwt_none.py",
+  "category": "jwt",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-347"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/path_js.js",
+  "category": "pathtrav",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-22"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sql_sa.py",
+  "category": "sqli",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-89"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sql_django.py",
+  "category": "sqli",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-89"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sec_slack.py",
+  "category": "secrets",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-798",
+   "CWE-400"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sec_pem.py",
+  "category": "secrets",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-798"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ssti_markup.py",
+  "category": "ssti",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-79"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sql_insert.py",
+  "category": "sqli",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-89"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/path_write.py",
+  "category": "pathtrav",
+  "vulnerable": true,
+  "slice": "sast",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-22"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": ".github/workflows/ci.yml",
+  "category": "gha",
+  "vulnerable": true,
+  "slice": "sg_turf",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-78",
+   "CWE-94"
+  ],
+  "sg": true,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/page.html",
+  "category": "sri",
+  "vulnerable": true,
+  "slice": "sg_turf",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-829"
+  ],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/c_nim.nim",
+  "category": "cmdi",
+  "vulnerable": true,
+  "slice": "breadth",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-78"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": true
+ },
+ {
+  "path": "app/c_hs.hs",
+  "category": "cmdi",
+  "vulnerable": true,
+  "slice": "breadth",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-78"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": true
+ },
+ {
+  "path": "app/sql_rs.rs",
+  "category": "sqli",
+  "vulnerable": true,
+  "slice": "breadth",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-89"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sql_rb.rb",
+  "category": "sqli",
+  "vulnerable": true,
+  "slice": "breadth",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-89"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sql_php.php",
+  "category": "sqli",
+  "vulnerable": true,
+  "slice": "breadth",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-89"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/iac.yml",
+  "category": "iac",
+  "vulnerable": true,
+  "slice": "breadth",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-732"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/redir.py",
+  "category": "redirect",
+  "vulnerable": true,
+  "slice": "breadth",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-601"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ssrf.py",
+  "category": "ssrf",
+  "vulnerable": true,
+  "slice": "breadth",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-918",
+   "CWE-400"
+  ],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "requirements.txt",
+  "category": "supply",
+  "vulnerable": true,
+  "slice": "breadth",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sup_curl.sh",
+  "category": "supply",
+  "vulnerable": true,
+  "slice": "breadth",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/redos.js",
+  "category": "redos",
+  "vulnerable": true,
+  "slice": "breadth",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/mass.py",
+  "category": "massassign",
+  "vulnerable": true,
+  "slice": "breadth",
+  "peephole": true,
+  "peephole_cwes": [
+   "CWE-915"
+  ],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_sql.py",
+  "category": "benign-db",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_sql.js",
+  "category": "benign-db",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_sql.go",
+  "category": "benign-db",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_cmd.py",
+  "category": "benign-cmd",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_cmd_argv.py",
+  "category": "benign-cmd",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_cmd.go",
+  "category": "benign-cmd",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_execfile.js",
+  "category": "benign-cmd",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_sha256.py",
+  "category": "benign-crypto",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_secrets.py",
+  "category": "benign-secrets",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_placeholder.py",
+  "category": "benign-secrets",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_yaml.py",
+  "category": "benign-deser",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_yaml_loader.py",
+  "category": "benign-deser",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_torch.py",
+  "category": "benign-deser",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_pickle_dump.py",
+  "category": "benign-deser",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_xss.js",
+  "category": "benign-xss",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_dompurify.js",
+  "category": "benign-xss",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_ssti.py",
+  "category": "benign-xss",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_template.py",
+  "category": "benign-xss",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_literal.py",
+  "category": "benign-eval",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_torch_eval.py",
+  "category": "benign-eval",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_static_eval.py",
+  "category": "benign-eval",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_static_system.py",
+  "category": "benign-cmd",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_path.py",
+  "category": "benign-path",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_send.py",
+  "category": "benign-path",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_net.py",
+  "category": "benign-net",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_chmod.py",
+  "category": "benign-perms",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_log.py",
+  "category": "benign-log",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_xml.py",
+  "category": "benign-xxe",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": true,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_sri.html",
+  "category": "benign-sri",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_jwt.py",
+  "category": "benign-jwt",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_gha.yml",
+  "category": "benign-gha",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_hmac.py",
+  "category": "benign-jwt",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_rand.py",
+  "category": "benign-crypto",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_md5_file.py",
+  "category": "benign-crypto",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_regex_exec.js",
+  "category": "benign-cmd",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_jwt_parse.go",
+  "category": "benign-jwt",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_spawn.js",
+  "category": "benign-cmd",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_asyncio.py",
+  "category": "benign-cmd",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_vm.js",
+  "category": "benign-eval",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/ok_sql_sa.py",
+  "category": "benign-db",
+  "vulnerable": false,
+  "slice": "benign",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sem_race.py",
+  "category": "semantic-race",
+  "vulnerable": true,
+  "slice": "semantic",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": false,
+  "semgrep_unsupported": false
+ },
+ {
+  "path": "app/sem_price.py",
+  "category": "semantic-bizlogic",
+  "vulnerable": true,
+  "slice": "semantic",
+  "peephole": false,
+  "peephole_cwes": [],
+  "sg": false,
+  "semgrep": true,
+  "semgrep_unsupported": false
+ }
+]

@@ -1,0 +1,89 @@
+{
+  "cwe_id": "CWE-22",
+  "name": "Path Traversal",
+  "owasp": [
+    "A01"
+  ],
+  "rank": 5,
+  "kev": true,
+  "severity": "high",
+  "task_triggers": [
+    "upload",
+    "download",
+    "file",
+    "attachment",
+    "avatar",
+    "export",
+    "backup",
+    "static",
+    "serve",
+    "filename"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "os\\.path\\.join\\(\\s*[^,)]+,\\s*(?:request\\.|flask\\.request\\.|self\\.request\\.|params\\[|args\\[|user_input)"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "send_file\\(\\s*os\\.path\\.join\\([^)]*(?:request\\.|params\\[|args\\[|user_)"
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "open\\(\\s*f[\\\"'][^\\\"']*\\{[^}]*(?:request|params|args|user_|input|flask)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "path\\.(?:join|resolve)\\(\\s*[^,)]+,\\s*req\\.(?:params|query|body)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "fs(?:\\.promises)?\\.(?:readFile|readFileSync|createReadStream|writeFile|unlink)(?:Sync)?\\(\\s*`[^`]*\\$\\{[^}]*(?:req|params|query|body|user)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "res\\.sendFile\\(\\s*path\\.(?:join|resolve)\\([^)]*req\\."
+    },
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "(?:http\\.ServeFile|os\\.(?:Open|ReadFile))\\([^)]*(?:r\\.URL\\.Query\\(\\)|r\\.FormValue)"
+    },
+    {
+      "lang": "rust",
+      "confidence": "high",
+      "re": "(?:File::open|fs::(?:read|read_to_string|write))\\(\\s*&?format!\\(",
+      "reject_re": "CARGO_MANIFEST_DIR|env!|concat!"
+    },
+    {
+      "lang": "haskell",
+      "confidence": "high",
+      "re": "\\breadFile\\s*\\([^)]*\\+\\+|\\breadFile\\s+\\$[^\\n]*\\+\\+|\\breadFile\\s+(?i)(?:user|input|req|param)\\w*"
+    },
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "\\b(?:readfile|fopen|file_get_contents)\\s*\\(\\s*(?:[\"\\x27][^\"\\x27]]*[\"\\x27]\\s*\\.\\s*)?\\$_(?:GET|POST|REQUEST)"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "new\\s+File\\([^)]*request\\.getParameter"
+    }
+  ],
+  "attack_scenario": "attacker sends a relative path that escapes the intended directory, reading or overwriting arbitrary files as the service user",
+  "negative_test_hint": [
+    "submit name = \"../../../../etc/passwd\" (and the absolute-path variant \"/etc/passwd\") and assert access is refused"
+  ],
+  "exemplar": {
+    "noncompliant": "path = os.path.join(UPLOAD_DIR, request.args[\"name\"])",
+    "compliant": "base = Path(UPLOAD_DIR).resolve()\npath = (base / request.args[\"name\"]).resolve()\nif not path.is_relative_to(base):\n    abort(400)",
+    "explanation": "resolve then verify the result is still under the base directory before opening it"
+  }
+}

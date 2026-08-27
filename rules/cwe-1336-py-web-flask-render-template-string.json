@@ -1,0 +1,37 @@
+{
+  "cwe_id": "CWE-1336",
+  "name": "Flask render_template_string with dynamic template (SSTI)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "template",
+    "render",
+    "email",
+    "preview",
+    "flask",
+    "message",
+    "newsletter",
+    "jinja"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "render_template_string\\(\\s*(?:f[\"']|request\\.|flask\\.request\\.)"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "render_template_string\\([^)]*(?:[\"']\\s*(?:%|\\+)|\\.format\\(|\\+\\s*request\\.)"
+    }
+  ],
+  "attack_scenario": "name = \"{{ config.__class__.__init__.__globals__['os'].popen('id').read() }}\" lands in the template body; Jinja2 evaluates it and returns command output and SECRET_KEY, chaining to full RCE.",
+  "negative_test_hint": [
+    "submit name = \"{{ config.__class__.__init__.__globals__['os'].popen('id').read() }}\" and assert the response renders it as inert text with no command output"
+  ],
+  "exemplar": {
+    "noncompliant": "return render_template_string(\"<h1>Hi \" + request.args[\"name\"] + \"</h1>\")",
+    "compliant": "return render_template_string(TEMPLATE, name=request.args[\"name\"])",
+    "explanation": "Flask's render_template_string() compiles its FIRST argument as a Jinja2 template. Jinja2 evaluates {{...}} expressions with full Python object access, so any user input reaching the template source (via f-string, %, +, .format(), or a request value spliced positionally) is server-side template injection, escalating past XSS to code execution in the app process. It is safe only when user data is passed as context kwargs, as in render_template_string(TEMPLATE, name=request.args['name'])."
+  }
+}

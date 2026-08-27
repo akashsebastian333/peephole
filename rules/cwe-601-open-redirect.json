@@ -1,0 +1,50 @@
+{
+  "cwe_id": "CWE-601",
+  "name": "Open Redirect",
+  "owasp": [
+    "A01"
+  ],
+  "rank": 0,
+  "kev": false,
+  "severity": "medium",
+  "task_triggers": [
+    "redirect",
+    "login",
+    "next",
+    "callback",
+    "return url",
+    "logout",
+    "sso"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "redirect\\(\\s*request\\.(?:args|GET|values|form|params)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "res\\.redirect\\(\\s*req\\.(?:query|params|body)"
+    },
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "\\bredirect_to\\s+params\\["
+    },
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "\\bheader\\s*\\(\\s*[\"']Location:[^\"']*\\$_"
+    }
+  ],
+  "attack_scenario": "the redirect target comes straight from user input, so an attacker crafts a link on the trusted site that bounces the victim to a phishing or token-stealing page",
+  "negative_test_hint": [
+    "submit next = \"https://evil.example/\" and assert the redirect is refused or forced to a relative path"
+  ],
+  "exemplar": {
+    "noncompliant": "return redirect(request.args.get(\"next\"))",
+    "compliant": "target = request.args.get(\"next\", \"/\")\nif not target.startswith(\"/\") or target.startswith(\"//\"):\n    target = \"/\"\nreturn redirect(target)",
+    "explanation": "only redirect to validated relative paths (or an allowlist of hosts), never a raw user-supplied URL"
+  }
+}

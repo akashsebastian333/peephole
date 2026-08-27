@@ -1,0 +1,20 @@
+{
+  "cwe_id": "CWE-1321",
+  "name": "Prototype Pollution",
+  "owasp": ["A08"],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": ["merge", "extend", "assign", "clone", "config", "deep merge", "set", "lodash"],
+  "patterns": [
+    {"lang": "javascript", "confidence": "high", "re": "\\[[\"']__proto__[\"']\\]\\s*=|\\[[\"']constructor[\"']\\]\\s*\\[[\"']prototype[\"']\\]"},
+    {"lang": "javascript", "confidence": "medium", "re": "(?:_\\.merge|_\\.mergeWith|_\\.defaultsDeep|_\\.set)\\(\\s*[^,]+,\\s*(?:req\\.|JSON\\.parse)"}
+  ],
+  "attack_scenario": "user-controlled keys reach Object prototype (via __proto__/constructor.prototype or a recursive merge of untrusted data), polluting every object and enabling privilege escalation, DoS, or RCE",
+  "negative_test_hint": ["merge {\"__proto__\":{\"isAdmin\":true}} and assert ({}).isAdmin is still undefined"],
+  "exemplar": {
+    "noncompliant": "target[key][\"__proto__\"] = value",
+    "compliant": "if (key === \"__proto__\" || key === \"constructor\" || key === \"prototype\") return;\ntarget[key] = value;   // or use a Map / Object.create(null)",
+    "explanation": "reject __proto__/constructor/prototype keys, or store data in a Map / null-prototype object"
+  }
+}

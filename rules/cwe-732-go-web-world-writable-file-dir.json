@@ -1,0 +1,41 @@
+{
+  "cwe_id": "CWE-732",
+  "name": "World-writable file/dir permissions in os package",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "file",
+    "write",
+    "openfile",
+    "mkdir",
+    "chmod",
+    "permissions",
+    "upload",
+    "log file",
+    "cache dir",
+    "config"
+  ],
+  "patterns": [
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "os\\.Chmod\\([^)\\n]*,\\s*0o?[0-7]{0,2}[2367]\\b",
+      "reject_re": "(?m:^\\s*(?://|#|\\*|<!--|;))"
+    },
+    {
+      "lang": "go",
+      "confidence": "medium",
+      "re": "(?:os\\.(?:OpenFile|WriteFile|Mkdir|MkdirAll)|ioutil\\.WriteFile)\\([^)\\n]*,\\s*0o?[0-7]{0,2}[2367]\\b",
+      "reject_re": "(?m:^\\s*(?://|#|\\*|<!--|;))"
+    }
+  ],
+  "attack_scenario": "A log or config file created 0666 is rewritten by another tenant on the host to inject a malicious payload; a 0777 upload directory lets a co-located process drop a script the app later executes.",
+  "negative_test_hint": [
+    "as a different local user write \"owned by attacker\" into the created file and assert the write is denied because the mode grants no group/other write"
+  ],
+  "exemplar": {
+    "noncompliant": "os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY, 0777)",
+    "compliant": "os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY, 0600)",
+    "explanation": "A trailing permission digit of 2, 3, 6 or 7 grants write to group/other (0666, 0777, 0776...), so any local user or a co-located compromised process can overwrite the file or plant executables in the directory. Use 0600 for private files, 0644 for read-shared files, 0700/0755 for directories."
+  }
+}

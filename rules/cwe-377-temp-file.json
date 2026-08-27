@@ -1,0 +1,21 @@
+{
+  "cwe_id": "CWE-377",
+  "name": "Insecure Temporary File",
+  "owasp": ["A01"],
+  "rank": 0,
+  "kev": false,
+  "severity": "medium",
+  "task_triggers": ["temp", "tmp", "tempfile", "cache", "scratch", "upload"],
+  "patterns": [
+    {"lang": "python", "confidence": "high", "re": "\\btempfile\\.mktemp\\("},
+    {"lang": "python", "confidence": "medium", "re": "open\\(\\s*[\"']/tmp/[^\"']+[\"']"},
+    {"lang": "javascript", "confidence": "medium", "re": "[\"'`]/tmp/[^\"'`]*(?:\\$\\{|[\"'`]\\s*\\+)"}
+  ],
+  "attack_scenario": "a predictable temp path (mktemp / hardcoded /tmp/name) lets a local attacker pre-create or symlink the file between the name being chosen and it being opened, hijacking or corrupting its contents (TOCTOU)",
+  "negative_test_hint": ["pre-create the predicted temp path as a symlink to \"/etc/passwd\" and assert the program refuses to follow it"],
+  "exemplar": {
+    "noncompliant": "path = tempfile.mktemp()\nopen(path, \"w\").write(data)",
+    "compliant": "fd, path = tempfile.mkstemp()\nwith os.fdopen(fd, \"w\") as f:\n    f.write(data)",
+    "explanation": "use mkstemp/NamedTemporaryFile which create the file atomically with a private name and O_EXCL"
+  }
+}

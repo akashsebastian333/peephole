@@ -1,0 +1,37 @@
+{
+  "cwe_id": "CWE-915",
+  "name": "Laravel Mass Assignment via Empty $guarded",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "eloquent",
+    "model",
+    "guarded",
+    "fillable",
+    "create",
+    "update",
+    "mass assignment",
+    "user",
+    "register",
+    "fill"
+  ],
+  "patterns": [
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "\\$guarded\\s*=\\s*\\[\\s*\\]"
+    },
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "\\$guarded\\s*=\\s*array\\(\\s*\\)"
+    }
+  ],
+  "attack_scenario": "Attacker adds is_admin=1 to the registration form; with $guarded=[] the field is fillable and persisted, granting admin on signup.",
+  "negative_test_hint": ["submit the registration form with the extra parameter \"is_admin=1\" and assert the created account is not an administrator"],
+  "exemplar": {
+    "noncompliant": "protected $guarded = [];",
+    "compliant": "protected $fillable = ['name', 'email'];",
+    "explanation": "An empty $guarded array makes every attribute mass-assignable, so Model::create($request->all()) or ->fill() lets the client set any column including is_admin/role. Define an explicit $fillable allowlist of user-settable attributes instead."
+  }
+}

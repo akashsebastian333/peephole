@@ -1,0 +1,27 @@
+{
+  "cwe_id": "CWE-319",
+  "name": "App Transport Security disabled (NSAllowsArbitraryLoads = true)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "editing Info.plist ATS settings",
+    "fixing 'cannot connect over HTTP' errors",
+    "reviewing NSAppTransportSecurity configuration"
+  ],
+  "patterns": [
+    {
+      "lang": "objc",
+      "confidence": "high",
+      "re": "(?is)<key>\\s*NSAllowsArbitraryLoads(InWebContent|ForMedia|InMediaContent)?\\s*</key>\\s*<true\\s*/>"
+    }
+  ],
+  "attack_scenario": "An on-path attacker (rogue Wi-Fi, ARP spoofing) reads and rewrites the app's now-cleartext or downgraded traffic, stealing session tokens and injecting malicious responses that the app trusts.",
+  "negative_test_hint": [
+    "write an Info.plist setting \"NSAllowsArbitraryLoads\" to true and assert it is rejected, keeping ATS enabled with at most narrow per-domain exceptions"
+  ],
+  "exemplar": {
+    "noncompliant": "<key>NSAppTransportSecurity</key>\n<dict>\n  <key>NSAllowsArbitraryLoads</key>\n  <true/>\n</dict>",
+    "compliant": "<key>NSAppTransportSecurity</key>\n<dict>\n  <key>NSExceptionDomains</key>\n  <dict>\n    <key>api.example.com</key>\n    <dict>\n      <key>NSExceptionAllowsInsecureHTTPLoads</key>\n      <false/>\n      <key>NSExceptionMinimumTLSVersion</key>\n      <string>TLSv1.2</string>\n    </dict>\n  </dict>\n</dict>",
+    "explanation": "NSAllowsArbitraryLoads=true globally disables App Transport Security, permitting cleartext HTTP and downgraded TLS for every domain the app contacts, so an on-path attacker can read and rewrite traffic. ATS should stay on, with exceptions scoped per-domain and a minimum TLS version when one is unavoidable."
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "cwe_id": "CWE-89",
+  "name": "Laravel Raw Query Builder SQL Injection",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "eloquent",
+    "query builder",
+    "whereRaw",
+    "DB::raw",
+    "orderByRaw",
+    "selectRaw",
+    "search",
+    "sort",
+    "sql",
+    "database"
+  ],
+  "patterns": [
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "(?:->|::)(?:whereRaw|orWhereRaw|havingRaw|orderByRaw|groupByRaw|selectRaw)\\(\\s*\"[^\"]*\\$"
+    },
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "\\bDB::raw\\(\\s*\"[^\"]*\\$"
+    },
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "(?:->|::)(?:whereRaw|orWhereRaw|havingRaw|orderByRaw|selectRaw)\\(\\s*['\"][^)]*['\"]\\s*\\."
+    },
+    {
+      "lang": "php",
+      "confidence": "high",
+      "re": "\\bDB::(?:select|statement|insert|update|delete)\\(\\s*\"[^\"]*\\$"
+    }
+  ],
+  "attack_scenario": "Attacker sends age=0 UNION SELECT password FROM users; the interpolated whereRaw executes the union and leaks credentials.",
+  "negative_test_hint": [
+    "submit age = \"0 UNION SELECT password FROM users\" and assert whereRaw binds it as a value or rejects it instead of interpolating it into the SQL"
+  ],
+  "exemplar": {
+    "noncompliant": "User::whereRaw(\"age > $age\")->orderByRaw($request->sort);",
+    "compliant": "User::whereRaw('age > ?', [$age])->orderBy($validatedColumn);",
+    "explanation": "whereRaw/DB::raw/orderByRaw/DB::select emit SQL verbatim; interpolating a $variable into the double-quoted string or concatenating with . injects unescaped user input straight into the query. Pass values as positional bindings (the ? + array form) and allowlist any column/direction names."
+  }
+}

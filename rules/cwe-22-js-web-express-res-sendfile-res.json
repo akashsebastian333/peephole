@@ -1,0 +1,38 @@
+{
+  "cwe_id": "CWE-22",
+  "name": "Express res.sendFile/res.download with raw request path",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "express",
+    "sendfile",
+    "download",
+    "file",
+    "path",
+    "req.params",
+    "static"
+  ],
+  "patterns": [
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "res\\.(?:sendFile|download)\\(\\s*req\\.",
+      "reject_re": "path\\.(?:resolve|join|normalize|basename)"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "res\\.(?:sendFile|download)\\(\\s*`[^`]*\\$\\{req\\.",
+      "reject_re": "path\\.(?:resolve|join|normalize|basename)"
+    }
+  ],
+  "attack_scenario": "attacker requests filename=../../../../etc/passwd; sendFile resolves outside the data directory and returns arbitrary server files",
+  "negative_test_hint": [
+    "request filename = \"../../../../etc/passwd\" and assert the response is an error rather than the contents of /etc/passwd"
+  ],
+  "exemplar": {
+    "noncompliant": "res.sendFile(req.params.filename, { root: '/var/data' });",
+    "compliant": "res.sendFile(path.basename(req.params.filename), { root: '/var/data' });",
+    "explanation": "Passing a request value straight into res.sendFile/res.download without basename/normalize lets '../' sequences escape the intended directory; the root option alone does not neutralise traversal. Stripping the path down to its basename keeps the served file inside the data directory."
+  }
+}

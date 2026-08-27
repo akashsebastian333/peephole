@@ -1,0 +1,50 @@
+{
+  "cwe_id": "CWE-295",
+  "name": "TLS certificate/hostname validation bypass",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "hostname verifier",
+    "ssl",
+    "trustmanager",
+    "https",
+    "onReceivedSslError",
+    "certificate"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?i)ALLOW_ALL_HOSTNAME_VERIFIER"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?i)HostnameVerifier\\s*\\{[^}]*->\\s*true"
+    },
+    {
+      "lang": "java",
+      "confidence": "medium",
+      "re": "(?i)setHostnameVerifier\\s*\\("
+    },
+    {
+      "lang": "java",
+      "confidence": "medium",
+      "re": "(?i)setDefaultHostnameVerifier\\s*\\("
+    },
+    {
+      "lang": "java",
+      "confidence": "medium",
+      "re": "(?i)\\.proceed\\s*\\(\\s*\\)"
+    }
+  ],
+  "attack_scenario": "On a hostile network the attacker presents a self-signed cert; the app proceeds anyway, so the attacker reads and rewrites all 'encrypted' traffic including credentials and session tokens.",
+  "negative_test_hint": [
+    "present a self-signed certificate for \"attacker.example.com\" during the TLS handshake and assert the connection is rejected instead of proceeding"
+  ],
+  "exemplar": {
+    "noncompliant": "connection.hostnameVerifier = HostnameVerifier { _, _ -> true }\n// WebView:\noverride fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {\n    handler?.proceed()\n}",
+    "compliant": "// Pin the server certificate and let the platform verify the chain/hostname\nval client = OkHttpClient.Builder()\n    .certificatePinner(CertificatePinner.Builder()\n        .add(\"app.example.com\", \"sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\")\n        .build())\n    .build()\n// WebView: on SSL error, call handler.cancel() to abort the load",
+    "explanation": "A HostnameVerifier that returns true, ALLOW_ALL_HOSTNAME_VERIFIER, or a WebView onReceivedSslError override that calls handler.proceed() accepts any certificate for any host, disabling TLS authentication and enabling full MITM of credentials and session tokens. Pinning the server certificate, letting the platform verify chain and hostname, and cancelling the load on SSL errors keeps the connection authenticated."
+  }
+}

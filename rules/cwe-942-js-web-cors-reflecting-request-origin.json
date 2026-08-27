@@ -1,0 +1,41 @@
+{
+  "cwe_id": "CWE-942",
+  "name": "CORS reflecting request Origin with credentials",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "cors",
+    "origin",
+    "credentials",
+    "access-control",
+    "cross-origin",
+    "express",
+    "headers"
+  ],
+  "patterns": [
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "origin\\s*:\\s*true\\b[^}]*credentials\\s*:\\s*true"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "credentials\\s*:\\s*true\\b[^}]*origin\\s*:\\s*true"
+    },
+    {
+      "lang": "javascript",
+      "confidence": "high",
+      "re": "setHeader\\(\\s*[\"']Access-Control-Allow-Origin[\"']\\s*,\\s*req\\."
+    }
+  ],
+  "attack_scenario": "attacker page on evil.com sends a credentialed fetch to the API; the server reflects Origin: evil.com with Allow-Credentials:true, so the attacker's JS reads the victim's authenticated response",
+  "negative_test_hint": [
+    "send a credentialed fetch with Origin header \"https://evil.example.com\" and assert Access-Control-Allow-Origin does not echo it back"
+  ],
+  "exemplar": {
+    "noncompliant": "app.use(cors({ origin: true, credentials: true }));",
+    "compliant": "app.use(cors({ origin: ['https://app.example.com'], credentials: true }));",
+    "explanation": "origin:true (or reflecting req.headers.origin) echoes the caller's Origin back as Access-Control-Allow-Origin. Combined with credentials:true this defeats the same-origin policy. An explicit origin allowlist confines credentialed cross-origin access to trusted front-ends."
+  }
+}

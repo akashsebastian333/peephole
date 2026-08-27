@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "name": "peephole",
+        "command": "peephole hook --exit2",
+        "timeout": 10
+      }
+    ]
+  }
+}

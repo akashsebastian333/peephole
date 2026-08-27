@@ -1,0 +1,34 @@
+{
+  "cwe_id": "CWE-134",
+  "name": "Uncontrolled format string (variable passed as the format argument)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "printf",
+    "log message",
+    "format",
+    "error message",
+    "syslog"
+  ],
+  "patterns": [
+    {
+      "lang": "c",
+      "confidence": "high",
+      "re": "\\b(?:printf|vprintf)\\s*\\(\\s*[A-Za-z_]\\w*\\s*\\)"
+    },
+    {
+      "lang": "c",
+      "confidence": "medium",
+      "re": "\\b(?:fprintf|dprintf|vfprintf|syslog)\\s*\\(\\s*[A-Za-z_]\\w*\\s*,\\s*[A-Za-z_]\\w*\\s*\\)"
+    }
+  ],
+  "attack_scenario": "Attacker-controlled text reaches printf/fprintf/syslog as the format string instead of as an argument; a payload of %x%x%n reads the stack and writes an attacker-chosen value to an attacker-chosen address, giving an arbitrary-write primitive and RCE (classic format-string bug).",
+  "negative_test_hint": [
+    "pass the string \"%n%n%n%n\" as the message and assert it is printed literally via a fixed \"%s\" format, never interpreted as format directives"
+  ],
+  "exemplar": {
+    "noncompliant": "fprintf(stderr, user_msg);",
+    "compliant": "fprintf(stderr, \"%s\", user_msg);",
+    "explanation": "A bare identifier in the format position lets attacker input carry %n/%s directives. Always pass a fixed \"%s\" literal and the data as an argument. Single-arg printf(x) and 2-arg fprintf(f,x)/syslog(p,x) with no literal format are matched; any call whose format position is a string literal stays clean."
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "cwe_id": "CWE-319",
+  "name": "Bicep: App Service / Function insecure transport",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "azure",
+    "bicep",
+    "app service",
+    "function app",
+    "web app",
+    "httpsOnly",
+    "minTlsVersion",
+    "ftps",
+    "tls"
+  ],
+  "patterns": [
+    {
+      "lang": "bicep",
+      "confidence": "high",
+      "re": "(?im)^\\s*httpsOnly\\s*:\\s*false\\b"
+    },
+    {
+      "lang": "bicep",
+      "confidence": "high",
+      "re": "(?im)^\\s*minTlsVersion\\s*:\\s*'1\\.[01]'"
+    },
+    {
+      "lang": "bicep",
+      "confidence": "medium",
+      "re": "(?im)^\\s*ftpsState\\s*:\\s*'AllAllowed'"
+    }
+  ],
+  "attack_scenario": "a man-in-the-middle downgrades or intercepts the plaintext HTTP/FTP channel and steals session cookies, deployment credentials, or injects a tampered app payload",
+  "negative_test_hint": ["submit a template with \"httpsOnly: false\" and assert the policy check rejects it, requiring HTTPS-only and TLS 1.2 or newer"],
+  "exemplar": {
+    "noncompliant": "  httpsOnly: false",
+    "compliant": "  httpsOnly: true",
+    "explanation": "On Microsoft.Web sites, httpsOnly:false serves the app over plaintext HTTP (no HTTP->HTTPS redirect); siteConfig minTlsVersion '1.0'/'1.1' negotiates deprecated TLS; ftpsState:'AllAllowed' permits plaintext FTP deployments. CIS Azure App Service requires HTTPS-only, TLS 1.2+, and FTPS-only/disabled. Enforcing those keeps session cookies and deployment credentials off interceptable channels."
+  }
+}

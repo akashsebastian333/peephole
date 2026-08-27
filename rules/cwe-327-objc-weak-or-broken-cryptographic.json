@@ -1,0 +1,42 @@
+{
+  "cwe_id": "CWE-327",
+  "name": "Weak or broken cryptographic primitive (DES/RC4/ECB/MD5/SHA1)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "writing or reviewing CommonCrypto usage",
+    "encrypting or hashing data in iOS/macOS",
+    "implementing signing, integrity, or password hashing"
+  ],
+  "patterns": [
+    {
+      "lang": "objc",
+      "confidence": "high",
+      "re": "(?i)kCCAlgorithm(DES|3DES|RC4|RC2)\\b"
+    },
+    {
+      "lang": "objc",
+      "confidence": "high",
+      "re": "(?i)kCCOptionECBMode"
+    },
+    {
+      "lang": "objc",
+      "confidence": "medium",
+      "re": "(?i)\\bCC_MD5\\s*\\("
+    },
+    {
+      "lang": "objc",
+      "confidence": "medium",
+      "re": "(?i)\\bCC_SHA1\\s*\\("
+    }
+  ],
+  "attack_scenario": "An attacker recovers or forges data: ECB reveals repeated plaintext blocks in ciphertext, DES/RC4 keys are brute-forceable, and MD5/SHA-1 collisions let an attacker craft two inputs with the same digest to defeat integrity checks or signature verification.",
+  "negative_test_hint": [
+    "encrypt the repeating-block plaintext \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\" and assert the code uses AES with a random IV rather than DES/RC4/ECB, so identical plaintext blocks never yield identical ciphertext"
+  ],
+  "exemplar": {
+    "noncompliant": "// DES + ECB, and MD5 for integrity \u2014 all broken\nCCCrypt(kCCEncrypt, kCCAlgorithmDES, kCCOptionECBMode,\n        key, kCCKeySizeDES, NULL, plaintext, len, out, outCap, &moved);\n\nunsigned char digest[CC_MD5_DIGEST_LENGTH];\nCC_MD5(data.bytes, (CC_LONG)data.length, digest);",
+    "compliant": "// AES-256-CBC with a random IV, SHA-256 for integrity\nuint8_t iv[kCCBlockSizeAES128];\nSecRandomCopyBytes(kSecRandomDefault, sizeof(iv), iv);\nCCCrypt(kCCEncrypt, kCCAlgorithmAES, kCCOptionPKCS7Padding,\n        key, kCCKeySizeAES256, iv, plaintext, len, out, outCap, &moved);\n\nuint8_t digest[CC_SHA256_DIGEST_LENGTH];\nCC_SHA256(data.bytes, (CC_LONG)data.length, digest);",
+    "explanation": "DES/3DES/RC4 are broken ciphers and ECB mode leaks plaintext structure because identical blocks encrypt identically; MD5 and SHA-1 are collision-broken and unsuitable for integrity or signatures. AES with a random IV and SHA-256 provide real confidentiality and collision resistance, as required by OWASP MASVS-CRYPTO and CWE-327/CWE-328."
+  }
+}

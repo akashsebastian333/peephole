@@ -1,0 +1,33 @@
+{
+  "cwe_id": "CWE-95",
+  "name": "Jenkins pipeline dynamic code execution via evaluate()/Eval",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "jenkinsfile",
+    "jenkins pipeline",
+    "groovy",
+    "evaluate",
+    "dynamic script",
+    "load groovy"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?m)\\bEval\\s*\\.\\s*(?:me|x|xy|xyz)\\s*\\("
+    },
+    {
+      "lang": "java",
+      "confidence": "medium",
+      "re": "(?m)\\bevaluate\\s*\\("
+    }
+  ],
+  "attack_scenario": "a job parameter or a checked-in Jenkinsfile.groovy loaded via evaluate() carries `new File('/var/lib/jenkins/secrets/...').text` or a reverse shell; it runs unsandboxed on the controller, exposing every stored credential and the master key",
+  "negative_test_hint": ["pass the job parameter SCRIPT_BODY = \"println new File('/var/lib/jenkins/secrets/master.key').text\" and assert the pipeline refuses to evaluate it, running only fixed sandboxed steps"],
+  "exemplar": {
+    "noncompliant": "evaluate(params.SCRIPT_BODY)",
+    "compliant": "def cfg = readJSON text: params.CONFIG_JSON",
+    "explanation": "evaluate() and Eval.me compile and run arbitrary Groovy inside the Jenkins controller JVM, bypassing the script-security sandbox. Feeding any build parameter, SCM content, or fetched string into them turns configuration into remote code execution on the controller."
+  }
+}

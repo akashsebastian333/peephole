@@ -1,0 +1,40 @@
+{
+  "cwe_id": "CWE-95",
+  "name": "Julia code injection via eval(Meta.parse) or shell -c",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "evaluate expression",
+    "parse and execute",
+    "Meta.parse",
+    "run shell command",
+    "eval user input",
+    "include_string"
+  ],
+  "patterns": [
+    {
+      "lang": "julia",
+      "confidence": "high",
+      "re": "(?i)eval\\s*\\(\\s*Meta\\.parse\\s*\\("
+    },
+    {
+      "lang": "julia",
+      "confidence": "high",
+      "re": "(?i)\\binclude_string\\s*\\("
+    },
+    {
+      "lang": "julia",
+      "confidence": "high",
+      "re": "(?i)`[^`\\n]*(?:ba)?sh\\s+-c\\s+\\$"
+    }
+  ],
+  "attack_scenario": "user_code = \"run(`rm -rf /`)\" is compiled and executed; typed parse(Int, ...) only ever yields an integer or throws.",
+  "negative_test_hint": [
+    "feed user_code = \"run(`rm -rf /`)\" and assert it is rejected or handled by typed parsing instead of being eval'd"
+  ],
+  "exemplar": {
+    "noncompliant": "eval(Meta.parse(user_code))",
+    "compliant": "parse(Int, user_input)",
+    "explanation": "Julia backtick commands escape interpolation safely, so the real footguns are eval(Meta.parse(...))/include_string, which compile and run arbitrary code, and explicitly wrapping a shell (sh -c $x), which defeats the automatic escaping by making the interpolated value a shell script."
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "description": "Peephole \u2014 born-secure enforcement. PreToolUse gates insecure writes before they land; SessionStart/UserPromptSubmit inject the security ladder and CWE context; PostToolUse logs and retro-scans; Stop enforces the negative-test gate.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "if": "Bash(git commit:*)",
+            "asyncRewake": true,
+            "rewakeMessage": "Peephole pre-ship review of your commit \u2014 address or acknowledge the findings below, then continue.",
+            "rewakeSummary": "Commit contains security findings",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "if": "Bash(git push:*)",
+            "asyncRewake": true,
+            "rewakeMessage": "Peephole pre-ship review of pushed commits \u2014 address or acknowledge the findings below, then continue.",
+            "rewakeSummary": "Pushed commit contains security findings",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "ConfigChange": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

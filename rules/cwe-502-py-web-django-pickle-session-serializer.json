@@ -1,0 +1,33 @@
+{
+  "cwe_id": "CWE-502",
+  "name": "Django pickle session serializer",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "session",
+    "settings",
+    "django",
+    "serializer",
+    "cache",
+    "config"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "SESSION_SERIALIZER\\s*=\\s*[\"'][^\"']*PickleSerializer"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "\\bPickleSerializer\\b"
+    }
+  ],
+  "attack_scenario": "An attacker who can write a crafted pickle into the session store (or forge one after a key leak) triggers __reduce__ on deserialization, running os.system('id')-style code in the web process.",
+  "negative_test_hint": ["write a crafted session payload whose pickle executes \"os.system('id')\" via __reduce__ and assert the session backend refuses to unpickle it and no command runs"],
+  "exemplar": {
+    "noncompliant": "SESSION_SERIALIZER = \"django.contrib.sessions.serializers.PickleSerializer\"",
+    "compliant": "SESSION_SERIALIZER = \"django.contrib.sessions.serializers.JSONSerializer\"",
+    "explanation": "Setting SESSION_SERIALIZER to PickleSerializer makes Django unpickle session payloads. If an attacker can influence stored session data (via a separate SECRET_KEY leak, a writable cache/DB session backend, or any object-injection foothold) the unpickle executes attacker gadgets. This is distinct from the generic pickle.loads detector: it targets the Django session-backend config knob. Django ships JSONSerializer as the default precisely to remove this RCE surface; PickleSerializer was removed entirely in Django 5.1."
+  }
+}

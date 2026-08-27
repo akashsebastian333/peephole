@@ -1,0 +1,31 @@
+{
+  "cwe_id": "CWE-798",
+  "name": "Git/SCM URL with embedded plaintext credentials",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "jenkinsfile",
+    "git checkout",
+    "scm",
+    "clone",
+    "git url",
+    "repository url",
+    "pipeline"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?i)\\b(?:https?|git)://[A-Za-z0-9._%+-]+:[^@/\\s\"']+@[A-Za-z0-9.-]+"
+    }
+  ],
+  "attack_scenario": "the embedded PAT is captured from a shared or archived console log (or from `ps`/`.git/config` on the agent) and reused to push malicious commits or exfiltrate every repo the token can reach",
+  "negative_test_hint": [
+    "configure a pipeline checkout with \"https://user:hunter2@github.com/org/repo.git\" and assert the credential scan rejects the embedded secret instead of cloning with it"
+  ],
+  "exemplar": {
+    "noncompliant": "git url: 'https://ci-bot:s3cr3tPAT@github.com/org/repo.git'",
+    "compliant": "git url: 'https://github.com/org/repo.git', credentialsId: 'gh-token'",
+    "explanation": "A userinfo (user:password@) segment in a clone/checkout URL hardcodes a token or password into the pipeline and leaks it into build logs, `git remote -v`, and process listings. Jenkins provides credentialsId bindings precisely so the secret never appears in the URL or the script."
+  }
+}

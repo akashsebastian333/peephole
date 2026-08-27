@@ -1,0 +1,32 @@
+{
+  "cwe_id": "CWE-269",
+  "name": "compose-docker-socket-mount",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "editing docker-compose.yml",
+    "adding a volume to a service",
+    "mounting the docker socket into a container"
+  ],
+  "patterns": [
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*-\\s*[\"']?(/var)?/run/docker\\.sock"
+    },
+    {
+      "lang": "yaml",
+      "confidence": "high",
+      "re": "(?im)^\\s*source\\s*:\\s*[\"']?(/var)?/run/docker\\.sock"
+    }
+  ],
+  "attack_scenario": "A compromised app with docker.sock mounted runs 'docker run -v /:/host --privileged' to mount and write the host filesystem, adding a root SSH key or cron job to take over the host.",
+  "negative_test_hint": [
+    "from inside the container run \"docker run -v /:/host --privileged alpine\" and assert it fails because the Docker socket is not mounted"
+  ],
+  "exemplar": {
+    "noncompliant": "services:\n  app:\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock",
+    "compliant": "services:\n  app:\n    volumes:\n      - ./app:/usr/src/app",
+    "explanation": "The Docker daemon socket is root-equivalent on the host: anything with access to it can create privileged containers, bind-mount the host root, and read every other container's secrets. Read-only (:ro) does not help because the API still allows container creation, so the socket must never be mounted into an application container."
+  }
+}

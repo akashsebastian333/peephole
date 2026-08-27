@@ -1,0 +1,29 @@
+{
+  "cwe_id": "CWE-863",
+  "name": "Spring Security @PreAuthorize disabled with permitAll/true",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "@preauthorize",
+    "@postauthorize",
+    "method security",
+    "authorization",
+    "access control",
+    "secured endpoint",
+    "role check"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "medium",
+      "re": "@(?:Pre|Post)Authorize\\s*\\(\\s*\"(?:permitAll(?:\\(\\))?|true|isAnonymous\\(\\))\""
+    }
+  ],
+  "attack_scenario": "Any unauthenticated or low-privilege user calls the state-changing endpoint (e.g. delete/admin action); the always-true expression grants access.",
+  "negative_test_hint": ["send an unauthenticated DELETE request to \"/users/1\" and assert the endpoint answers 401 or 403 rather than performing the deletion"],
+  "exemplar": {
+    "noncompliant": "@PreAuthorize(\"permitAll\")\n@DeleteMapping(\"/users/{id}\")\npublic void delete(@PathVariable Long id) { ... }",
+    "compliant": "@PreAuthorize(\"hasRole('ADMIN')\")\n@DeleteMapping(\"/users/{id}\")\npublic void delete(@PathVariable Long id) { ... }",
+    "explanation": "@PreAuthorize(\"permitAll\") / \"true\" / \"isAnonymous()\" evaluates to always-allow, so a method that looks protected is open to everyone. Developers often add it thinking it restricts access. Sensitive methods need a real authority/role expression. isAuthenticated(), hasAuthority(...), and SpEL principal checks do not match."
+  }
+}

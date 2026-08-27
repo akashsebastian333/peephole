@@ -1,0 +1,44 @@
+{
+  "cwe_id": "CWE-79",
+  "name": "WebView loadUrl/evaluateJavascript with string concatenation",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "webview",
+    "loadUrl",
+    "evaluateJavascript",
+    "loadData",
+    "javascript injection"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?i)loadUrl\\s*\\(\\s*\"javascript:[^\"]*\"\\s*\\+"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?i)loadUrl\\s*\\(\\s*\"javascript:[^\"]*\\$\\{"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "(?i)evaluateJavascript\\s*\\(\\s*\"[^\"]*\"\\s*\\+"
+    },
+    {
+      "lang": "java",
+      "confidence": "medium",
+      "re": "(?i)loadData\\s*\\(\\s*\"[^\"]*\"\\s*\\+"
+    }
+  ],
+  "attack_scenario": "userName is set to `');stealToken();//`; the concatenated javascript: URL breaks out of the string literal and runs attacker JS in the app's WebView origin, reaching any exposed bridge.",
+  "negative_test_hint": [
+    "set userName to \"');stealToken();//\" and assert it reaches the WebView as an inert JSON-encoded value, never as executable script"
+  ],
+  "exemplar": {
+    "noncompliant": "webView.loadUrl(\"javascript:showProfile('\" + userName + \"')\")\nwebView.evaluateJavascript(\"render(\" + jsonFromServer + \")\", null)",
+    "compliant": "// Pass data as a JSON value argument, never string-built into the script body\nval payload = JSONObject().put(\"name\", userName).toString()\nwebView.evaluateJavascript(\"render\", null) // invoke a fixed JS function that reads a pre-set, JSON-encoded value",
+    "explanation": "Concatenating untrusted data into a javascript: URL or an evaluateJavascript/loadData string injects it into a script context inside the WebView, giving DOM-based XSS in the app's own origin; if a native bridge exists this escalates to native calls. Passing data as a JSON-encoded value to a fixed JS function keeps user input out of the script body (CWE-79 / OWASP MASVS-CODE)."
+  }
+}

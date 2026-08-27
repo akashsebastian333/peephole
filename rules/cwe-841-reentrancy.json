@@ -1,0 +1,20 @@
+{
+  "cwe_id": "CWE-841",
+  "name": "Reentrancy (Solidity)",
+  "owasp": ["A04"],
+  "rank": 0,
+  "kev": false,
+  "severity": "critical",
+  "task_triggers": ["withdraw", "transfer", "refund", "payable", "reentrancy", "balance", "ether", "smart contract", "solidity"],
+  "patterns": [
+    {"lang": "solidity", "confidence": "medium", "re": "\\.call\\s*\\{[^}]*value\\s*:"},
+    {"lang": "solidity", "confidence": "high", "re": "\\.call\\.value\\s*\\("}
+  ],
+  "attack_scenario": "a low-level call forwarding Ether hands control to the recipient, whose fallback re-enters withdraw() before the caller zeroes the balance, so the balance check passes repeatedly and the contract is drained in one transaction (SWC-107, The DAO)",
+  "negative_test_hint": ["deploy an attacker contract whose \"receive() re-enters withdraw\" and assert the second entry reverts and the balance cannot be drained twice"],
+  "exemplar": {
+    "noncompliant": "function withdraw() external {\n  (bool ok,) = msg.sender.call{value: balances[msg.sender]}(\"\");\n  require(ok);\n  balances[msg.sender] = 0;\n}",
+    "compliant": "function withdraw() external nonReentrant {\n  uint amt = balances[msg.sender];\n  balances[msg.sender] = 0;\n  payable(msg.sender).transfer(amt);\n}",
+    "explanation": "zero the balance BEFORE sending (checks-effects-interactions) and add a nonReentrant guard; a re-entering fallback then sees a zeroed balance and cannot double-withdraw"
+  }
+}

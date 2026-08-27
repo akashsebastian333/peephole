@@ -1,0 +1,43 @@
+{
+  "cwe_id": "CWE-521",
+  "name": "CREATE USER with empty or weak password",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "CREATE USER / CREATE ROLE",
+    "database account provisioning",
+    "seed/migration scripts",
+    "IDENTIFIED BY clause"
+  ],
+  "patterns": [
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)create\\s+(?:user|role)\\b[^;]*identified\\s+by\\s+''"
+    },
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)create\\s+(?:user|role)\\b[^;]*password\\s+''"
+    },
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)identified\\s+by\\s+'(?:password|admin|123456|root|test|changeme|secret|welcome|passw0rd)'"
+    },
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)password\\s+'(?:password|admin|123456|root|test|changeme|secret|welcome|passw0rd)'"
+    }
+  ],
+  "attack_scenario": "A network-reachable DB has an account created IDENTIFIED BY 'password'; an automated scanner brute-forces it in one guess and gets an authenticated foothold, from which it enumerates schemas and pivots.",
+  "negative_test_hint": [
+    "run \"CREATE USER 'app'@'%' IDENTIFIED BY 'password';\" and assert it is rejected in favor of a generated secret and a restricted host"
+  ],
+  "exemplar": {
+    "noncompliant": "CREATE USER 'app'@'%' IDENTIFIED BY 'password';",
+    "compliant": "CREATE USER 'app'@'10.0.0.5' IDENTIFIED BY '${DB_APP_SECRET}';",
+    "explanation": "CWE-521/CWE-258: accounts created with an empty string or a top-list password (password, admin, 123456, changeme...) are trivially guessable and are the first thing credential-stuffing and default-credential scanners try. Committed .sql seed scripts also leak the literal into version control."
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "cwe_id": "CWE-89",
+  "name": "Dynamic SQL built by string concatenation",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "EXECUTE IMMEDIATE (Oracle/PLpgSQL)",
+    "sp_executesql / EXEC() (SQL Server)",
+    "stored procedure building dynamic SQL",
+    "concatenating variables into a query"
+  ],
+  "patterns": [
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)execute\\s+immediate\\b[^;]*\\|\\|"
+    },
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)execute\\s+immediate\\b[^;]*'\\s*\\+"
+    },
+    {
+      "lang": "sql",
+      "confidence": "high",
+      "re": "(?i)\\bexec(?:ute)?\\s*\\(\\s*'[^']*'\\s*\\+"
+    },
+    {
+      "lang": "sql",
+      "confidence": "medium",
+      "re": "(?i)\\bexec(?:ute)?\\s*\\(\\s*@\\w+\\s*\\+"
+    },
+    {
+      "lang": "sql",
+      "confidence": "medium",
+      "re": "(?i)sp_executesql\\s+n?'[^']*'\\s*\\+"
+    }
+  ],
+  "attack_scenario": "p_name is set to `x'' OR ''1''=''1' (or `'; DROP TABLE users; --`); the concatenated statement becomes attacker-controlled SQL that deletes or dumps arbitrary rows.",
+  "negative_test_hint": [
+    "set p_name to \"'; DROP TABLE users; --\" and assert the users table survives because the value is bound via USING, not concatenated into the statement"
+  ],
+  "exemplar": {
+    "noncompliant": "EXECUTE IMMEDIATE 'DELETE FROM users WHERE name = ''' || p_name || '''';",
+    "compliant": "EXECUTE IMMEDIATE 'DELETE FROM users WHERE name = :1' USING p_name;",
+    "explanation": "CWE-89: concatenating variables into an EXECUTE IMMEDIATE / EXEC() / sp_executesql string (with || or +) splices caller input into the query text, so any quote-breaking value alters the statement. OWASP requires parameterized/bind execution (USING binds, sp_executesql @params) instead of concatenation."
+  }
+}

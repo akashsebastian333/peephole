@@ -1,0 +1,30 @@
+{
+  "cwe_id": "CWE-502",
+  "name": "mlflow load_model of untrusted run/registry artifact",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "mlflow",
+    "load_model",
+    "pyfunc",
+    "model registry",
+    "runs:/",
+    "flavor"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "mlflow\\.[a-z_]+\\.load_model\\s*\\("
+    }
+  ],
+  "attack_scenario": "An attacker with write access to a staging model version replaces the pickled artifact; the next mlflow.pyfunc.load_model on that stage deserializes and runs the payload.",
+  "negative_test_hint": [
+    "call load_model with \"models:/attacker-controlled-model/Staging\" and assert the artifact is refused unless it comes from a signed, vetted source"
+  ],
+  "exemplar": {
+    "noncompliant": "model = mlflow.pyfunc.load_model(\"runs:/abc123/model\")",
+    "compliant": "model = load_verified_model(vetted_local_path)",
+    "explanation": "mlflow.*.load_model reads the MLmodel spec and unpickles the flavor's artifact (often a pickle/cloudpickle), so an attacker-writable run or registry stage yields RCE on load. Restrict to signed, access-controlled artifacts."
+  }
+}

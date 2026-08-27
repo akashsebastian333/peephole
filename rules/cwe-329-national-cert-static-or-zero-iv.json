@@ -1,0 +1,37 @@
+{
+  "cwe_id": "CWE-329",
+  "name": "Static or zero IV supplied to CBC/CTR cipher (IvParameterSpec)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "encrypt",
+    "cipher",
+    "aes",
+    "iv",
+    "IvParameterSpec",
+    "Cipher.getInstance",
+    "CBC",
+    "symmetric encryption"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "new\\s+IvParameterSpec\\s*\\(\\s*new\\s+byte\\s*\\["
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "new\\s+IvParameterSpec\\s*\\(\\s*\"[^\"]*\"\\s*\\.getBytes"
+    }
+  ],
+  "attack_scenario": "With a fixed IV, encrypting the same plaintext prefix always yields the same ciphertext prefix, so an attacker performing a chosen/known-plaintext or dictionary attack can detect repeated login tokens or fields, and in CTR/GCM a reused IV+key leaks the keystream, enabling plaintext recovery by XORing two ciphertexts.",
+  "negative_test_hint": [
+    "encrypt the same plaintext twice using a constant IV like \"new IvParameterSpec(new byte[16])\" and assert the code refuses a fixed IV so the two ciphertexts differ"
+  ],
+  "exemplar": {
+    "noncompliant": "cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(new byte[16]));",
+    "compliant": "byte[] iv = new byte[16];\nnew SecureRandom().nextBytes(iv);\ncipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(iv));",
+    "explanation": "CWE-329 (Generation of Predictable IV with CBC Mode) and BSI TR-02102-1 require a fresh, unpredictable IV per encryption; Egele et al. 'An Empirical Study of Cryptographic Misuse in Android Applications' (ACM CCS 2013) found constant IVs to be one of the most common crypto-API misuses. A zero IV (new IvParameterSpec(new byte[16])) or an IV derived from a constant String literal makes CBC/CTR deterministic; filling the IV from SecureRandom before every encryption restores semantic security."
+  }
+}

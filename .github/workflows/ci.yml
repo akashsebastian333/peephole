@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: false
+
+      - name: gofmt
+        run: test -z "$(gofmt -l *.go cmd internal)" || (gofmt -l *.go cmd internal && echo "run gofmt -w" && exit 1)
+
+      - name: generated KB is fresh
+        run: go run ./cmd/kbgen --check
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test ./...
+
+      - name: go test (race)
+        run: go test -race ./...
+
+      - name: rules are valid JSON
+        run: |
+          for f in rules/*.json taint/*.json; do python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f"; done
+
+      - name: cross-compile all targets
+        run: |
+          for t in darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64; do
+            os=${t%/*}; arch=${t#*/}
+            CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath -ldflags="-s -w" -o /dev/null .
+          done

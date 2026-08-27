@@ -1,0 +1,28 @@
+{
+  "cwe_id": "CWE-327",
+  "name": "Weak/NULL/EXPORT cipher suites in TLS config",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "ssl_ciphers",
+    "SSLCipherSuite",
+    "tls cipher hardening",
+    "cipher suite config"
+  ],
+  "patterns": [
+    {
+      "lang": "webserver",
+      "confidence": "high",
+      "re": "(?im)^\\s*(ssl_ciphers|SSLCipherSuite)\\b[^;#\\n]*[:\\s'\"](RC4|MD5|EXPORT|aNULL|eNULL|ADH|DES-CBC3-SHA|RC2|SEED|NULL-)\\b"
+    }
+  ],
+  "attack_scenario": "Attacker negotiates an EXPORT or anonymous suite and either brute-forces the 40-bit key (FREAK) or performs a full MITM because an aNULL suite skips server authentication entirely.",
+  "negative_test_hint": [
+    "offer only \"EXP-RC4-MD5\" in the TLS ClientHello and assert the server refuses the handshake rather than negotiating the weak suite"
+  ],
+  "exemplar": {
+    "noncompliant": "ssl_ciphers HIGH:RC4:MD5:EXPORT;",
+    "compliant": "ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:!aNULL:!MD5:!RC4';",
+    "explanation": "RC4 (biased keystream), MD5 MACs (collisions), EXPORT-grade suites (FREAK/Logjam), DES-CBC3 (SWEET32), and anonymous suites (aNULL/eNULL/ADH, no server authentication, so full MITM) are all cryptographically broken. A hardened cipher string restricted to modern AEAD suites with explicit exclusions leaves the attacker no weak suite to negotiate."
+  }
+}

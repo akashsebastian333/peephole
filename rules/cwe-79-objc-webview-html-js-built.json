@@ -1,0 +1,35 @@
+{
+  "cwe_id": "CWE-79",
+  "name": "WebView HTML/JS built by string interpolation (loadHTMLString / evaluateJavaScript)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "injecting data into a WKWebView or UIWebView",
+    "building HTML or JavaScript strings at runtime",
+    "calling evaluateJavaScript / loadHTMLString / stringByEvaluatingJavaScriptFromString"
+  ],
+  "patterns": [
+    {
+      "lang": "objc",
+      "confidence": "high",
+      "re": "(?is)(loadHTMLString|stringByEvaluatingJavaScriptFromString|evaluateJavaScript):\\s*\\[[^;]*\\bstringWithFormat:"
+    },
+    {
+      "lang": "objc",
+      "confidence": "high",
+      "re": "(?is)(loadHTMLString|stringByEvaluatingJavaScriptFromString|evaluateJavaScript):\\s*\\[[^;]*\\bstringByAppendingString"
+    },
+    {
+      "lang": "objc",
+      "confidence": "medium",
+      "re": "(?is)(loadHTMLString|stringByEvaluatingJavaScriptFromString|evaluateJavaScript):\\s*\\[[^;]*\\bstringByAppendingFormat"
+    }
+  ],
+  "attack_scenario": "An attacker supplies a value containing <script> or a breakout like '); maliciousCode(); //; the WebView executes it in the app's origin, letting the attacker read the DOM, call exposed native bridges, and exfiltrate session data or local files.",
+  "negative_test_hint": ["supply a comment containing \"'); alert(document.cookie); //\" and assert the WebView does not execute it, because data crosses the bridge as JSON rather than interpolated code"],
+  "exemplar": {
+    "noncompliant": "[webView loadHTMLString:[NSString stringWithFormat:@\"<h1>Hi %@</h1>\", userName] baseURL:nil];\n\n[webView evaluateJavaScript:[@\"showComment('\" stringByAppendingString:\n                [userComment stringByAppendingString:@\"')\"]] completionHandler:nil];",
+    "compliant": "// Load a static bundled template; pass data across the JS bridge as JSON\n[webView loadHTMLString:bundledTemplateHTML baseURL:bundleURL];\n\nNSData *j = [NSJSONSerialization dataWithJSONObject:@{@\"c\": userComment} options:0 error:nil];\nNSString *arg = [[NSString alloc] initWithData:j encoding:NSUTF8StringEncoding];\n[webView callAsyncJavaScript:@\"showComment(payload.c)\"\n                   arguments:@{@\"payload\": arg}\n                   inFrame:nil inContentWorld:WKContentWorld.pageWorld\n           completionHandler:nil];",
+    "explanation": "Interpolating untrusted values into an HTML or JavaScript string with stringWithFormat/stringByAppendingString and handing it to a WebView is DOM-based XSS (OWASP MSTG-PLATFORM-2, CWE-79). The injected script runs in the app's origin, where it can read the DOM, call exposed native bridges, and exfiltrate session data or local files; loading static templates and passing data across the JS bridge as JSON keeps user input out of executable code."
+  }
+}

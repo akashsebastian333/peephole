@@ -1,0 +1,37 @@
+{
+  "cwe_id": "CWE-347",
+  "name": "jjwt parseClaimsJwt accepts unsigned JWTs",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "jwt",
+    "jjwt",
+    "Jwts.parser",
+    "parseClaimsJwt",
+    "token",
+    "auth",
+    "verify token",
+    "bearer"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.parseClaimsJwt\\s*\\("
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.parsePlaintextJwt\\s*\\("
+    }
+  ],
+  "attack_scenario": "Attacker crafts a token with header {\"alg\":\"none\"} and body {\"role\":\"admin\"} and no signature; parseClaimsJwt parses it without any verification, so the server trusts the forged admin claims.",
+  "negative_test_hint": [
+    "submit the unsigned token \"eyJhbGciOiJub25lIn0.eyJyb2xlIjoiYWRtaW4ifQ.\" and assert parsing throws instead of trusting the forged admin claim"
+  ],
+  "exemplar": {
+    "noncompliant": "Jwt<Header, Claims> jwt = Jwts.parser().setSigningKey(key).parseClaimsJwt(token);",
+    "compliant": "Jws<Claims> jws = Jwts.parser().setSigningKey(key).parseClaimsJws(token);",
+    "explanation": "In jjwt the one-letter difference is a total auth bypass: parseClaimsJwt and parsePlaintextJwt parse unsecured (alg=none) tokens and ignore any signing key set on the parser, so forged claims are trusted. parseClaimsJws and parseSignedClaims enforce signature verification and reject unsigned or wrongly-signed tokens."
+  }
+}

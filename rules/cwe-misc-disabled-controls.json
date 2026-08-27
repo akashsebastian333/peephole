@@ -1,0 +1,25 @@
+{
+  "cwe_id": "CWE-1188",
+  "name": "Disabled Security Control",
+  "owasp": ["A05"],
+  "rank": 0,
+  "kev": false,
+  "severity": "high",
+  "task_triggers": ["tls", "ssl", "cors", "csrf", "debug", "verify", "certificate", "https"],
+  "patterns": [
+    {"lang": "", "confidence": "high", "re": "\\bverify\\s*=\\s*False\\b|rejectUnauthorized\\s*:\\s*false|InsecureSkipVerify\\s*:\\s*true|NODE_TLS_REJECT_UNAUTHORIZED\\s*=\\s*[\"']?0|ssl\\._create_unverified_context|check_hostname\\s*=\\s*False", "reject_re": "(?m:^\\s*(?://|#|\\*|<!--|;))|(?i:^\\s*(?:const|var|let|final|static)\\s+\\w*(?:msg|message|err|error|warn|text|hint|desc|label|note|reason|advice)\\w*\\s)"},
+    {"lang": "python", "confidence": "high", "re": "@csrf_exempt\\b|permission_classes\\s*=\\s*\\[\\s*AllowAny|CORS_ALLOW_ALL_ORIGINS\\s*=\\s*True|CORS_ORIGIN_ALLOW_ALL\\s*=\\s*True|ALLOWED_HOSTS\\s*=\\s*\\[\\s*[\"']\\*[\"']\\s*\\]"},
+    {"lang": "python", "confidence": "medium", "re": "\\bapp\\.run\\([^)]*debug\\s*=\\s*True|\\bDEBUG\\s*=\\s*True\\b|allow_origins\\s*=\\s*\\[\\s*[\"']\\*[\"']\\s*\\]"},
+    {"lang": "javascript", "confidence": "high", "re": "cors\\(\\s*\\{[^}]*origin\\s*:\\s*[\"']\\*[\"'][^}]*credentials\\s*:\\s*true"},
+    {"lang": "java", "confidence": "high", "re": "\\.csrf\\(\\s*\\)\\s*\\.disable\\(\\)|csrf\\(\\s*[\\w]+\\s*->\\s*[\\w.]*\\.disable\\(\\)\\)"},
+    {"lang": "", "confidence": "high", "re": "\\bStrictHostKeyChecking[= ]+no\\b|GIT_SSL_NO_VERIFY|\\bcurl\\b[^\\n|]*\\s-[a-zA-Z]*k\\b|\\bcurl\\b[^\\n|]*--insecure\\b|\\bwget\\b[^\\n|]*--no-check-certificate"},
+    {"lang": "", "confidence": "high", "re": "(?i)(?:introspection|graphiql|playground)\\s*:\\s*true"}
+  ],
+  "attack_scenario": "the code disables a protection the framework provides by default (TLS verification, CSRF, CORS origin restriction), reopening the exact class the control existed to close",
+  "negative_test_hint": ["point the client at a host presenting a \"self-signed attacker certificate\" and assert the connection is refused"],
+  "exemplar": {
+    "noncompliant": "requests.get(url, verify=False)",
+    "compliant": "requests.get(url)   # verify defaults to True; add the CA to the trust store for self-signed dev certs",
+    "explanation": "leave TLS verification on; disabling it allows a man-in-the-middle to impersonate the server"
+  }
+}

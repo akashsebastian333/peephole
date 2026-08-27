@@ -1,0 +1,50 @@
+{
+  "cwe_id": "CWE-78",
+  "name": "OS Command Injection (tainted variable into shell sink)",
+  "severity": "critical",
+  "owasp": [
+    "A03"
+  ],
+  "kev": false,
+  "mode": "arg",
+  "triggers": [
+    "user",
+    "dyn"
+  ],
+  "confidence": "high",
+  "sinks": [
+    {
+      "lang": "python",
+      "re": "os\\.system\\s*\\(\\s*([A-Za-z_]\\w*)\\s*\\)"
+    },
+    {
+      "lang": "python",
+      "re": "os\\.popen\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
+    },
+    {
+      "lang": "python",
+      "re": "create_subprocess_shell\\s*\\(\\s*([A-Za-z_]\\w*)\\s*[,)]"
+    },
+    {
+      "lang": "javascript",
+      "re": "child_process\\.exec\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]"
+    },
+    {
+      "lang": "python",
+      "re": "subprocess\\.(?:run|call|check_output|check_call|Popen)\\s*\\(\\s*([A-Za-z_]\\w*)\\s*,[^)\\n]*shell\\s*=\\s*True"
+    },
+    {
+      "lang": "go",
+      "re": "exec\\.Command\\(\\s*[\"'](?:sh|bash|/bin/sh|/bin/bash)[\"']\\s*,\\s*[\"']-c[\"']\\s*,\\s*([A-Za-z_]\\w*)"
+    },
+    {
+      "lang": "rust",
+      "re": "\\.arg\\(\\s*[\"']-c[\"']\\s*\\)\\s*\\.arg\\(\\s*([A-Za-z_]\\w*)"
+    }
+  ],
+  "exemplar": {
+    "noncompliant": "host = request.args.get('host')\ncmd = \"ping \" + host\nos.system(cmd)",
+    "compliant": "host = request.args.get('host')\nsubprocess.run([\"ping\", \"-c\", \"1\", host], shell=False)",
+    "explanation": "never build a shell string from input; pass an argv list with shell=False"
+  }
+}

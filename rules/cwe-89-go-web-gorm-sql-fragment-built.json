@@ -1,0 +1,39 @@
+{
+  "cwe_id": "CWE-89",
+  "name": "GORM SQL fragment built with Sprintf or concatenation",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "gorm",
+    "query",
+    "database",
+    "db",
+    "search",
+    "filter",
+    "sort",
+    "order by",
+    "where",
+    "sql"
+  ],
+  "patterns": [
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "\\.(?:Raw|Where|Order|Group|Having|Joins|Pluck|Not|Or|Select)\\(\\s*fmt\\.Sprintf\\("
+    },
+    {
+      "lang": "go",
+      "confidence": "high",
+      "re": "\\.(?:Raw|Where|Order|Joins|Group|Having)\\(\\s*\"[^\"]*\"\\s*\\+"
+    }
+  ],
+  "attack_scenario": "name = ' OR '1'='1'-- turns the WHERE into an always-true clause dumping every row; a payload in an Order() column can chain a UNION SELECT to exfiltrate other tables.",
+  "negative_test_hint": [
+    "submit name \"' OR '1'='1'--\" and assert the query returns at most one row or errors instead of dumping the whole table"
+  ],
+  "exemplar": {
+    "noncompliant": "db.Where(fmt.Sprintf(\"name = '%s'\", name)).Find(&users)",
+    "compliant": "db.Where(\"name = ?\", name).Find(&users)",
+    "explanation": "GORM's Raw, Where, Order, Group, Having, Joins, Pluck, Not and Or accept SQL fragments; building them with fmt.Sprintf or string '+' concatenation of user input is direct SQL injection, exactly as with database/sql. GORM's '?' placeholders and named binds are the safe form. Order/Group columns that must be dynamic should be checked against an allowlist, not interpolated."
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "cwe_id": "CWE-614",
+  "name": "Session Cookie Flags Explicitly Disabled (Secure/HttpOnly)",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "cookie",
+    "session",
+    "setcookie",
+    "servlet",
+    "jsp",
+    "httponly",
+    "secure",
+    "login"
+  ],
+  "patterns": [
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.setSecure\\(\\s*false\\s*\\)"
+    },
+    {
+      "lang": "java",
+      "confidence": "high",
+      "re": "\\.setHttpOnly\\(\\s*false\\s*\\)"
+    }
+  ],
+  "attack_scenario": "Without HttpOnly, any reflected/stored XSS reads document.cookie and exfiltrates the session id; without Secure, the cookie rides over a plain-HTTP request (SSL-strip or a mixed-content asset) and is sniffed on the wire, letting the attacker hijack the session.",
+  "negative_test_hint": ["after login, attempt to read the session id via \"document.cookie\" and assert the cookie is unreadable and its Set-Cookie carries HttpOnly and Secure"],
+  "exemplar": {
+    "noncompliant": "Cookie c = new Cookie(\"SID\", sessionId);\nc.setHttpOnly(false);\nresponse.addCookie(c);",
+    "compliant": "Cookie c = new Cookie(\"SID\", sessionId);\nc.setHttpOnly(true);\nc.setSecure(true);\nresponse.addCookie(c);",
+    "explanation": "IPA 'Anzen na Web Site no Tsukurikata' (Secure/HttpOnly guidance) and the KISA Java secure-coding guide both require session cookies to carry Secure (HTTPS-only) and HttpOnly (no JS access). Calling setSecure(false)/setHttpOnly(false) on a servlet Cookie strips those protections explicitly; setting both to true keeps the session id off unencrypted channels and away from scripts."
+  }
+}

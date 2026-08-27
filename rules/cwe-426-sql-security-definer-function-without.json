@@ -1,0 +1,28 @@
+{
+  "cwe_id": "CWE-426",
+  "name": "SECURITY DEFINER function without pinned search_path",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "CREATE FUNCTION / PROCEDURE",
+    "PostgreSQL definer-rights routine",
+    "privileged stored procedure"
+  ],
+  "patterns": [
+    {
+      "lang": "sql",
+      "confidence": "medium",
+      "re": "(?i)security\\s+definer",
+      "reject_re": "(?i)set\\s+search_path"
+    }
+  ],
+  "attack_scenario": "Attacker with ordinary rights creates a malicious function named like one the definer body calls, in a schema earlier on the unpinned search_path; when a victim invokes the definer routine, the attacker's code runs as the powerful owner.",
+  "negative_test_hint": [
+    "create a function with \"SECURITY DEFINER\" and no SET search_path clause and assert it is flagged, or rewritten with search_path pinned to pg_catalog"
+  ],
+  "exemplar": {
+    "noncompliant": "CREATE FUNCTION admin_reset() RETURNS void LANGUAGE sql SECURITY DEFINER AS $$ UPDATE users SET locked = false $$;",
+    "compliant": "CREATE FUNCTION admin_reset() RETURNS void LANGUAGE sql SECURITY INVOKER AS $$ UPDATE users SET locked = false $$;",
+    "explanation": "PostgreSQL runs a SECURITY DEFINER routine with the owner's (often superuser) rights; without a pinned search_path a caller can shadow built-in functions or tables and have the privileged body execute their objects (the CVE-2018-1058 class). Pinning search_path to pg_catalog (or using SECURITY INVOKER) makes the body resolve only the intended objects."
+  }
+}

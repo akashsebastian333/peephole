@@ -1,0 +1,45 @@
+{
+  "cwe_id": "CWE-79",
+  "name": "Rails XSS via html_safe/raw on Dynamic Content",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "view",
+    "erb",
+    "html",
+    "html_safe",
+    "raw",
+    "comment",
+    "bio",
+    "markdown",
+    "render",
+    "sanitize"
+  ],
+  "patterns": [
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "params\\[[^\\]]*\\]\\.html_safe|\\braw\\(?\\s*params\\b"
+    },
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "<%=\\s*raw\\s+[a-z_@][\\w.]*"
+    },
+    {
+      "lang": "ruby",
+      "confidence": "medium",
+      "re": "\\.html_safe\\b",
+      "reject_re": "[\"'][^\"']*[\"']\\.html_safe"
+    }
+  ],
+  "attack_scenario": "Attacker stores bio = <img src=x onerror=alert(document.cookie)>; html_safe renders it live, executing script under the site origin and stealing sessions.",
+  "negative_test_hint": [
+    "store a comment body of \"<img src=x onerror=alert(1)>\" and assert the rendered page escapes or sanitizes it instead of executing the handler"
+  ],
+  "exemplar": {
+    "noncompliant": "<%= raw params[:note] %>\n<%= comment.body.html_safe %>",
+    "compliant": "<%= sanitize(comment.body) %>\n<%= comment.body %>",
+    "explanation": "html_safe and raw mark a string as trusted and bypass ERB's automatic output escaping, so user-controlled data rendered through them injects live markup into every viewer's page. Letting ERB escape by default, or running untrusted HTML through sanitize with an allowlist, renders it as inert text."
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "cwe_id": "CWE-295",
+  "name": "TLS certificate validation disabled / accept-any-cert",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "implementing NSURLSession/NSURLConnection auth challenges",
+    "configuring SSL for CFStream / sockets",
+    "debugging TLS handshake or self-signed cert errors"
+  ],
+  "patterns": [
+    {
+      "lang": "objc",
+      "confidence": "high",
+      "re": "(?i)kCFStreamSSLValidatesCertificateChain",
+      "reject_re": "(?i)kCFBooleanTrue"
+    },
+    {
+      "lang": "objc",
+      "confidence": "high",
+      "re": "(?i)setAllowsAnyHTTPSCertificate"
+    },
+    {
+      "lang": "objc",
+      "confidence": "high",
+      "re": "(?i)allowsAnyHTTPSCertificate:\\s*(YES|TRUE|true)"
+    }
+  ],
+  "attack_scenario": "An on-path attacker presents a self-signed or attacker-controlled certificate; because the chain is never validated, the app completes the handshake with the attacker, who then decrypts and modifies all 'HTTPS' traffic including credentials.",
+  "negative_test_hint": [
+    "present a self-signed certificate for \"attacker.example.com\" during the handshake and assert the challenge is cancelled instead of completing the connection"
+  ],
+  "exemplar": {
+    "noncompliant": "// Turn off chain validation to accept a self-signed cert\nNSDictionary *ssl = @{\n  (id)kCFStreamSSLValidatesCertificateChain: (id)kCFBooleanFalse\n};\n[stream setProperty:ssl forKey:(id)kCFStreamPropertySSLSettings];\n\n[NSURLRequest setAllowsAnyHTTPSCertificate:YES forHost:host];",
+    "compliant": "// Evaluate server trust; only proceed if it validates\n- (void)URLSession:(NSURLSession *)s\n didReceiveChallenge:(NSURLAuthenticationChallenge *)ch\n completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential *))done {\n    SecTrustRef trust = ch.protectionSpace.serverTrust;\n    CFErrorRef err = NULL;\n    if (trust && SecTrustEvaluateWithError(trust, &err)) {\n        done(NSURLSessionAuthChallengeUseCredential,\n             [NSURLCredential credentialForTrust:trust]);\n    } else {\n        done(NSURLSessionAuthChallengeCancelAuthenticationChallenge, nil);\n    }\n}",
+    "explanation": "Setting kCFStreamSSLValidatesCertificateChain to false or using the private setAllowsAnyHTTPSCertificate:YES turns off X.509 chain validation, so any certificate, including an on-path attacker's self-signed one, is accepted and the whole 'HTTPS' channel is open to MITM. Evaluating SecTrust and cancelling the challenge on failure keeps the connection pinned to a valid, trusted chain."
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "cwe_id": "CWE-470",
+  "name": "Rails Unsafe Reflection via constantize/send",
+  "rank": 0,
+  "kev": false,
+  "task_triggers": [
+    "controller",
+    "params",
+    "dispatch",
+    "handler",
+    "plugin",
+    "dynamic",
+    "constantize",
+    "send",
+    "polymorphic",
+    "type"
+  ],
+  "patterns": [
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "params\\[[^\\]]*\\]\\.(?:safe_)?constantize"
+    },
+    {
+      "lang": "ruby",
+      "confidence": "high",
+      "re": "\\.(?:public_send|send|__send__)\\(\\s*params\\["
+    },
+    {
+      "lang": "ruby",
+      "confidence": "medium",
+      "re": "\\.(?:safe_)?constantize\\b",
+      "reject_re": "[\"'][\\w:]+[\"']\\.(?:safe_)?constantize"
+    }
+  ],
+  "attack_scenario": "Attacker sets ?type=Kernel or method=destroy_all; the controller instantiates or calls a class/method it was never meant to, escalating to data loss or code execution.",
+  "negative_test_hint": [
+    "request the endpoint with type param \"Kernel\" and assert the controller rejects it instead of constantizing an arbitrary class"
+  ],
+  "exemplar": {
+    "noncompliant": "klass = params[:type].constantize\nrecord = klass.public_send(params[:method])",
+    "compliant": "ALLOWED = { \"post\" => Post, \"comment\" => Comment }\nklass = ALLOWED.fetch(params[:type]) { raise ActionController::BadRequest }",
+    "explanation": "constantize/safe_constantize resolve an arbitrary class name from user input and .send/public_send invoke an arbitrary method, letting an attacker reach classes and methods the developer never exposed \u2014 a direct path to RCE or auth bypass. Map user input through a fixed allowlist instead."
+  }
+}
