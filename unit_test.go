@@ -52,6 +52,29 @@ func TestPluginManifestDoesNotRedeclareAutoloadPaths(t *testing.T) {
 	}
 }
 
+func TestGrokMarketplaceIndex(t *testing.T) {
+	b, err := os.ReadFile(filepath.Join(".", ".grok-plugin", "marketplace.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m struct {
+		Plugins []struct {
+			Name    string `json:"name"`
+			Source  string `json:"source"`
+			Version string `json:"version"`
+		} `json:"plugins"`
+	}
+	if err := json.Unmarshal(b, &m); err != nil {
+		t.Fatal(err)
+	}
+	if len(m.Plugins) != 1 || m.Plugins[0].Name != "peephole" || m.Plugins[0].Source != "./" {
+		t.Fatalf("Grok marketplace must list peephole at ./ , got %+v", m.Plugins)
+	}
+	if m.Plugins[0].Version == "" {
+		t.Fatal("Grok marketplace plugin is missing version")
+	}
+}
+
 func TestLowAssurancePathDowngrade(t *testing.T) {
 	kb := loadKB()
 	code := `cur.execute(f"SELECT * FROM t WHERE id={x}")`

@@ -19,9 +19,9 @@
 
 Peephole is a **plugin for coding agents**. It shows the model the secure
 pattern as it works, then can **ask or deny before a file is saved**, so
-insecure code does not land. It installs on Claude Code, Gemini CLI, Codex,
-Cursor, OpenCode, Qwen Code, and Crush, and also at `git pre-commit` or as an
-MCP/LSP checker. Default mode is **`guided`**: you see the finding and decide.
+insecure code does not land. It installs on Claude Code, Grok Code, Gemini CLI,
+Codex, Cursor, OpenCode, Qwen Code, and Crush, and also at `git pre-commit` or
+as an MCP/LSP checker. Default mode is **`guided`**: you see the finding and decide.
 **`strict`** and **`hardened`** block high-confidence issues at write time.
 Every decision is recorded in a tamper-evident audit log, kept for 30 days.
 One Go binary — no Node, no Python, no third-party modules.
@@ -37,6 +37,15 @@ no extra `settings.json` to write.
 ```
 /plugin marketplace add akashsebastian333/peephole
 /plugin install peephole@peephole
+```
+
+**Grok Code** — same marketplace, then install with `--trust` so hooks run.
+Default mode is `guided`. Grok has no ask prompt: deny still blocks the write;
+ask is allow. Restart Grok once. There is no extra `settings.json` to write.
+
+```
+grok plugin marketplace add akashsebastian333/peephole
+grok plugin install peephole --trust
 ```
 
 **Gemini CLI, Codex, Cursor, OpenCode, Qwen Code, Crush** — drop-in hook or
@@ -68,13 +77,15 @@ allow, ask, or deny.
 | Path | Blocks before write? | Hosts |
 |---|---|---|
 | `peephole hook` | **Yes** (deny; ask is a prompt) | Claude Code |
+| `peephole hook` | **Yes** (deny; ask is allow) | Grok Code |
 | `peephole hook --exit2` | **Yes** (deny only) | Gemini CLI · Codex CLI · Qwen Code · Crush · Cursor |
 | OpenCode plugin | **Yes** | OpenCode |
 | `peephole scan --gate --staged` | At commit | Any git repo |
 | `peephole mcp` / `peephole lsp` | Advisory | MCP/LSP editors |
 
 Claude Code uses the JSON dialect (`permissionDecision`) without `--exit2`.
-Exit-2 hosts honor **deny** only; `ask` findings pass through. Details:
+Grok Code uses the same binary and also reads top-level `decision`; ask is
+allow. Exit-2 hosts honor **deny** only; `ask` findings pass through. Details:
 [integrations/README.md](integrations/README.md).
 
 ## Modes

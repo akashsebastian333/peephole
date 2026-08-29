@@ -38,12 +38,63 @@ type ToolInput struct {
 	} `json:"edits"`
 }
 
+func (e *Event) UnmarshalJSON(data []byte) error {
+	var raw map[string]json.RawMessage
+	if json.Unmarshal(data, &raw) != nil {
+		return nil
+	}
+	if _, ok := raw["hookEventName"]; ok {
+		grokDialect = true
+	}
+	if _, ok := raw["toolName"]; ok {
+		grokDialect = true
+	}
+	if _, ok := raw["toolInput"]; ok {
+		grokDialect = true
+	}
+	str := func(keys ...string) string {
+		for _, k := range keys {
+			if v, ok := raw[k]; ok {
+				var s string
+				if json.Unmarshal(v, &s) == nil && s != "" {
+					return s
+				}
+			}
+		}
+		return ""
+	}
+	rawMsg := func(keys ...string) json.RawMessage {
+		for _, k := range keys {
+			if v, ok := raw[k]; ok && len(v) > 0 && string(v) != "null" {
+				return v
+			}
+		}
+		return nil
+	}
+	e.HookEventName = str("hook_event_name", "hookEventName", "event")
+	e.Event = str("event")
+	e.ToolName = str("tool_name", "toolName")
+	e.ToolInput = rawMsg("tool_input", "toolInput")
+	e.ToolResponse = rawMsg("tool_response", "toolResult", "tool_result")
+	e.Prompt = str("prompt", "userPrompt")
+	e.Source = str("source", "startSource")
+	e.Cwd = str("cwd", "workspaceRoot")
+	e.FilePath = str("file_path", "filePath")
+	e.SessionID = str("session_id", "sessionId")
+	e.LastMessage = str("last_assistant_message", "lastAssistantMessage")
+	e.TopCommand = str("command")
+	return nil
+}
+
 func readEvent() Event {
 	var e Event
 	dec := json.NewDecoder(os.Stdin)
 	_ = dec.Decode(&e)
 	if e.HookEventName == "" {
 		e.HookEventName = e.Event
+	}
+	if os.Getenv("GROK_PLUGIN_ROOT") != "" || os.Getenv("GROK_HOOK_EVENT") != "" {
+		grokDialect = true
 	}
 	e.HookEventName = normalizeEvent(e.HookEventName)
 	e.ToolName = normalizeTool(e.ToolName)
@@ -70,10 +121,23 @@ var canonicalTools = map[string]string{
 	"replace_in_file": "Edit", "editor": "Edit", "edit_file": "Edit",
 	"bash": "Bash", "shell": "Bash", "run_shell_command": "Bash", "runshellcommand": "Bash",
 	"execute_command": "Bash", "executecommand": "Bash", "run_command": "Bash", "exec_command": "Bash",
+	"run_terminal_command": "Bash", "runterminalcommand": "Bash",
+	"search_replace": "Edit", "searchreplace": "Edit",
+}
+
+func foldName(s string) string {
+	s = strings.ToLower(s)
+	n := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] != '_' && s[i] != '-' {
+			n = append(n, s[i])
+		}
+	}
+	return string(n)
 }
 
 func normalizeEvent(name string) string {
-	if c, ok := canonicalEvents[strings.ToLower(name)]; ok {
+	if c, ok := canonicalEvents[foldName(name)]; ok {
 		return c
 	}
 	return name
@@ -84,6 +148,9 @@ func normalizeTool(name string) string {
 		return name
 	}
 	if c, ok := canonicalTools[strings.ToLower(name)]; ok {
+		return c
+	}
+	if c, ok := canonicalTools[foldName(name)]; ok {
 		return c
 	}
 	return name
@@ -155,6 +222,7 @@ func emitJSON(v any) {
 }
 
 var dialectExit2 bool
+var grokDialect bool
 
 func emitPreDecision(decision, reason string) {
 	if dialectExit2 {
@@ -169,23 +237,41 @@ func emitPreDecision(decision, reason string) {
 			select {}
 		}
 	}
-	emitJSON(map[string]any{"hookSpecificOutput": map[string]any{
+	out := map[string]any{"hookSpecificOutput": map[string]any{
 		"hookEventName":            "PreToolUse",
 		"permissionDecision":       decision,
 		"permissionDecisionReason": reason,
-	}})
+	}}
+	attachGrokDecision(out, decision, reason)
+	emitJSON(out)
 }
 
 func emitPreDecisionInput(decision, reason string, updatedInput json.RawMessage) {
 	if dialectExit2 {
 		emitPreDecision(decision, reason)
 	}
-	emitJSON(map[string]any{"hookSpecificOutput": map[string]any{
+	out := map[string]any{"hookSpecificOutput": map[string]any{
 		"hookEventName":            "PreToolUse",
 		"permissionDecision":       decision,
 		"permissionDecisionReason": reason,
 		"updatedInput":             updatedInput,
-	}})
+	}}
+	attachGrokDecision(out, decision, reason)
+	emitJSON(out)
+}
+
+func attachGrokDecision(out map[string]any, decision, reason string) {
+	if !grokDialect {
+		return
+	}
+	switch decision {
+	case "deny":
+		out["decision"] = "deny"
+		out["reason"] = reason
+	case "ask":
+		out["decision"] = "allow"
+		out["reason"] = reason
+	}
 }
 
 func setDialect(args []string) {

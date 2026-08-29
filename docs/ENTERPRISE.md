@@ -61,7 +61,14 @@ fleet path.
 /plugin install peephole@peephole
 ```
 
-Restart Claude Code once. Marketplace tracks the public repo; it is not a
+Grok Code (hooks stay off until trusted):
+
+```
+grok plugin marketplace add akashsebastian333/peephole
+grok plugin install peephole --trust
+```
+
+Restart Claude Code or Grok Code once. Marketplace tracks the public repo; it is not a
 version pin. For a pin, use path B or vendor the plugin directory.
 
 Do **not** set `allowManagedHooksOnly: true` on this path. That setting

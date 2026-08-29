@@ -14,6 +14,9 @@ saved, so they ship secure code.
   CLI, Codex, Cursor, OpenCode, Qwen Code, Crush, git pre-commit, MCP, and LSP.
   Crush stdin `event` is accepted (official Crush payload; not only
   `hook_event_name`).
+- Grok Code marketplace plugin: `grok plugin marketplace add
+  akashsebastian333/peephole` then `grok plugin install peephole --trust`.
+  Deny blocks at PreToolUse; Grok has no ask prompt.
 - Write-time presence scan plus Python/JS/Go/Rust cross-line taint (SQLi,
   command injection, eval/exec, XSS, pickle/yaml, path traversal, secrets, weak
   crypto, SSTI, JWT verify-off, SSRF, exfil).

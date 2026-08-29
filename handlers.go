@@ -152,7 +152,8 @@ func handlePreToolUse(e Event, kb *KB) {
 		emitPreDecision("deny", provenance+" "+why+". This is non-waivable self-protection.")
 	}
 
-	if !writeTools[e.ToolName] && e.ToolName != "Bash" && !strings.HasPrefix(e.ToolName, "mcp__") {
+	mcpish := strings.HasPrefix(e.ToolName, "mcp__") || strings.Contains(e.ToolName, "__")
+	if !writeTools[e.ToolName] && e.ToolName != "Bash" && !mcpish {
 		passthrough("")
 	}
 
@@ -167,7 +168,7 @@ func handlePreToolUse(e Event, kb *KB) {
 		handleWriteFamily(e, kb, mode, ti, pol)
 	case e.ToolName == "Bash":
 		handleBash(e, kb, mode, ti, pol)
-	case strings.HasPrefix(e.ToolName, "mcp__"):
+	case mcpish:
 		handleUnknownWrite(e, kb, mode, pol)
 	}
 }
@@ -490,7 +491,7 @@ func handlePostToolUse(e Event, kb *KB) {
 		}
 		passthrough("")
 	}
-	if !writeTools[e.ToolName] {
+	if !writeTools[e.ToolName] && !strings.Contains(e.ToolName, "__") {
 		passthrough("")
 	}
 	markSessionWrite(sd, e.SessionID)

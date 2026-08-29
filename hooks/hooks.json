@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT:-$GROK_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
             "timeout": 10
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT:-$GROK_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
             "timeout": 10
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT:-$GROK_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
             "timeout": 10
           }
         ]
@@ -36,11 +36,11 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash|mcp__.*",
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash|write|search_replace|run_terminal_command|mcp__.*|.+__.*",
         "hooks": [
           {
             "type": "command",
-            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT:-$GROK_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
             "timeout": 10
           }
         ]
@@ -48,11 +48,11 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash",
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash|write|search_replace|run_terminal_command|mcp__.*|.+__.*",
         "hooks": [
           {
             "type": "command",
-            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT:-$GROK_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
             "timeout": 10
           }
         ]
@@ -62,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT:-$GROK_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
             "if": "Bash(git commit:*)",
             "asyncRewake": true,
             "rewakeMessage": "Peephole pre-ship review of your commit \u2014 address or acknowledge the findings below, then continue.",
@@ -71,7 +71,7 @@
           },
           {
             "type": "command",
-            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT:-$GROK_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
             "if": "Bash(git push:*)",
             "asyncRewake": true,
             "rewakeMessage": "Peephole pre-ship review of pushed commits \u2014 address or acknowledge the findings below, then continue.",
@@ -86,7 +86,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT:-$GROK_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
             "timeout": 10
           }
         ]
@@ -97,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT:-$GROK_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
             "timeout": 10
           }
         ]
@@ -108,7 +108,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "R=\"${CLAUDE_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
+            "command": "R=\"${CLAUDE_PLUGIN_ROOT:-$GROK_PLUGIN_ROOT}\"; E=\"\"; [ -r \"$R/bin/.peephole-exe\" ] && read -r E < \"$R/bin/.peephole-exe\"; case \"$E\" in \"$R\"/bin/*) if [ -x \"$E\" ]; then GOMAXPROCS=1 GOGC=off GODEBUG=asyncpreemptoff=1; export GOMAXPROCS GOGC GODEBUG; exec \"$E\" hook; fi ;; esac; exec sh \"$R/hooks/peephole.sh\" hook",
             "timeout": 10
           }
         ]

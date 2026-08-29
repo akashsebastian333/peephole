@@ -24,6 +24,7 @@ Two facts:
 | Host | Config in this folder | When it runs | Blocks the write? |
 |---|---|---|---|
 | Claude Code | plugin marketplace (not a file here) | PreToolUse | **Yes** (deny); ask is a prompt |
+| Grok Code | plugin marketplace (not a file here) | PreToolUse | **Yes** (deny); ask is allow |
 | Gemini CLI | `gemini-cli.settings.json` | BeforeTool | **Yes** (deny only) |
 | Codex CLI | `codex.hooks.json` | PreToolUse (Bash, `apply_patch`, MCP, other local tools) | **Yes** (deny only), after you **trust** the hook in `/hooks` |
 | Cursor | `cursor.hooks.json` | preToolUse + beforeShellExecution + beforeMCPExecution | **Yes** on those agent tools. Tab / GUI edits are after the fact — use git |
@@ -45,6 +46,29 @@ That is the only host that surfaces **ask** as an approval prompt.
 /plugin marketplace add akashsebastian333/peephole
 /plugin install peephole@peephole
 ```
+
+---
+
+## Grok Code
+
+Marketplace install registers the same `hooks/hooks.json` and `skills/`.
+`--trust` is required: without it, Grok leaves hooks inactive.
+
+Grok maps `Write`/`Edit` to `search_replace` and `Bash` to
+`run_terminal_command`; native `write` is a separate tool. The engine
+accepts Grok camelCase stdin (`hookEventName`, `toolName`, `toolInput`)
+and, on that dialect only, emits top-level `decision` (deny blocks; ask
+is allow — Grok has no ask prompt). Claude stdin stays
+`permissionDecision` only, so ask is still a prompt. SessionStart /
+UserPromptSubmit stdout is observe-only on Grok; the write-time deny
+still stands.
+
+```
+grok plugin marketplace add akashsebastian333/peephole
+grok plugin install peephole --trust
+```
+
+Restart Grok once.
 
 ---
 

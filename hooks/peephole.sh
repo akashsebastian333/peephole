@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
-ROOT="${CLAUDE_PLUGIN_ROOT:-$(CDPATH= cd "$(dirname "$0")/.." && pwd)}"
+ROOT="${CLAUDE_PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-$(CDPATH= cd "$(dirname "$0")/.." && pwd)}}"
 BIN="$ROOT/bin"
-CACHE="${CLAUDE_PLUGIN_DATA:-$BIN}/.peephole-exe"
+CACHE="${CLAUDE_PLUGIN_DATA:-${GROK_PLUGIN_DATA:-$BIN}}/.peephole-exe"
 
 GOMAXPROCS=1
 GOGC=off

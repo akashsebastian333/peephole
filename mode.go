@@ -20,6 +20,9 @@ func projectDir(e Event) string {
 	if d := os.Getenv("CLAUDE_PROJECT_DIR"); d != "" {
 		return d
 	}
+	if d := os.Getenv("GROK_WORKSPACE_ROOT"); d != "" {
+		return d
+	}
 	d, _ := os.Getwd()
 	return d
 }

@@ -1,0 +1,19 @@
+{
+  "name": "peephole",
+  "description": "A plugin for coding agents. They ship secure code.",
+  "owner": {
+    "name": "Akash",
+    "url": "https://github.com/akashsebastian333"
+  },
+  "plugins": [
+    {
+      "name": "peephole",
+      "source": "./",
+      "description": "Plugin for coding agents: steers the write and can ask or deny before a file is saved. They ship secure code.",
+      "version": "0.5.1",
+      "license": "MIT",
+      "homepage": "https://github.com/akashsebastian333/peephole",
+      "keywords": ["security", "cwe", "sast", "enforcement", "secure-coding"]
+    }
+  ]
+}

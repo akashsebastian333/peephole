@@ -33,7 +33,10 @@ misses.
 - Stop forces continuation via top-level `{"decision":"block","reason":str}`.
 - stdin field names: `hook_event_name`, `tool_name`, `tool_input`
   (Write/Edit: `file_path`/`content`/`new_string`; Bash: `command`), `prompt`,
-  `source`, `cwd`, `session_id`.
+  `source`, `cwd`, `session_id`. Grok Code uses the camelCase aliases
+  (`hookEventName`, `toolName`, `toolInput`, `workspaceRoot`, `sessionId`)
+  and `pre_tool_use` event values; deny is top-level `decision` on that
+  dialect only.
 
 ## Runtime: a single static Go binary (no interpreter dependency)
 
@@ -144,6 +147,7 @@ DEFERRED (blueprint itself defers these):
 
 ```
 .claude-plugin/plugin.json   plugin metadata only (no hooks/skills paths — Claude Code auto-loads hooks/hooks.json and skills/)
+.grok-plugin/marketplace.json Grok Code marketplace index (source ./ ; install with --trust)
 hooks/hooks.json             event → command wiring (inline read+exec fast path -> cached binary, fallback peephole.sh)
 hooks/peephole.sh            platform dispatcher: picks bin/peephole-<os>-<arch>
 bin/peephole-<os>-<arch>     prebuilt static binaries (5 targets) + manifest.sha256

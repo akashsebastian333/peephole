@@ -26,7 +26,7 @@ jobs:
       - name: version matches the tag
         run: |
           v="${GITHUB_REF_NAME#v}"
-          for f in .claude-plugin/plugin.json .claude-plugin/marketplace.json; do
+          for f in .claude-plugin/plugin.json .claude-plugin/marketplace.json .grok-plugin/marketplace.json; do
             grep -q "\"version\": \"$v\"" "$f" || { echo "$f does not declare version $v"; exit 1; }
           done
           grep -q "^const version = \"$v\"\$" version.go || { echo "version.go does not declare $v"; exit 1; }
