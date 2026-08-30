@@ -24,7 +24,6 @@ Codex, Cursor, OpenCode, Qwen Code, and Crush, and also at `git pre-commit` or
 as an MCP/LSP checker. Default mode is **`guided`**: you see the finding and decide.
 **`strict`** and **`hardened`** block high-confidence issues at write time.
 Every decision is recorded in a tamper-evident audit log, kept for 30 days.
-One Go binary — no Node, no Python, no third-party modules.
 
 **Docs:** [Design](docs/DESIGN.md) · [Architecture](docs/ARCHITECTURE.md) · [Threat model](docs/THREAT_MODEL.md) · [Benchmark](docs/BENCHMARK.md) · [Integrations](integrations/README.md) · [Organizations](docs/ENTERPRISE.md) · [Changelog](CHANGELOG.md)
 
